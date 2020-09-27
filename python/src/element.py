@@ -4,90 +4,157 @@ import shape_functions
 class Element:
     def __init__(self,id,style,param,inode):
         self.id = id
-        self.style = style
         self.inode = inode
-        self.ng = 5
 
-        self.param = param
+        self.set_style(style)
         self.set_param(param)
 
     def print(self):
         print(self.id,":",self.inode,",",self.param)
 
-    def set_nodes(self,nodes):
-        self.nodes = nodes
+    def set_style(self,style):
+        self.style = style
+        self.nnode = len(self.inode)
+        self.dim = shape_functions.set_dim(style)
 
     def set_param(self,param):
+        self.param = param
         vs,vp,rho = param
         self.rmu = rho*vs**2
         self.rlambda = rho*vp**2 - 2*self.rmu
         self.rho = rho
 
+    def set_nodes(self,nodes):
+        self.nodes = nodes
+
     # ---------------------------------------------------------
     def mk_local_matrix(self,dof):
         self.dof = dof
 
-        xn = np.empty([self.style,2],dtype=np.float64)
-        for i in range(self.style):
+        xn = np.empty([self.nnode,2],dtype=np.float64)
+        for i in range(self.nnode):
             xn[i,0] = self.nodes[i].xyz[0]
             xn[i,1] = self.nodes[i].xyz[1]
 
-        xi_list,w_list = np.polynomial.legendre.leggauss(self.ng)
-        self.M = np.zeros([self.dof*self.style,self.dof*self.style],dtype=np.float64)
-        self.K = np.zeros([self.dof*self.style,self.dof*self.style],dtype=np.float64)
+        xi_list,w_list = shape_functions.set_gauss(self.style)
+        self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
+        self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
+        self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
         self.De = mk_d(self.dof,self.rmu,self.rlambda)
 
-        V = 0.0
-        for i in range(self.ng):
-            xi,wx = xi_list[i],w_list[i]
-            for j in range(self.ng):
-                zeta,wz = xi_list[j],w_list[j]
+        self.M_diag = np.diag(self.M)
+        self.C_diag = np.diag(self.C)
 
-                det,_ = mk_jacobi(self.style,xn,xi,zeta)
-                detJ = wx*wz*det
+        if self.dim == 2:
+            V = 0.0
+            for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
+                for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
+                    det,_ = mk_jacobi(self.style,xn,xi,zeta)
+                    detJ = wx*wz*det
 
-                N = mk_n(self.dof,self.style,xi,zeta)
-                M = mk_m(N)
-                V += detJ
-                self.M += M*detJ
+                    N = mk_n(self.dof,self.style,self.nnode,xi,zeta)
+                    M = mk_m(N)
+                    V += detJ
+                    self.M += M*detJ
 
-                B = mk_b(self.dof,self.style,xn,xi,zeta)
-                K = mk_k(B,self.De)
+                    B = mk_b(self.dof,self.style,self.nnode,xn,xi,zeta)
+                    K = mk_k(B,self.De)
 
-                self.K += K*detJ
+                    self.K += K*detJ
 
-        mass = self.rho*V
-        tr_M = np.trace(self.M)/self.dof
-        self.M_diag = np.diag(self.M) * mass/tr_M
+            mass = self.rho*V
+            tr_M = np.trace(self.M)/self.dof
+            self.M_diag = np.diag(self.M) * mass/tr_M
+
+        elif self.dim == 1:
+            if "input" in self.style:
+                imp = mk_imp(self.dof,self.rmu,self.rlambda,self.rho)
+                for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
+                    det,q = mk_q(self.dof,self.style,xn,xi)
+                    detJ = wx*det
+
+                    N = mk_n(self.dof,self.style,self.nnode,xi,0.0)
+                    NqN = mk_nqn(self.dof,self.style,N,q,imp)
+                    self.C += NqN*detJ
+
+                self.C_diag = np.diag(self.C)
+                self.C -= np.diag(self.C_diag)
 
     # ---------------------------------------------------------
     def mk_ku(self,dof):
-        u = np.zeros([dof*self.style])
-        for i in range(self.style):
+        u = np.zeros([dof*self.nnode])
+        for i in range(self.nnode):
             i0 = dof*i
             u[i0:i0+dof] = self.nodes[i].u[:]
 
         ku = np.dot(self.K,u)
-        for i in range(self.style):
+        for i in range(self.nnode):
             i0 = dof*i
             self.nodes[i].force[:] += ku[i0:i0+dof]
 
+    def mk_cv(self,dof):
+        v = np.zeros([dof*self.nnode])
+        for i in range(self.nnode):
+            i0 = dof*i
+            v[i0:i0+dof] = self.nodes[i].v[:]
+
+        cv = np.dot(self.C,v)
+        for i in range(self.nnode):
+            i0 = dof*i
+            self.nodes[i].force[:] += cv[i0:i0+dof]
 
 # ---------------------------------------------------------
 def mk_m(N):
     return np.dot(N.T,N)
 
-def mk_n(dof,style,xi,zeta):
+def mk_n(dof,style,nnode,xi,zeta):
     n_shape = shape_functions.shape_function_n(style,xi,zeta)
 
-    N = np.zeros([dof,dof*style],dtype=np.float64)
+    N = np.zeros([dof,dof*nnode],dtype=np.float64)
     e = np.eye(dof)
 
-    for i in range(style):
+    for i in range(nnode):
         i0 = dof*i
         N[:,i0:i0+dof] = e*n_shape[i]
 
     return N
+
+# ---------------------------------------------------------
+def mk_nqn(dof,style,n,q,imp):
+    qiq = np.dot(np.dot(q.T,imp),q)
+    nqn = np.dot(np.dot(n.T,qiq),n)
+    return nqn
+
+def mk_imp(dof,rmu,rlambda,rho):
+    vs = np.sqrt(rmu/rho)
+    vp = np.sqrt((rlambda +2*rmu)/rho)
+
+    if dof == 1:
+        imp = np.diag([rho*vs])
+    elif dof == 2:
+        imp = np.diag([rho*vp,rho*vs])
+    elif dof == 3:
+        imp = np.diag([rho*vp,rho*vs,rho*vs])
+
+    return imp
+
+def mk_q(dof,style,xn,xi):
+    dn = shape_functions.shape_function_dn(style,xi)
+    t = np.dot(xn.T,dn)
+    n = np.cross(t,np.array([0.0,0.0,1.0]))
+    det = np.linalg.norm(t)
+
+    if dof == 1:
+        q = np.array([1.0])
+    elif dof == 2:
+        q = np.array([[n[0],n[1]],
+                      [t[0],t[1]]]) / det
+    elif dof == 3:
+        q = np.array([[n[0],n[1],0.0],
+                      [t[0],t[1],0.0],
+                      [0.0 ,0.0 ,1.0]]) / det
+
+    return det, q
 
 # ---------------------------------------------------------
 def mk_k(B,D):
@@ -115,26 +182,26 @@ def mk_d(dof,rmu,rlambda):
 
     return D
 
-def mk_b(dof,style,xn,xi,zeta):
+def mk_b(dof,style,nnode,xn,xi,zeta):
     dn = mk_dn(style,xn,xi,zeta)
 
     if dof == 1:
-        B = np.zeros([2,style],dtype=np.float64)
-        for i in range(style):
+        B = np.zeros([2,nnode],dtype=np.float64)
+        for i in range(nnode):
             B[0,i] = dn[i,0]
             B[1,i] = dn[i,1]
 
     elif dof == 2:
-        B = np.zeros([3,2*style],dtype=np.float64)
-        for i in range(style):
+        B = np.zeros([3,2*nnode],dtype=np.float64)
+        for i in range(nnode):
             i0,i1 = 2*i,2*i+1
             B[0,i0],B[0,i1] = dn[i,0],   0.0
             B[1,i0],B[1,i1] =    0.0 ,dn[i,1]
             B[2,i0],B[2,i1] = dn[i,1],dn[i,0]
 
     elif dof == 3:
-        B = np.zeros([5,3*style],dtype=np.float64)
-        for i in range(style):
+        B = np.zeros([5,3*nnode],dtype=np.float64)
+        for i in range(nnode):
             i0,i1,i2 = 3*i,3*i+1,3*i+2
             B[0,i0],B[0,i1] = dn[i,0],   0.0
             B[1,i0],B[1,i1] =    0.0 ,dn[i,1]

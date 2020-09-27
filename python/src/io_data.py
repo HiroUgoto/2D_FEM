@@ -26,7 +26,7 @@ def input_mesh(mesh_file):
             items = lines[ielem+irec].split()
 
             id = int(items[0])
-            style = int(items[1])
+            style = items[1]
             param = [float(s) for s in items[2:5]]
             inode = [int(s) for s in items[5:]]
 

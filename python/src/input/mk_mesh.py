@@ -18,7 +18,7 @@ for k in range(len(zg)):
     for i in range(len(xg)):
         dofx,dofz = 1,1
         if k == len(zg)-1:
-            dofx,dofz = 0,0
+            dofz = 0
         if i == 0:
             dofz = 0
         if i == len(xg)-1:
@@ -32,7 +32,7 @@ element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        style = 9
+        style = "2d9solid"
 
         vs = 250.0
         vp = 1500.0
@@ -45,6 +45,19 @@ for k in range(nz):
 
         element_lines += [param_line + style_line + "\n"]
         ielem += 1
+
+for i in range(nx):
+    style = "1d3input"
+
+    vs = 250.0
+    vp = 1500.0
+    rho = 1750.0
+
+    param_line = "{} {} {} {} {} ".format(ielem,style,vs,vp,rho)
+    style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
+
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
 
 nnode = inode
 nelem = ielem

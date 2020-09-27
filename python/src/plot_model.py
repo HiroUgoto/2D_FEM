@@ -44,13 +44,14 @@ def plot_mesh_update(ax,fem,amp=1.0):
     ax.set_aspect('equal')
 
     for element in fem.elements:
-        f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
-        f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
-        f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
-        f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
+        if element.dim == 2:
+            f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
+            f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
+            f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
+            f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
 
-        fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc="gray")
-        ax.add_patch(fpoly)
+            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc="gray")
+            ax.add_patch(fpoly)
 
     rc = 0.2
     for node in fem.nodes:
