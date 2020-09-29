@@ -20,8 +20,9 @@ class Element:
     def set_param(self,param):
         self.param = param
         vs,vp,rho = param
-        self.rmu = rho*vs**2
-        self.rlambda = rho*vp**2 - 2*self.rmu
+        nu = 0.495
+        self.rmu = rho/2*vp**2*(1-2*nu)/(1-nu)
+        self.rlambda = rho*nu*vp**2/(1-nu)
         self.rho = rho
 
     def set_nodes(self,nodes):
@@ -233,3 +234,4 @@ def mk_jacobi(style,xn,xi,zeta):
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
 
     return det,jacobi
+    
