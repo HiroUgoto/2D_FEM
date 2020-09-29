@@ -50,7 +50,7 @@ class Fem():
             node.inv_mc[:] = 1.0 / (node.mass[:] + 0.5*dt*node.c[:])
 
 
-    def update_time(self,dt,acc0,vel0=0.0,input_wave=False):
+    def update_time(self,dt,acc0,vel0=None,input_wave=False):
         for node in self.nodes:
             node.force = np.zeros(self.dof,dtype=np.float64)
 
@@ -59,16 +59,16 @@ class Fem():
                 v = np.zeros([element.dof*element.nnode])
                 for i in range(element.nnode):
                     i0 = self.dof*i
-                    v[i0] = vel0
+                    v[i0:i0+self.dof] = vel0
 
-                cv = np.dot(element.C+np.diag(element.C_diag),v)
+                cv = np.dot(element.C,v)
                 for i in range(element.nnode):
                     i0 = self.dof*i
                     element.nodes[i].force[:] -= 2*cv[i0:i0+self.dof]
 
         else:
             for node in self.nodes:
-                node.force += np.dot(np.diag(node.mass),np.array([acc0,0.0]))
+                node.force += np.dot(np.diag(node.mass),acc0)
 
         for element in self.elements:
             element.mk_ku(self.dof)

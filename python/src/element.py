@@ -44,6 +44,7 @@ class Element:
 
         self.M_diag = np.diag(self.M)
         self.C_diag = np.diag(self.C)
+        self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
 
         if self.dim == 2:
             V = 0.0
@@ -78,7 +79,7 @@ class Element:
                     self.C += NqN*detJ
 
                 self.C_diag = np.diag(self.C)
-                self.C -= np.diag(self.C_diag)
+                self.C_off_diag = self.C - np.diag(self.C_diag)
 
     # ---------------------------------------------------------
     def mk_ku(self,dof):
@@ -98,7 +99,7 @@ class Element:
             i0 = dof*i
             v[i0:i0+dof] = self.nodes[i].v[:]
 
-        cv = np.dot(self.C,v)
+        cv = np.dot(self.C_off_diag,v)
         for i in range(self.nnode):
             i0 = dof*i
             self.nodes[i].force[:] += cv[i0:i0+dof]
