@@ -19,8 +19,9 @@ class Element:
 
     def set_param(self,param):
         vs,vp,rho = param
-        self.rmu = rho*vs**2
-        self.rlambda = rho*vp**2 - 2*self.rmu
+        nu = 0.495
+        self.rmu = rho/2*vp**2*(1-2*nu)/(1-nu)
+        self.rlambda = rho*nu*vp**2/(1-nu)
         self.rho = rho
 
     # ---------------------------------------------------------
