@@ -166,3 +166,4 @@ def mk_jacobi(style,xn,xi,zeta):
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
 
     return det,jacobi
+    
