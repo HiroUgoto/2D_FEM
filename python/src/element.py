@@ -81,28 +81,30 @@ class Element:
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
 
+    def set_pointer_list(self):
+        self.u, self.v = (), ()
+        for node in self.nodes:
+            self.u += (node.u.view(),)
+            self.v += (node.v.view(),)
+
     # ---------------------------------------------------------
     def mk_ku(self,dof):
-        u = np.zeros([dof*self.nnode])
-        for i in range(self.nnode):
-            i0 = dof*i
-            u[i0:i0+dof] = self.nodes[i].u[:]
-
-        ku = np.dot(self.K,u)
+        ku = np.dot(self.K,np.hstack(self.u))
         for i in range(self.nnode):
             i0 = dof*i
             self.nodes[i].force[:] += ku[i0:i0+dof]
 
     def mk_cv(self,dof):
-        v = np.zeros([dof*self.nnode])
-        for i in range(self.nnode):
-            i0 = dof*i
-            v[i0:i0+dof] = self.nodes[i].v[:]
-
-        cv = np.dot(self.C_off_diag,v)
+        cv = np.dot(self.C_off_diag,np.hstack(self.v))
         for i in range(self.nnode):
             i0 = dof*i
             self.nodes[i].force[:] += cv[i0:i0+dof]
+
+    def mk_ku_cv(self,dof):
+        f = np.dot(self.K,np.hstack(self.u)) + np.dot(self.C_off_diag,np.hstack(self.v))
+        for i in range(self.nnode):
+            i0 = dof*i
+            self.nodes[i].force[:] += f[i0:i0+dof]
 
 # ---------------------------------------------------------
 def mk_m(N):
