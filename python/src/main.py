@@ -33,13 +33,14 @@ for it in range(len(tim)):
     acc0 = np.array([0.0,0.0])
     vel0 = np.array([wave_vel[it],0.0])
 
-    fem.update_time(dt,acc0,vel0,input_wave=True)
+    fem.update_time(acc0,vel0,input_wave=True)
     output_vel[it] = np.copy(fem.nodes[20].v[0])
 
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,5000.)
         print(it,fem.nodes[20].u)
 
+## Check process time ##
 process_time = time.time() - start
 print("process time: ", process_time)
 
