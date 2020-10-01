@@ -73,6 +73,7 @@ id style vs vp rho node_id
 
 **vs** : S-wave velocity [m/s]  
 **vp** : P-wave velocity [m/s]  
+**nu** : Poisson's ratio
 **rho** : Density [kg/m^3]  
 
 **node_id** : Node ID list in the order corresponding to the element style.

@@ -34,11 +34,11 @@ for k in range(nz):
     for i in range(nx):
         style = "2d9solid"
 
-        vs = 250.0
+        nu = 0.495
         vp = 1500.0
         rho = 1750.0
 
-        param_line = "{} {} {} {} {} ".format(ielem,style,vs,vp,rho)
+        param_line = "{} {} {} {} {} ".format(ielem,style,nu,vp,rho)
         style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
                                                          node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
                                                          node[2*i+1,2*k+1])
@@ -49,11 +49,11 @@ for k in range(nz):
 for i in range(nx):
     style = "1d3input"
 
-    vs = 250.0
+    nu = 0.495
     vp = 1500.0
     rho = 1750.0
 
-    param_line = "{} {} {} {} {} ".format(ielem,style,vs,vp,rho)
+    param_line = "{} {} {} {} {} ".format(ielem,style,nu,vp,rho)
     style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
 
     element_lines += [param_line + style_line + "\n"]
