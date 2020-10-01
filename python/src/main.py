@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 import io_data
 import input_wave
 import plot_model
 
+start = time.time()
 
 ## --- Input FEM Mesh --- ##
 fem = io_data.input_mesh("input/mesh.in")
@@ -15,10 +17,10 @@ fem.set_init()
 
 ## --- Define input wave --- ##
 fsamp = 5000
-duration = 0.5
+duration = 0.25
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.ricker(tim,0.25,5.0,1.0)
+wave_acc = input_wave.ricker(tim,0.10,10.0,1.0)
 wave_vel = np.cumsum(wave_acc) * dt
 
 ## --- Prepare time solver --- ##
@@ -31,13 +33,16 @@ for it in range(len(tim)):
     acc0 = np.array([0.0,0.0])
     vel0 = np.array([wave_vel[it],0.0])
 
-    fem.update_time(dt,acc0,vel0,input_wave=True)
+    fem.update_time(acc0,vel0,input_wave=True)
     output_vel[it] = np.copy(fem.nodes[20].v[0])
 
     if it%50 == 0:
-        plot_model.plot_mesh_update(ax,fem,1000.)
+        plot_model.plot_mesh_update(ax,fem,5000.)
         print(it,fem.nodes[20].u)
 
+## Check process time ##
+process_time = time.time() - start
+print("process time: ", process_time)
 
 ## Output result ##
 plt.figure()

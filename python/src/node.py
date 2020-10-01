@@ -17,6 +17,5 @@ class Node:
 
         self.mass   = np.zeros(self.dof,dtype=np.float64)
         self.c      = np.zeros(self.dof,dtype=np.float64)
-        self.inv_mc = np.zeros(self.dof,dtype=np.float64)
 
         self.force = np.zeros(self.dof,dtype=np.float64)
