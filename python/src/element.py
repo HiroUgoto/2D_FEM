@@ -2,30 +2,27 @@ import numpy as np
 import shape_functions
 
 class Element:
-    def __init__(self,id,style,param,inode):
+    def __init__(self,id,style,material_id,inode):
         self.id = id
         self.inode = inode
+        self.material_id = material_id
 
         self.set_style(style)
-        self.set_param(param)
 
     def print(self):
-        print(self.id,":",self.inode,",",self.param)
+        print(self.id,":",self.style,",",self.material_id,",",self.inode)
 
     def set_style(self,style):
         self.style = style
         self.nnode = len(self.inode)
         self.dim = shape_functions.set_dim(style)
 
-    def set_param(self,param):
-        self.param = param
-        nu,vp,rho = param
-        self.rmu = rho/2*vp**2*(1-2*nu)/(1-nu)
-        self.rlambda = rho*nu*vp**2/(1-nu)
-        self.rho = rho
-
     def set_nodes(self,nodes):
         self.nodes = nodes
+
+    def set_material(self,material):
+        self.material = material
+        self.rho = material.rho
 
     # ---------------------------------------------------------
     def mk_local_matrix(self,dof):
@@ -40,7 +37,8 @@ class Element:
         self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
         self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
         self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.De = mk_d(self.dof,self.rmu,self.rlambda)
+
+        self.De = self.material.mk_d(self.dof)
 
         self.M_diag = np.diag(self.M)
         self.C_diag = np.diag(self.C)
@@ -69,7 +67,7 @@ class Element:
 
         elif self.dim == 1:
             if "input" in self.style:
-                imp = mk_imp(self.dof,self.rmu,self.rlambda,self.rho)
+                imp = self.material.mk_imp(self.dof)
                 for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
                     det,q = mk_q(self.dof,self.style,xn,xi)
                     detJ = wx*det
@@ -128,19 +126,6 @@ def mk_nqn(dof,style,n,q,imp):
     nqn = np.dot(np.dot(n.T,qiq),n)
     return nqn
 
-def mk_imp(dof,rmu,rlambda,rho):
-    vs = np.sqrt(rmu/rho)
-    vp = np.sqrt((rlambda +2*rmu)/rho)
-
-    if dof == 1:
-        imp = np.diag([rho*vs])
-    elif dof == 2:
-        imp = np.diag([rho*vp,rho*vs])
-    elif dof == 3:
-        imp = np.diag([rho*vp,rho*vs,rho*vs])
-
-    return imp
-
 def mk_q(dof,style,xn,xi):
     dn = shape_functions.shape_function_dn(style,xi)
     t = np.dot(xn.T,dn)
@@ -162,28 +147,6 @@ def mk_q(dof,style,xn,xi):
 # ---------------------------------------------------------
 def mk_k(B,D):
     return np.dot(np.dot(B.T,D),B)
-
-def mk_d(dof,rmu,rlambda):
-    if dof == 1:
-        D = np.zeros([2,2],dtype=np.float64)
-        D[0,0] = rmu
-        D[1,1] = rmu
-
-    elif dof == 2:
-        D = np.zeros([3,3],dtype=np.float64)
-        D[0,0],D[0,1] = rlambda + 2*rmu, rlambda
-        D[1,0],D[1,1] = rlambda, rlambda + 2*rmu
-        D[2,2] = rmu
-
-    elif dof == 3:
-        D = np.zeros([5,5],dtype=np.float64)
-        D[0,0],D[0,1] = rlambda + 2*rmu, rlambda
-        D[1,0],D[1,1] = rlambda, rlambda + 2*rmu
-        D[2,2] = rmu
-        D[3,3] = rmu
-        D[4,4] = rmu
-
-    return D
 
 def mk_b(dof,style,nnode,xn,xi,zeta):
     dn = mk_dn(style,xn,xi,zeta)

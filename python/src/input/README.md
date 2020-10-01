@@ -1,7 +1,7 @@
 # Input File Format - mesh.in
 ---
 
-Input file `mesh.in` consists of three definition blocks, namely **header block**, **node block**, and **element block**. The detail formats are described as follows.
+Input file `mesh.in` consists of three definition blocks, namely **header block**, **node block**, **element block**, and **material block**. The detail formats are described as follows.
 
 ---
 ## Header block
@@ -9,11 +9,12 @@ Input file `mesh.in` consists of three definition blocks, namely **header block*
 Header block defines a number of nodes and elements, and degrees of freedom of the FEM model. The header block must be writtern in a single line.
 
 ```
-nnode nelem dof
+nnode nelem nmaterial dof
 ```
 
 **nnode** : Number of nodes  
 **nelem** : Number of elements  
+**nmaterial** : Number of materials  
 **dof** : Degrees of freedom
 - 2D-SH (anti-plane) problem : dof = 1
 - 2D-PSV (in-plane) problem : dof = 2
@@ -23,9 +24,10 @@ nnode nelem dof
 ### Example
 
 ```
-121 100 2
+121 100 2 2
 ```
-FEM model consists 121 nodes and 100 elements. The problem targets 2D in-plane deformation.
+FEM model consists 121 nodes and 100 elements. 2 materials are given.
+The problem targets 2D in-plane deformation.
 
 ---
 ## Node block
@@ -58,7 +60,7 @@ id x y dof0 [dof1] [dof2]
 Element block defines element types, material constants, and belonging nodes.
 
 ```
-id style vs vp rho node_id
+id style material_id node_id
 ```
 
 **id** : Element ID. Prefer to define it by sequential order.  
@@ -71,23 +73,46 @@ id style vs vp rho node_id
 - 1d2input : 2-node line input boundary element
 - 1d3input : 3-node line input boundary element  
 
-**vs** : S-wave velocity [m/s]  
-**vp** : P-wave velocity [m/s]  
-**nu** : Poisson's ratio
-**rho** : Density [kg/m^3]  
-
+**material_id** : Material ID defined in material block.  
 **node_id** : Node ID list in the order corresponding to the element style.
 
 ### Example
 
 ```
-0 2d4solid 250 1500 1750 0 1 3 2
+0 2d4solid 0 0 1 3 2
 ```
 
-2D 4-node isoparametric element is defined. The element consists of node ID 0, 1, 3, 2 in the order.
+2D 4-node isoparametric element is defined.
+Material parameters are given in ID 0.
+The element consists of node ID 0, 1, 3, 2 in the order.
 
 ```
-1 1d2input 250 1500 1750 0 1
+1 1d2input 1 0 1
 ```
 
 Input wave boundary is defined on the boundary consisting of node ID 0 and 1.
+
+---
+## Material block
+
+Material block defines material types and its physical parameters.
+
+```
+id style param
+```
+
+**id** : Material ID. Prefer to define it by sequential order.  
+**style** : Material style as listed below.  
+**param** : List of physical parameters. The order is described as below.  
+- vs_vp_rho : Linear elastic material. Parameters are given in the order of  
+  + S-wave velocity [m/s], P-wave velocity [m/s], and density [kg/m^3]
+- nu_vp_rho : Linear elastic material. Parameters are given in the order of
+  + Poisson's ratio, P-wave velocity [m/s], and density [kg/m^3]
+
+### Example
+
+```
+0 vs_vp_rho 250. 1500. 1750.
+```
+
+Linear elastic material is defined. The parameters are defined in the order of S-wave velocity (250m/s), P-wave velocity (1500m/s), and density (1750kg/m^3).

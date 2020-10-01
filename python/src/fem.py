@@ -1,13 +1,14 @@
 import numpy as np
 
 class Fem():
-    def __init__(self,dof,nodes,elements):
+    def __init__(self,dof,nodes,elements,materials):
         self.nnode = len(nodes)
         self.nelem = len(elements)
         self.dof = dof
 
         self.nodes = nodes
         self.elements = elements
+        self.materials = materials
 
         self.input_elements = []
         self.free_nodes = []
@@ -30,8 +31,16 @@ class Fem():
                         if n.id == inode:
                             nodes += [n]
                             break
-
             element.set_nodes(nodes)
+
+            if self.materials[element.material_id].id == element.material_id:
+                material = self.materials[element.material_id]
+            else:
+                for m in self.materials:
+                    if m.id == element.material_id:
+                        material = m
+                        break
+            element.set_material(material)
 
             if "input" in element.style:
                 self.input_elements += [element]
