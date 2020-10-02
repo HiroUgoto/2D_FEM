@@ -38,7 +38,7 @@ Node block defines locations of nodes and its degree of freedom (constrains).
 id x y dof0 [dof1] [dof2]
 ```
 
-**id** : Node ID. Prefer to define it by sequential order.  
+**id** : Node ID. Prefer to define it by sequential order.  
 **x** : x coordinate [m]  
 **y** : y coordinate [m]  
 **dof0** : 1st degree of freedom [fix: 0, no fix: 1]  
