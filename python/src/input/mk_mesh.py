@@ -35,19 +35,46 @@ ielem = 0
 for k in range(nz):
     if k <= 1:
         im = 0
+        for i in range(nx):
+            style = "2d9solid"
+
+            param_line = "{} {} {} ".format(ielem,style,im)
+            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])
+
+            element_lines += [param_line + style_line + "\n"]
+            ielem += 1
+    elif 1 < k < 4:
+        for i in range(nx):
+            style = "2d9solid"
+            if i <=8:    #液状化層鉛直境界
+                im = 1
+            else:
+                im = 0
+
+            param_line = "{} {} {} ".format(ielem,style,im)
+            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])
+
+            element_lines += [param_line + style_line + "\n"]
+            ielem += 1
+
     else:
         im = 1
+        for i in range(nx):
+            style = "2d9solid"
 
-    for i in range(nx):
-        style = "2d9solid"
+            param_line = "{} {} {} ".format(ielem,style,im)
+            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])
 
-        param_line = "{} {} {} ".format(ielem,style,im)
-        style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
-                                                         node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
-                                                         node[2*i+1,2*k+1])
+            element_lines += [param_line + style_line + "\n"]
+            ielem += 1
 
-        element_lines += [param_line + style_line + "\n"]
-        ielem += 1
+
 
 for i in range(nx):
     style = "1d3input"
