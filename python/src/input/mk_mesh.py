@@ -1,11 +1,11 @@
 import numpy as np
 
 
-area_x = 100.0
-area_z = 10.0
+area_x = 130.0
+area_z = 15.0
 
-nx = 20
-nz = 5
+nx = 52
+nz = 15
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -45,10 +45,10 @@ for k in range(nz):
 
             element_lines += [param_line + style_line + "\n"]
             ielem += 1
-    elif 1 < k < 4:
+    elif 6 < k < 10:        #液状化層水平境界
         for i in range(nx):
             style = "2d9solid"
-            if i <=8:    #液状化層鉛直境界
+            if i <=24:    #液状化層鉛直境界
                 im = 1
             else:
                 im = 0
