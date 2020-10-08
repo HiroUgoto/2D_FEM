@@ -33,7 +33,20 @@ for k in range(len(zg)):
 element_lines = []
 ielem = 0
 for k in range(nz):
-    if k <= 1:
+    if k < 3:      #盛土層
+        im = 2
+        for i in range(nx):
+            style = "2d9solid"
+
+            param_line = "{} {} {} ".format(ielem,style,im)
+            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])
+
+            element_lines += [param_line + style_line + "\n"]
+            ielem += 1
+
+    elif 3 <= k < 6:      #一様液状化層(埋立土層)
         im = 0
         for i in range(nx):
             style = "2d9solid"
@@ -45,10 +58,12 @@ for k in range(nz):
 
             element_lines += [param_line + style_line + "\n"]
             ielem += 1
-    elif 6 < k < 10:        #液状化層水平境界
+
+
+    elif 6 <= k < 10:        #水平に遷移する土層(沖積砂層/埋立土層)
         for i in range(nx):
             style = "2d9solid"
-            if i <=24:    #液状化層鉛直境界
+            if i <=24:    #土層の鉛直境界
                 im = 1
             else:
                 im = 0
@@ -61,7 +76,7 @@ for k in range(nz):
             element_lines += [param_line + style_line + "\n"]
             ielem += 1
 
-    else:
+    else:       #非液状化層(沖積砂層)
         im = 1
         for i in range(nx):
             style = "2d9solid"
@@ -91,8 +106,9 @@ nelem = ielem
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"nu_vp_rho",0.495,1500.0,1750.0)]
-material_lines += ["{} {} {} {} {} \n".format(1,"nu_vp_rho",0.400,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"nu_vs_rho",0.495,6.0,1834.9)]      #埋立土層
+material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.333,140.0,1732.9)]     #沖積砂層
+material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.333,140.0,1732.9)]       #盛土層
 
 nmaterial = len(material_lines)
 

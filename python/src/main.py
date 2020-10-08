@@ -13,7 +13,7 @@ fem = io_data.input_mesh("input/mesh.in")
 
 ## --- FEM Set up --- ##
 fem.set_init()
-plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)       #コメントアウトoffでメッシュ描画モード
 
 ## --- Define input wave --- ##
 fsamp = 5000
