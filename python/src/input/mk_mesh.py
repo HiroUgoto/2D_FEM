@@ -106,6 +106,11 @@ nelem = ielem
 
 ### Set material ###
 material_lines = []
+#material_lines += ["{} {} {} {} {} \n".format(0,"nu_vp_rho",0.495,1500.0,1750.0)]      #埋立土層
+#material_lines += ["{} {} {} {} {} \n".format(1,"nu_vp_rho",0.333,1500.0,1750.0)]     #沖積砂層
+#material_lines += ["{} {} {} {} {} \n".format(2,"nu_vp_rho",0.333,1500.0,1750.0)]       #盛土層
+
+#浦安・舞浜2丁目モデル
 material_lines += ["{} {} {} {} {} \n".format(0,"nu_vs_rho",0.495,6.0,1834.9)]      #埋立土層
 material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.333,140.0,1732.9)]     #沖積砂層
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.333,140.0,1732.9)]       #盛土層
