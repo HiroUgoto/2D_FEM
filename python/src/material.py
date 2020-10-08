@@ -25,6 +25,12 @@ class Material:
             self.rlambda = rho*nu*vp**2/(1-nu)
             self.rho = rho
 
+        elif self.style == "nu_vs_rho":
+            nu,vs,rho = param
+            self.rmu = rho*vs**2
+            self.rlambda = 2*nu/(1-2*nu)/(rho*vs**2)
+            self.rho = rho
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:
