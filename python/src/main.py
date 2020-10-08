@@ -13,7 +13,7 @@ fem = io_data.input_mesh("input/mesh.in")
 
 ## --- FEM Set up --- ##
 fem.set_init()
-# plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
 fsamp = 5000
@@ -38,7 +38,7 @@ for it in range(len(tim)):
 
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,5000.)
-        print(it,fem.nodes[20].u)
+        print(it,fem.nodes[20].u,fem.elements[100].strain[0])
 
 ## Check process time ##
 process_time = time.time() - start

@@ -28,10 +28,10 @@ class Element:
     def mk_local_matrix(self,dof):
         self.dof = dof
 
-        xn = np.empty([self.nnode,2],dtype=np.float64)
+        self.xn = np.empty([self.nnode,2],dtype=np.float64)
         for i in range(self.nnode):
-            xn[i,0] = self.nodes[i].xyz[0]
-            xn[i,1] = self.nodes[i].xyz[1]
+            self.xn[i,0] = self.nodes[i].xyz[0]
+            self.xn[i,1] = self.nodes[i].xyz[1]
 
         xi_list,w_list = shape_functions.set_gauss(self.style)
         self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
@@ -48,7 +48,7 @@ class Element:
             V = 0.0
             for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
                 for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
-                    det,_ = mk_jacobi(self.style,xn,xi,zeta)
+                    det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
                     detJ = wx*wz*det
 
                     N = mk_n(self.dof,self.style,self.nnode,xi,zeta)
@@ -56,7 +56,7 @@ class Element:
                     V += detJ
                     self.M += M*detJ
 
-                    B = mk_b(self.dof,self.style,self.nnode,xn,xi,zeta)
+                    B = mk_b(self.dof,self.style,self.nnode,self.xn,xi,zeta)
                     K = mk_k(B,self.De)
 
                     self.K += K*detJ
@@ -69,7 +69,7 @@ class Element:
             if "input" in self.style:
                 imp = self.material.mk_imp(self.dof)
                 for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
-                    det,q = mk_q(self.dof,self.style,xn,xi)
+                    det,q = mk_q(self.dof,self.style,self.xn,xi)
                     detJ = wx*det
 
                     N = mk_n(self.dof,self.style,self.nnode,xi,0.0)
@@ -103,6 +103,12 @@ class Element:
         for i in range(self.nnode):
             i0 = dof*i
             self.nodes[i].force[:] += f[i0:i0+dof]
+
+    # ---------------------------------------------------------
+    def calc_stress(self):
+        B = mk_b(self.dof,self.style,self.nnode,self.xn,0.0,0.0)
+        self.strain = np.dot(B,np.hstack(self.u))
+        self.stress = np.dot(self.De,self.strain)
 
 # ---------------------------------------------------------
 def mk_m(N):

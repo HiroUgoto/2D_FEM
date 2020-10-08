@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 
 #--------------------------------------------------------#
 def plot_mesh(fem,amp=1.0):
-    fig,ax = plt.subplots()
+    pc = ["whitesmoke","wheat","lightyellow","lightgreen","lightsskyblue","lightpink"]
+
+    fig,ax = plt.subplots(figsize=(12,4))
 
     x = [node.xyz[0] for node in fem.nodes]
     z = [node.xyz[1] for node in fem.nodes]
@@ -12,14 +14,18 @@ def plot_mesh(fem,amp=1.0):
     ax.set_aspect('equal')
 
     for element in fem.elements:
-        f0 = (element.nodes[0].xyz[0], element.nodes[0].xyz[1])
-        f1 = (element.nodes[1].xyz[0], element.nodes[1].xyz[1])
-        f2 = (element.nodes[2].xyz[0], element.nodes[2].xyz[1])
-        f3 = (element.nodes[3].xyz[0], element.nodes[3].xyz[1])
-        fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc="gray")
-        ax.add_patch(fpoly)
+        if element.dim == 2:
+            ic = element.material_id % len(pc)
 
-    rc = 0.2
+            f0 = (element.nodes[0].xyz[0], element.nodes[0].xyz[1])
+            f1 = (element.nodes[1].xyz[0], element.nodes[1].xyz[1])
+            f2 = (element.nodes[2].xyz[0], element.nodes[2].xyz[1])
+            f3 = (element.nodes[3].xyz[0], element.nodes[3].xyz[1])
+
+            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])
+            ax.add_patch(fpoly)
+
+    rc = 0.1
     for node in fem.nodes:
         p = plt.Circle((node.xyz[0],node.xyz[1]),rc,color="k")
         ax.add_patch(p)

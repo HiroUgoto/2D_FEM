@@ -114,6 +114,9 @@ class Fem():
             node.v[:] = (node.u - node.um) * self.inv_dt2
             node.um = u
 
+        for element in self.elements:
+            if element not in self.input_elements:
+                element.calc_stress()
 
     # ------------------------------------------------
     def print_all(self):
