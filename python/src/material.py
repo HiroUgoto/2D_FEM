@@ -28,7 +28,7 @@ class Material:
         elif self.style == "nu_vs_rho":
             nu,vs,rho = param
             self.rmu = rho*vs**2
-            self.rlambda = 2*nu/(1-2*nu)/(rho*vs**2)
+            self.rlambda = 2*nu/(1-2*nu) * self.rmu
             self.rho = rho
 
     # ---------------------------------------------------------

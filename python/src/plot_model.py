@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 #--------------------------------------------------------#
 def plot_mesh(fem,amp=1.0):
-    pc = ["whitesmoke","wheat","lightyellow","lightgreen","lightsskyblue","lightpink"]
+    pc = ["white","lightblue","yellow","green","pink"]
 
     fig,ax = plt.subplots(figsize=(12,4))
 

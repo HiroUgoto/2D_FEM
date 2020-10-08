@@ -20,7 +20,7 @@ fsamp = 5000
 duration = 0.50
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.ricker(tim,0.10,10.0,1.0)
+wave_acc = input_wave.ricker(tim,0.20,5.0,1.0)
 wave_vel = np.cumsum(wave_acc) * dt
 
 ## --- Prepare time solver --- ##
