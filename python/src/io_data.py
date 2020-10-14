@@ -2,7 +2,7 @@ import numpy as np
 import fem
 import node,element,material
 
-
+# ------------------------------------------------------------------- #
 def input_mesh(mesh_file):
     with open(mesh_file) as f:
         lines = f.readlines()
@@ -44,3 +44,28 @@ def input_mesh(mesh_file):
             materials += [material.Material(id,style,param)]
 
         return fem.Fem(dof,nodes,elements,materials)
+
+# ------------------------------------------------------------------- #
+def input_outputs(output_file):
+    with open(output_file) as f:
+        lines = f.readlines()
+
+        nnode,nelem = [int(s) for s in lines[0].split()]
+
+        irec = 1
+        nodes = []
+        for inode in range(nnode):
+            items = lines[inode+irec].split()
+
+            inode = int(items[0])
+            nodes += [inode]
+
+        irec += nnode
+        elements = []
+        for ielem in range(nelem):
+            items = lines[ielem+irec].split()
+
+            ielem = int(items[0])
+            elements += [ielem]
+
+        return nodes, elements

@@ -20,6 +20,21 @@ class Fem():
         self.set_initial_matrix()
 
     # ------------------------------------------------
+    def set_output(self,outputs):
+        output_node_list,output_element_list = outputs
+
+        self.output_nodes = []
+        for inode in output_node_list:
+            self.output_nodes += [self.nodes[inode]]
+        self.output_nnode = len(self.output_nodes)
+
+        self.output_elements = []
+        for ielem in output_element_list:
+            self.output_elements += [self.elements[ielem]]
+        self.output_nelem = len(self.output_elements)
+
+
+    # ------------------------------------------------
     def set_mesh(self):
         for element in self.elements:
             nodes = []
@@ -114,9 +129,8 @@ class Fem():
             node.v[:] = (node.u - node.um) * self.inv_dt2
             node.um = u
 
-        for element in self.elements:
-            if element not in self.input_elements:
-                element.calc_stress()
+        for element in self.output_elements:
+            element.calc_stress()
 
     # ------------------------------------------------
     def print_all(self):
