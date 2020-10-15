@@ -16,10 +16,10 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fsamp = 5000
-duration = 0.50
+duration = 1.5
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.ricker(tim,0.20,5.0,1.0)
+wave_acc = input_wave.tapered_sin(tim,fp=5.0,taper=0.2,duration=1.0,amp=1.0)
 wave_vel = np.cumsum(wave_acc) * dt
 ntim = len(tim)
 

@@ -33,31 +33,25 @@ for k in range(len(zg)):
 element_lines = []
 ielem = 0
 for k in range(nz):
-    if k < 3:
-        im = 0
-        for i in range(nx):
-            style = "2d9solid"
+    im = 1
 
-            param_line = "{} {} {} ".format(ielem,style,im)
-            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
-                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
-                                                             node[2*i+1,2*k+1])
+    for i in range(nx):
+        if k < 3:
+            im = 0
+            if i == 0 or i == nx-1:
+                im = 1
 
-            element_lines += [param_line + style_line + "\n"]
-            ielem += 1
 
-    else:
-        im = 1
-        for i in range(nx):
-            style = "2d9solid"
+        style = "2d9solid"
 
-            param_line = "{} {} {} ".format(ielem,style,im)
-            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
-                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
-                                                             node[2*i+1,2*k+1])
+        param_line = "{} {} {} ".format(ielem,style,im)
+        style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                         node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                         node[2*i+1,2*k+1])
 
-            element_lines += [param_line + style_line + "\n"]
-            ielem += 1
+        element_lines += [param_line + style_line + "\n"]
+        ielem += 1
+
 
 
 
