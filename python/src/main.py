@@ -40,7 +40,7 @@ for it in range(len(tim)):
     output_vel[it,:] = [node.v[0] for node in fem.output_nodes]
     output_strain[it,:] = [element.strain[0] for element in fem.output_elements]
 
-    if it%50 == 0:
+    if it%10 == 0:
         plot_model.plot_mesh_update(ax,fem,500.)
         print(it,output_vel[it,0],output_strain[it,0])
 

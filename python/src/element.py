@@ -25,13 +25,39 @@ class Element:
         self.rho = material.rho
 
     # ---------------------------------------------------------
-    def mk_local_matrix(self,dof):
-        self.dof = dof
+    def set_pointer_list(self):
+        self.u, self.v = (), ()
+        for node in self.nodes:
+            self.u += (node.u.view(),)
+            self.v += (node.v.view(),)
 
+    def set_xn(self):
         self.xn = np.empty([self.nnode,2],dtype=np.float64)
         for i in range(self.nnode):
-            self.xn[i,0] = self.nodes[i].xyz[0]
-            self.xn[i,1] = self.nodes[i].xyz[1]
+            self.xn[i,0] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
+            self.xn[i,1] = self.nodes[i].xyz[1] + self.u[i][1] # mesh update
+            # self.xn[i,0] = self.nodes[i].xyz[0]
+            # self.xn[i,1] = self.nodes[i].xyz[1]
+
+    # ---------------------------------------------------------
+    def mk_local_mass(self):
+        self.set_xn()
+        xi_list,w_list = shape_functions.set_gauss(self.style)
+
+        if self.dim == 2:
+            V = 0.0
+            for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
+                for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
+                    det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
+                    detJ = wx*wz*det
+                    V += detJ
+
+            self.mass = self.rho*V
+
+
+    def mk_local_matrix(self,dof):
+        self.dof = dof
+        self.set_xn()
 
         xi_list,w_list = shape_functions.set_gauss(self.style)
         self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
@@ -45,7 +71,6 @@ class Element:
         self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
 
         if self.dim == 2:
-            V = 0.0
             for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
                 for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
                     det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
@@ -53,7 +78,6 @@ class Element:
 
                     N = mk_n(self.dof,self.style,self.nnode,xi,zeta)
                     M = mk_m(N)
-                    V += detJ
                     self.M += M*detJ
 
                     B = mk_b(self.dof,self.style,self.nnode,self.xn,xi,zeta)
@@ -61,9 +85,8 @@ class Element:
 
                     self.K += K*detJ
 
-            mass = self.rho*V
             tr_M = np.trace(self.M)/self.dof
-            self.M_diag = np.diag(self.M) * mass/tr_M
+            self.M_diag = np.diag(self.M) * self.mass/tr_M
 
         elif self.dim == 1:
             if "input" in self.style:
@@ -78,12 +101,6 @@ class Element:
 
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
-
-    def set_pointer_list(self):
-        self.u, self.v = (), ()
-        for node in self.nodes:
-            self.u += (node.u.view(),)
-            self.v += (node.v.view(),)
 
     # ---------------------------------------------------------
     def mk_ku(self,dof):

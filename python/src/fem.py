@@ -69,10 +69,13 @@ class Fem():
             else:
                 self.fixed_nodes += [node]
 
+        for element in self.elements:
+            element.set_pointer_list()
+
     def set_initial_matrix(self):
         for element in self.elements:
+            element.mk_local_mass()
             element.mk_local_matrix(self.dof)
-            element.set_pointer_list()
 
             id = 0
             for node in element.nodes:
@@ -92,7 +95,32 @@ class Fem():
         self.dt = dt
         self.inv_dt2 = 1./(2.*dt)
 
+    def update_matrix(self):
+        for node in self.nodes:
+            node.mass = np.zeros(self.dof,dtype=np.float64)
+            node.c    = np.zeros(self.dof,dtype=np.float64)
+
+        for element in self.elements:
+            element.mk_local_matrix(self.dof)
+
+            id = 0
+            for node in element.nodes:
+                for i in range(self.dof):
+                    node.mass[i] += element.M_diag[id]
+                    node.c[i] += element.C_diag[id]
+                    id += 1
+
+        for node in self.nodes:
+            node.inv_mc = 1.0 / (node.mass[:] + 0.5*self.dt*node.c[:])
+            node.mass_inv_mc = node.mass[:]*node.inv_mc[:]
+            node.c_inv_mc = node.c[:]*node.inv_mc[:]*0.5*self.dt
+            node.dtdt_inv_mc = self.dt*self.dt*node.inv_mc[:]
+
+
     def update_time(self,acc0,vel0=None,input_wave=False):
+        # finite deformation ~ update matrix
+        self.update_matrix()
+
         for node in self.nodes:
             node.force = np.zeros(self.dof,dtype=np.float64)
 
