@@ -102,6 +102,32 @@ class Element:
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
 
+    def mk_local_vector(self,dof):
+        gravity = 9.8
+        self.dof = dof
+        self.set_xn()
+
+        xi_list,w_list = shape_functions.set_gauss(self.style)
+        self.force = np.zeros(self.dof*self.nnode,dtype=np.float64)
+
+        if self.dof == 1:
+            return
+
+        if self.dim == 2:
+            V = 0.0
+            for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
+                for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
+                    det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
+                    detJ = wx*wz*det
+                    V += detJ
+
+                    N = mk_n(self.dof,self.style,self.nnode,xi,zeta)
+                    self.force += N[1,:]*detJ * gravity
+
+            self.force = self.force * self.mass/V
+
+
+
     # ---------------------------------------------------------
     def mk_ku(self,dof):
         ku = np.dot(self.K,np.hstack(self.u))

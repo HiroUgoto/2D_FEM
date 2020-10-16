@@ -76,13 +76,16 @@ class Fem():
         for element in self.elements:
             element.mk_local_mass()
             element.mk_local_matrix(self.dof)
+            element.mk_local_vector(self.dof)
 
             id = 0
             for node in element.nodes:
                 for i in range(self.dof):
                     node.mass[i] += element.M_diag[id]
                     node.c[i] += element.C_diag[id]
+                    node.static_force[i] += element.force[id]
                     id += 1
+
 
     # ------------------------------------------------
     def update_init(self,dt):
@@ -99,15 +102,18 @@ class Fem():
         for node in self.nodes:
             node.mass = np.zeros(self.dof,dtype=np.float64)
             node.c    = np.zeros(self.dof,dtype=np.float64)
+            node.dynamic_force = -np.copy(node.static_force)
 
         for element in self.elements:
             element.mk_local_matrix(self.dof)
+            element.mk_local_vector(self.dof)
 
             id = 0
             for node in element.nodes:
                 for i in range(self.dof):
                     node.mass[i] += element.M_diag[id]
                     node.c[i] += element.C_diag[id]
+                    node.dynamic_force[i] += element.force[id]
                     id += 1
 
         for node in self.nodes:
@@ -122,7 +128,7 @@ class Fem():
         self.update_matrix()
 
         for node in self.nodes:
-            node.force = np.zeros(self.dof,dtype=np.float64)
+            node.force = -np.copy(node.dynamic_force)
 
         if input_wave:
             for element in self.input_elements:

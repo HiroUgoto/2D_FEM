@@ -19,3 +19,5 @@ class Node:
         self.c      = np.zeros(self.dof,dtype=np.float64)
 
         self.force = np.zeros(self.dof,dtype=np.float64)
+        self.static_force = np.zeros(self.dof,dtype=np.float64)
+        self.dynamic_force = np.zeros(self.dof,dtype=np.float64)
