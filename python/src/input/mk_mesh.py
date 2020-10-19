@@ -4,7 +4,7 @@ import numpy as np
 area_x = 50.0
 area_z = 16.0
 
-nx =  5
+nx =  10
 nz =  8
 dof = 2
 
@@ -53,8 +53,6 @@ for k in range(nz):
         ielem += 1
 
 
-
-
 for i in range(nx):
     style = "1d3input"
     im = 1
@@ -70,7 +68,7 @@ nelem = ielem
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",5.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",20.0,1500.0,1750.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)

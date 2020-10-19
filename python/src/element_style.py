@@ -23,6 +23,9 @@ class Solid_2d_4Node:
         self.dim = 2
         self.gauss = np.polynomial.legendre.leggauss(3)
 
+    def init_dn(self,n):
+        return np.zeros([n,n,4,2])
+
     @lru_cache()
     def shape_function_n(self,xi,zeta):
         n = np.zeros(4)
@@ -53,6 +56,9 @@ class Solid_2d_8Node:
     def __init__(self):
         self.dim = 2
         self.gauss = np.polynomial.legendre.leggauss(5)
+
+    def init_dn(self,n):
+        return np.zeros([n,n,8,2])
 
     @lru_cache()
     def shape_function_n(self,xi,zeta):
@@ -101,6 +107,9 @@ class Solid_2d_9Node:
     def __init__(self):
         self.dim = 2
         self.gauss = np.polynomial.legendre.leggauss(5)
+
+    def init_dn(self,n):
+        return np.zeros([n,n,9,2])
 
     @lru_cache()
     def shape_function_n(self,xi,zeta):
@@ -155,6 +164,9 @@ class Line_1d_2Node:
         self.dim = 1
         self.gauss = np.polynomial.legendre.leggauss(3)
 
+    def init_dn(self,n):
+        return np.zeros([n,2])
+
     @lru_cache()
     def shape_function_n(self,xi,zeta=0.0):
         n = np.zeros(2)
@@ -174,6 +186,9 @@ class Line_1d_3Node:
     def __init__(self):
         self.dim = 1
         self.gauss = np.polynomial.legendre.leggauss(5)
+
+    def init_dn(self,n):
+        return np.zeros([n,3])
 
     @lru_cache()
     def shape_function_n(self,xi,zeta=0.0):
