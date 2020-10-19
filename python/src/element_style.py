@@ -1,3 +1,4 @@
+from functools import lru_cache
 import numpy as np
 
 def set_style(style):
@@ -22,6 +23,7 @@ class Solid_2d_4Node:
         self.dim = 2
         self.gauss = np.polynomial.legendre.leggauss(3)
 
+    @lru_cache()
     def shape_function_n(self,xi,zeta):
         n = np.zeros(4)
         n[0] = (1.0 - xi)*(1.0 - zeta) / 4.0
@@ -30,6 +32,7 @@ class Solid_2d_4Node:
         n[3] = (1.0 - xi)*(1.0 + zeta) / 4.0
         return n
 
+    @lru_cache()
     def shape_function_dn(style,xi,zeta):
         dn = np.zeros([4,2])
         dn[0,0] = -(1.0 - zeta) / 4.0
@@ -51,6 +54,7 @@ class Solid_2d_8Node:
         self.dim = 2
         self.gauss = np.polynomial.legendre.leggauss(5)
 
+    @lru_cache()
     def shape_function_n(self,xi,zeta):
         n = np.zeros(8)
         n[0] = (1.0 - xi)*(1.0 - zeta)*(-1.0-xi-zeta) / 4.0
@@ -64,6 +68,7 @@ class Solid_2d_8Node:
         n[7] = (1.0 - xi)*(1.0 - zeta*zeta) / 2.0
         return n
 
+    @lru_cache()
     def shape_function_dn(style,xi,zeta):
         dn = np.zeros([8,2])
         dn[0,0] = (1.0 - zeta)*(2.0*xi+zeta) / 4.0
@@ -97,6 +102,7 @@ class Solid_2d_9Node:
         self.dim = 2
         self.gauss = np.polynomial.legendre.leggauss(5)
 
+    @lru_cache()
     def shape_function_n(self,xi,zeta):
         n = np.zeros(9)
         n[0] =  (1.0 - xi)*(1.0 - zeta)*xi*zeta / 4.0
@@ -112,6 +118,7 @@ class Solid_2d_9Node:
         n[8] = (1.0-xi*xi)*(1.0-zeta*zeta)
         return n
 
+    @lru_cache()
     def shape_function_dn(style,xi,zeta):
         dn = np.zeros([9,2])
         dn[0,0] =  (2.0*xi-1.0)*(zeta-1.0)*zeta / 4.0
@@ -148,12 +155,14 @@ class Line_1d_2Node:
         self.dim = 1
         self.gauss = np.polynomial.legendre.leggauss(3)
 
+    @lru_cache()
     def shape_function_n(self,xi,zeta=0.0):
         n = np.zeros(2)
         n[0] = (1.0 - xi) / 2.0
         n[1] = (1.0 + xi) / 2.0
         return n
 
+    @lru_cache()
     def shape_function_dn(style,xi,zeta=0.0):
         dn = np.zeros(2)
         dn[0] = -0.5
@@ -166,6 +175,7 @@ class Line_1d_3Node:
         self.dim = 1
         self.gauss = np.polynomial.legendre.leggauss(5)
 
+    @lru_cache()
     def shape_function_n(self,xi,zeta=0.0):
         n = np.zeros(3)
         n[0] = -xi*(1.0 - xi) / 2.0
@@ -173,6 +183,7 @@ class Line_1d_3Node:
         n[2] = (1.0 - xi)*(1.0 + xi)
         return n
 
+    @lru_cache()
     def shape_function_dn(style,xi,zeta=0.0):
         dn = np.zeros(3)
         dn[0] = xi - 0.5

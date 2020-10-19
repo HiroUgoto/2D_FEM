@@ -33,7 +33,6 @@ class Fem():
             self.output_elements += [self.elements[ielem]]
         self.output_nelem = len(self.output_elements)
 
-
     # ------------------------------------------------
     def set_mesh(self):
         for element in self.elements:
@@ -60,6 +59,7 @@ class Fem():
             if "input" in element.style:
                 self.input_elements += [element]
 
+    # ------------------------------------------------
     def set_initial_condition(self):
         for node in self.nodes:
             node.set_initial_condition()
@@ -72,11 +72,13 @@ class Fem():
         for element in self.elements:
             element.set_pointer_list()
 
+    # ------------------------------------------------
     def set_initial_matrix(self):
         for element in self.elements:
-            element.mk_local_mass()
-            element.mk_local_matrix(self.dof)
-            element.mk_local_vector(self.dof)
+            element.set_xn()
+            element.mk_local_matrix_init(self.dof)
+            element.mk_local_matrix()
+            element.mk_local_vector()
 
             id = 0
             for node in element.nodes:
@@ -85,7 +87,6 @@ class Fem():
                     node.c[i] += element.C_diag[id]
                     node.static_force[i] += element.force[id]
                     id += 1
-
 
     # ------------------------------------------------
     def update_init(self,dt):
@@ -105,8 +106,9 @@ class Fem():
             node.dynamic_force = -np.copy(node.static_force)
 
         for element in self.elements:
-            element.mk_local_matrix(self.dof)
-            element.mk_local_vector(self.dof)
+            element.set_xn()
+            element.mk_local_matrix()
+            element.mk_local_vector()
 
             id = 0
             for node in element.nodes:
@@ -121,7 +123,6 @@ class Fem():
             node.mass_inv_mc = node.mass[:]*node.inv_mc[:]
             node.c_inv_mc = node.c[:]*node.inv_mc[:]*0.5*self.dt
             node.dtdt_inv_mc = self.dt*self.dt*node.inv_mc[:]
-
 
     def update_time(self,acc0,vel0=None,input_wave=False):
         # finite deformation ~ update matrix

@@ -70,7 +70,7 @@ nelem = ielem
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",100.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",5.0,1500.0,1750.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
