@@ -1,5 +1,5 @@
 import numpy as np
-import shape_functions
+import element_style
 
 class Element:
     def __init__(self,id,style,material_id,inode):
@@ -15,7 +15,8 @@ class Element:
     def set_style(self,style):
         self.style = style
         self.nnode = len(self.inode)
-        self.dim = shape_functions.set_dim(style)
+        self.estyle = element_style.set_style(style)
+        self.dim = self.estyle.dim
 
     def set_nodes(self,nodes):
         self.nodes = nodes
@@ -36,19 +37,17 @@ class Element:
         for i in range(self.nnode):
             self.xn[i,0] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
             self.xn[i,1] = self.nodes[i].xyz[1] + self.u[i][1] # mesh update
-            # self.xn[i,0] = self.nodes[i].xyz[0]
-            # self.xn[i,1] = self.nodes[i].xyz[1]
 
     # ---------------------------------------------------------
     def mk_local_mass(self):
         self.set_xn()
-        xi_list,w_list = shape_functions.set_gauss(self.style)
+        xi_list,w_list = self.estyle.gauss
 
         if self.dim == 2:
             V = 0.0
             for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
                 for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
-                    det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
+                    det,_ = mk_jacobi(self.estyle,self.xn,xi,zeta)
                     detJ = wx*wz*det
                     V += detJ
 
@@ -59,7 +58,7 @@ class Element:
         self.dof = dof
         self.set_xn()
 
-        xi_list,w_list = shape_functions.set_gauss(self.style)
+        xi_list,w_list = self.estyle.gauss
         self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
         self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
         self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
@@ -73,14 +72,14 @@ class Element:
         if self.dim == 2:
             for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
                 for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
-                    det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
+                    det,_ = mk_jacobi(self.estyle,self.xn,xi,zeta)
                     detJ = wx*wz*det
 
-                    N = mk_n(self.dof,self.style,self.nnode,xi,zeta)
+                    N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
                     M = mk_m(N)
                     self.M += M*detJ
 
-                    B = mk_b(self.dof,self.style,self.nnode,self.xn,xi,zeta)
+                    B = mk_b(self.dof,self.estyle,self.nnode,self.xn,xi,zeta)
                     K = mk_k(B,self.De)
 
                     self.K += K*detJ
@@ -92,11 +91,11 @@ class Element:
             if "input" in self.style:
                 imp = self.material.mk_imp(self.dof)
                 for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
-                    det,q = mk_q(self.dof,self.style,self.xn,xi)
+                    det,q = mk_q(self.dof,self.estyle,self.xn,xi)
                     detJ = wx*det
 
-                    N = mk_n(self.dof,self.style,self.nnode,xi,0.0)
-                    NqN = mk_nqn(self.dof,self.style,N,q,imp)
+                    N = mk_n(self.dof,self.estyle,self.nnode,xi,0.0)
+                    NqN = mk_nqn(self.dof,N,q,imp)
                     self.C += NqN*detJ
 
                 self.C_diag = np.diag(self.C)
@@ -107,7 +106,7 @@ class Element:
         self.dof = dof
         self.set_xn()
 
-        xi_list,w_list = shape_functions.set_gauss(self.style)
+        xi_list,w_list = self.estyle.gauss
         self.force = np.zeros(self.dof*self.nnode,dtype=np.float64)
 
         if self.dof == 1:
@@ -117,11 +116,11 @@ class Element:
             V = 0.0
             for i,(xi,wx) in enumerate(zip(xi_list,w_list)):
                 for j,(zeta,wz) in enumerate(zip(xi_list,w_list)):
-                    det,_ = mk_jacobi(self.style,self.xn,xi,zeta)
+                    det,_ = mk_jacobi(self.estyle,self.xn,xi,zeta)
                     detJ = wx*wz*det
                     V += detJ
 
-                    N = mk_n(self.dof,self.style,self.nnode,xi,zeta)
+                    N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
                     self.force += N[1,:]*detJ * gravity
 
             self.force = self.force * self.mass/V
@@ -149,7 +148,7 @@ class Element:
 
     # ---------------------------------------------------------
     def calc_stress(self):
-        B = mk_b(self.dof,self.style,self.nnode,self.xn,0.0,0.0)
+        B = mk_b(self.dof,self.estyle,self.nnode,self.xn,0.0,0.0)
         self.strain = np.dot(B,np.hstack(self.u))
         self.stress = np.dot(self.De,self.strain)
 
@@ -157,8 +156,8 @@ class Element:
 def mk_m(N):
     return np.dot(N.T,N)
 
-def mk_n(dof,style,nnode,xi,zeta):
-    n_shape = shape_functions.shape_function_n(style,xi,zeta)
+def mk_n(dof,estyle,nnode,xi,zeta):
+    n_shape = estyle.shape_function_n(xi,zeta)
 
     N = np.zeros([dof,dof*nnode],dtype=np.float64)
     e = np.eye(dof)
@@ -170,13 +169,13 @@ def mk_n(dof,style,nnode,xi,zeta):
     return N
 
 # ---------------------------------------------------------
-def mk_nqn(dof,style,n,q,imp):
+def mk_nqn(dof,n,q,imp):
     qiq = np.dot(np.dot(q.T,imp),q)
     nqn = np.dot(np.dot(n.T,qiq),n)
     return nqn
 
-def mk_q(dof,style,xn,xi):
-    dn = shape_functions.shape_function_dn(style,xi)
+def mk_q(dof,estyle,xn,xi):
+    dn = estyle.shape_function_dn(xi)
     t = np.dot(xn.T,dn)
     n = np.cross(t,np.array([0.0,0.0,1.0]))
     det = np.linalg.norm(t)
@@ -197,8 +196,8 @@ def mk_q(dof,style,xn,xi):
 def mk_k(B,D):
     return np.dot(np.dot(B.T,D),B)
 
-def mk_b(dof,style,nnode,xn,xi,zeta):
-    dn = mk_dn(style,xn,xi,zeta)
+def mk_b(dof,estyle,nnode,xn,xi,zeta):
+    dn = mk_dn(estyle,xn,xi,zeta)
 
     if dof == 1:
         B = np.zeros([2,nnode],dtype=np.float64)
@@ -228,20 +227,20 @@ def mk_b(dof,style,nnode,xn,xi,zeta):
     return B
 
 # ---------------------------------------------------------
-def mk_dn(style,xn,xi,zeta):
-    _,jacobi_inv = mk_inv_jacobi(style,xn,xi,zeta)
-    dn = shape_functions.shape_function_dn(style,xi,zeta)
+def mk_dn(estyle,xn,xi,zeta):
+    _,jacobi_inv = mk_inv_jacobi(estyle,xn,xi,zeta)
+    dn = estyle.shape_function_dn(xi,zeta)
 
     return np.dot(dn,jacobi_inv)
 
-def mk_inv_jacobi(style,xn,xi,zeta):
-    det,jacobi = mk_jacobi(style,xn,xi,zeta)
+def mk_inv_jacobi(estyle,xn,xi,zeta):
+    det,jacobi = mk_jacobi(estyle,xn,xi,zeta)
     jacobi_inv = np.linalg.inv(jacobi)
 
     return 1.0/det, jacobi_inv
 
-def mk_jacobi(style,xn,xi,zeta):
-    dn = shape_functions.shape_function_dn(style,xi,zeta)
+def mk_jacobi(estyle,xn,xi,zeta):
+    dn = estyle.shape_function_dn(xi,zeta)
 
     jacobi = np.dot(xn.T,dn)
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
