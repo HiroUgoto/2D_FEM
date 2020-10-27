@@ -13,7 +13,7 @@ zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
 ### Set node ###
 inode = 0
-node = np.empty([len(xg),len(zg)],dtype=np.int32)
+node = np.empty([len(xg),len(zg)],dtype=np.int32)       #node_idを振った配列(転置)
 node_lines = []
 for k in range(len(zg)):
     for i in range(len(xg)):
@@ -63,8 +63,8 @@ for i in range(nx):
     element_lines += [param_line + style_line + "\n"]
     ielem += 1
 
-nnode = inode
-nelem = ielem
+nnode = inode       #nodeの総数
+nelem = ielem       #elementの総数
 
 ### Set material ###
 material_lines = []

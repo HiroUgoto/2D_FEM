@@ -21,8 +21,8 @@ class Element:
         self.estyle = element_style.set_style(style)
         self.dim = self.estyle.dim
 
-        self.xi,self.w = self.estyle.gauss
-        self.ng = len(self.xi)
+        self.xi,self.w = self.estyle.gauss      #gauss積分点の座標,重み
+        self.ng = len(self.xi)      #積分点数
 
     def set_nodes(self,nodes):
         self.nodes = nodes
@@ -58,7 +58,7 @@ class Element:
             self.wxz = np.empty([self.ng,self.ng],dtype=np.float64)
 
             V = 0.0
-            for i,(xi,wx) in enumerate(zip(self.xi,self.w)):
+            for i,(xi,wx) in enumerate(zip(self.xi,self.w)):        #index付で(xi,w)を取得
                 for j,(zeta,wz) in enumerate(zip(self.xi,self.w)):
                     self.Nxz[i,j,:,:] = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
                     self.Mxz[i,j,:,:] = mk_m(self.Nxz[i,j,:,:])
@@ -90,7 +90,7 @@ class Element:
 
         self.De = self.material.mk_d(self.dof)
 
-        self.M_diag = np.diag(self.M)
+        self.M_diag = np.diag(self.M)       #対角成分
         self.C_diag = np.diag(self.C)
         self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
 
@@ -140,7 +140,7 @@ class Element:
 
     # ---------------------------------------------------------
     def mk_ku(self):
-        ku = np.dot(self.K,np.hstack(self.u))
+        ku = np.dot(self.K,np.hstack(self.u))       #横に結合
         for i in range(self.nnode):
             i0 = self.dof*i
             self.nodes[i].force[:] += ku[i0:i0+self.dof]
@@ -166,12 +166,12 @@ class Element:
 
 # ---------------------------------------------------------
 def mk_m(N):
-    return np.dot(N.T,N)
+    return np.dot(N.T,N)        #18*18
 
 def mk_n(dof,estyle,nnode,xi,zeta):
     n_shape = estyle.shape_function_n(xi,zeta)
     N = np.zeros([dof,dof*nnode],dtype=np.float64)
-    e = np.eye(dof)
+    e = np.eye(dof)     #単位行列
 
     for i in range(nnode):
         i0 = dof*i
