@@ -38,7 +38,7 @@ class Element:
             self.u += (node.u.view(),)
             self.v += (node.v.view(),)
 
-    def set_xn(self):
+    def set_xn(self):       #9*2ノード座標
         self.xn = np.empty([self.nnode,2],dtype=np.float64)
         for i in range(self.nnode):
             self.xn[i,0] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
@@ -151,7 +151,7 @@ class Element:
             i0 = self.dof*i
             self.nodes[i].force[:] += cv[i0:i0+self.dof]
 
-    def mk_ku_cv(self):
+    def mk_ku_cv(self):     #ku項とcv項まとめる
         f = np.dot(self.K,np.hstack(self.u)) + np.dot(self.C_off_diag,np.hstack(self.v))
         for i in range(self.nnode):
             i0 = self.dof*i
@@ -180,7 +180,7 @@ def mk_n(dof,estyle,nnode,xi,zeta):
     return N
 
 # ---------------------------------------------------------
-def mk_nqn(dof,n,q,imp):
+def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
     qiq = np.dot(np.dot(q.T,imp),q)
     nqn = np.dot(np.dot(n.T,qiq),n)
     return nqn
@@ -250,3 +250,34 @@ def mk_jacobi(estyle,xn,dn):
     jacobi = np.dot(xn.T,dn)
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
     return det,jacobi
+
+# ---------------------------------------------------------
+def mk_tau(D,dof,estyle,xn,dn):     #キルヒホッフ応力tau,Kマト算定
+    FF,_ = mk_FF(dof,estyle,xn,dn)
+    hogehoge = np.empty(dof,dof,dtype=np.float64)
+
+    for i in range(dof):
+        for j in range(dof):
+            hogehoge[i,j] = 0.5*np.log(FF[i,j])     #Euler対数ひずみ,仮置き
+    tau =
+    K = np.dot(FF.T,tau)
+    return K
+
+def mk_FF(dof,estyle,xn,dn):    #Euler対数ひずみでのBマト
+    dnu = mk_dnu(dof,estyle,xn,dn)
+    F = np.linalg.inv(np.eye(dof) - dnu)
+
+    FF = np.zeros([2,2],dtype=np.float64)      #FikFjk
+    for i in range(dof):
+        for j in range(dof):
+            FF[i,j] = np.sum(F[i,:]*F[j,:])
+    J = np.linalg.det(F)
+    return FF,J
+
+def mk_dnu(dof,estyle,dn,u):
+    dnu = np.empty(dof,dof,dtype=np.float64)
+    dnj = mk_dnj(estyle,xn,dn)
+    for i in range(dof):
+        for j in range(dof):
+            dnu[i,j] = np.sum(u[:][i]*dnj[:,j])
+    return dnu
