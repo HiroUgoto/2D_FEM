@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 import element_style
 
@@ -65,7 +66,7 @@ class Element:
                     self.dnxz[i,j,:,:] = self.estyle.shape_function_dn(xi,zeta)
                     self.wxz[i,j] = wx*wz
 
-                    det,_ = mk_jacobi(self.estyle,self.xn,self.dnxz[i,j,:,:])
+                    det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
                     detJ = wx*wz*det
                     V += detJ
 
@@ -97,10 +98,10 @@ class Element:
         if self.dim == 2:
             for i in range(self.ng):
                 for j in range(self.ng):
-                    det,_ = mk_jacobi(self.estyle,self.xn,self.dnxz[i,j,:,:])
+                    det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
                     detJ = self.wxz[i,j]*det
 
-                    B = mk_b(self.dof,self.estyle,self.nnode,self.xn,self.dnxz[i,j,:,:])
+                    B = mk_b(self.dof,self.nnode,self.xn,self.dnxz[i,j,:,:])
                     K = mk_k(B,self.De)
 
                     self.M += self.Mxz[i,j,:,:] * detJ
@@ -112,7 +113,7 @@ class Element:
         elif self.dim == 1:
             if "input" in self.style:
                 for i in range(self.ng):
-                    det,q = mk_q(self.dof,self.estyle,self.xn,self.dnxz[i,:])
+                    det,q = mk_q(self.dof,self.xn,self.dnxz[i,:])
                     detJ = self.wxz[i]*det
 
                     NqN = mk_nqn(self.dof,self.Nxz[i,:,:],q,self.imp)
@@ -131,7 +132,7 @@ class Element:
             V = 0.0
             for i in range(self.ng):
                 for j in range(self.ng):
-                    det,_ = mk_jacobi(self.estyle,self.xn,self.dnxz[i,j,:,:])
+                    det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
                     detJ = self.wxz[i,j]*det
                     V += detJ
                     self.force += self.Nxz[i,j,1,:]*detJ * self.gravity
@@ -157,10 +158,32 @@ class Element:
             i0 = self.dof*i
             self.nodes[i].force[:] += f[i0:i0+self.dof]
 
+    # --------------------------------------------------------
+    def mk_B_stress(self):
+        if self.dim == 1:
+            self.mk_ku()
+
+        elif self.dim == 2:
+            force = np.zeros(self.dof*self.nnode,dtype=np.float64)
+
+            for i in range(self.ng):
+                for j in range(self.ng):
+                    det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
+                    detJ = self.wxz[i,j]*det
+
+                    B = mk_b(self.dof,self.nnode,self.xn,self.dnxz[i,j,:,:])
+                    stress = Hencky_stress(self.dof,self.nnode,self.xn,self.dnxz[i,j,:,:],self.De,self.u)
+
+                    force += np.dot(B.T,stress) * detJ
+
+            for i in range(self.nnode):
+                i0 = self.dof*i
+                self.nodes[i].force[:] += force[i0:i0+self.dof]
+
     # ---------------------------------------------------------
     def calc_stress(self):
         dn = self.estyle.shape_function_dn(0.0,0.0)
-        B = mk_b(self.dof,self.estyle,self.nnode,self.xn,dn)
+        B = mk_b(self.dof,self.nnode,self.xn,dn)
         self.strain = np.dot(B,np.hstack(self.u))
         self.stress = np.dot(self.De,self.strain)
 
@@ -185,7 +208,7 @@ def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
     nqn = np.dot(np.dot(n.T,qiq),n)
     return nqn
 
-def mk_q(dof,estyle,xn,dn):
+def mk_q(dof,xn,dn):
     t = np.dot(xn.T,dn)
     n = np.cross(t,np.array([0.0,0.0,1.0]))
     det = np.linalg.norm(t)
@@ -206,8 +229,8 @@ def mk_q(dof,estyle,xn,dn):
 def mk_k(B,D):
     return np.dot(np.dot(B.T,D),B)
 
-def mk_b(dof,estyle,nnode,xn,dn):
-    dnj = mk_dnj(estyle,xn,dn)
+def mk_b(dof,nnode,xn,dn):
+    dnj = mk_dnj(xn,dn)
     if dof == 1:
         B = np.empty([2,nnode],dtype=np.float64)
         for i in range(nnode):
@@ -236,48 +259,68 @@ def mk_b(dof,estyle,nnode,xn,dn):
     return B
 
 # ---------------------------------------------------------
-def mk_dnj(estyle,xn,dn):
-    _,jacobi_inv = mk_inv_jacobi(estyle,xn,dn)
+def Hencky_stress(dof,nnode,xn,dn,D,u):     #キルヒホッフ応力tau,Kマト算定
+    strain = Euler_log_strain(nnode,xn,dn,u)
+    # strain = micro_strain(nnode,xn,dn,u)
+    strain_vector = np.array([strain[0,0],strain[1,1],strain[0,1]+strain[1,0]])
+
+    K_stress = np.dot(D,strain_vector)
+    J,_ = mk_F(nnode,xn,dn,u)
+
+    return K_stress/J
+
+def Euler_log_strain(nnode,xn,dn,u):
+    FF = mk_FF(nnode,xn,dn,u)
+    L,P = np.linalg.eig(FF)
+    log_L = np.log(L)
+    EL_strain = 0.5*np.dot(P,np.dot(np.diag(log_L),P.T))
+    return EL_strain
+
+def micro_strain(nnode,xn,dn,u):
+    dnu = mk_dnu(nnode,xn,dn,u)
+    strain = np.array([ [dnu[0,0], 0.5*(dnu[0,1]+dnu[1,0])],
+                        [0.5*(dnu[0,1]+dnu[1,0]), dnu[1,1]] ])
+    return strain
+
+def mk_FF(nnode,xn,dn,u):    #Euler対数ひずみでのBマト
+    _,F = mk_F(nnode,xn,dn,u)
+    FF = np.dot(F,F.T)
+    return FF
+
+def mk_F(nnode,xn,dn,u):
+    dnu = mk_dnu(nnode,xn,dn,u)
+    F_inv = np.eye(2) - dnu
+
+    det = F_inv[0,0]*F_inv[1,1] - F_inv[0,1]*F_inv[1,0]
+    F = np.array([  [ F_inv[1,1],-F_inv[0,1]],
+                    [-F_inv[1,0], F_inv[0,0]] ]) / det
+    return 1./det, F
+
+def mk_dnu(nnode,xn,dn,u):
+    dnu = np.zeros((2,2),dtype=np.float64)
+    dnj = mk_dnj(xn,dn)
+
+    for inode in range(nnode):
+        dnu[0,0] += u[inode][0]*dnj[inode,0]
+        dnu[0,1] += u[inode][0]*dnj[inode,1]
+
+        dnu[1,0] += u[inode][1]*dnj[inode,0]
+        dnu[1,1] += u[inode][1]*dnj[inode,1]
+
+    return dnu
+
+# ---------------------------------------------------------
+def mk_dnj(xn,dn):
+    _,jacobi_inv = mk_inv_jacobi(xn,dn)
     return np.dot(dn,jacobi_inv)
 
-def mk_inv_jacobi(estyle,xn,dn):
-    det,jacobi = mk_jacobi(estyle,xn,dn)
+def mk_inv_jacobi(xn,dn):
+    det,jacobi = mk_jacobi(xn,dn)
     jacobi_inv = np.array([ [ jacobi[1,1],-jacobi[0,1]],
                             [-jacobi[1,0], jacobi[0,0]] ]) / det
     return 1.0/det, jacobi_inv
 
-def mk_jacobi(estyle,xn,dn):
+def mk_jacobi(xn,dn):
     jacobi = np.dot(xn.T,dn)
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
     return det,jacobi
-
-# ---------------------------------------------------------
-def mk_tau(D,dof,estyle,xn,dn):     #キルヒホッフ応力tau,Kマト算定
-    FF,_ = mk_FF(dof,estyle,xn,dn)
-    hogehoge = np.empty(dof,dof,dtype=np.float64)
-
-    for i in range(dof):
-        for j in range(dof):
-            hogehoge[i,j] = 0.5*np.log(FF[i,j])     #Euler対数ひずみ,仮置き
-    tau =
-    K = np.dot(FF.T,tau)
-    return K
-
-def mk_FF(dof,estyle,xn,dn):    #Euler対数ひずみでのBマト
-    dnu = mk_dnu(dof,estyle,xn,dn)
-    F = np.linalg.inv(np.eye(dof) - dnu)
-
-    FF = np.zeros([2,2],dtype=np.float64)      #FikFjk
-    for i in range(dof):
-        for j in range(dof):
-            FF[i,j] = np.sum(F[i,:]*F[j,:])
-    J = np.linalg.det(F)
-    return FF,J
-
-def mk_dnu(dof,estyle,dn,u):
-    dnu = np.empty(dof,dof,dtype=np.float64)
-    dnj = mk_dnj(estyle,xn,dn)
-    for i in range(dof):
-        for j in range(dof):
-            dnu[i,j] = np.sum(u[:][i]*dnj[:,j])
-    return dnu

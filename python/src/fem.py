@@ -150,7 +150,10 @@ class Fem():
                 node.force += np.dot(np.diag(node.mass),acc0)
 
         for element in self.elements:
-            element.mk_ku_cv()
+            # element.mk_ku_cv()
+            element.mk_B_stress()
+            element.mk_cv()
+
 
         for node in self.free_nodes:
             self._update_time_set_free_nodes(node)
