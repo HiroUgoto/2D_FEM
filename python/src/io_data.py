@@ -55,8 +55,7 @@ def input_outputs(output_file):
         irec = 1
         nodes = []
         for inode in range(nnode):
-            items = lines[inode+irec].split()       #output.inの2~nnode行まで
-
+            items = lines[inode+irec].split()       #output.inの2~nnode+1行まで
             inode = int(items[0])
             nodes += [inode]
 

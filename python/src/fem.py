@@ -150,9 +150,9 @@ class Fem():
                 node.force += np.dot(np.diag(node.mass),acc0)
 
         for element in self.elements:
-            # element.mk_ku_cv()
+            # element.mk_ku_cv()        #微小変形
             element.mk_B_stress()
-            element.mk_cv()
+            element.mk_cv()     #大変形
 
 
         for node in self.free_nodes:

@@ -260,6 +260,7 @@ def mk_b(dof,nnode,xn,dn):
 
 # ---------------------------------------------------------
 def Hencky_stress(dof,nnode,xn,dn,D,u):     #キルヒホッフ応力tau,Kマト算定
+    #大変形or微小ひずみ
     strain = Euler_log_strain(nnode,xn,dn,u)
     # strain = micro_strain(nnode,xn,dn,u)
     strain_vector = np.array([strain[0,0],strain[1,1],strain[0,1]+strain[1,0]])
