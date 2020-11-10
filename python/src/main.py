@@ -15,11 +15,11 @@ outputs = io_data.input_outputs("input/output.in")
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-plot_model.plot_mesh(fem)
+#plot_model.plot_mesh(fem)
 
 
 ## --- Define input wave --- ##
-fsamp = 5000
+fsamp = 30
 duration = 0.5
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -41,8 +41,8 @@ for it in range(len(tim)):
 
     fem.update_time(acc0,vel0,input_wave=True)
 
-    output_vel[it,:] = [node.v[0] for node in fem.output_nodes]
-    output_strain[it,:] = [element.strain[0] for element in fem.output_elements]
+    output_vel[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
+    output_strain[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
 
 
     if it%10 == 0:      #terminal出力の時間間隔

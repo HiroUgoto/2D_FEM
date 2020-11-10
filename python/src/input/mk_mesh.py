@@ -4,7 +4,7 @@ import numpy as np
 area_x = 50.0
 area_z = 16.0
 
-nx =  10
+nx = 10
 nz =  8
 dof = 2
 
@@ -76,10 +76,10 @@ nmaterial = len(material_lines)
 
 ### Set output ###
 output_node_lines = []
-output_node_lines += ["{} \n".format(nx)]
+output_node_lines += ["{} \n".format(nx)]       #outputするnode指定
 
 output_element_lines = []
-for i in range(nx,2*nx):
+for i in range(nx,2*nx):        #outputするelement番号指定
     output_element_lines += ["{} \n".format(i)]
 
 output_nnode = len(output_node_lines)

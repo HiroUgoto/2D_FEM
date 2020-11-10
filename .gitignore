@@ -1,4 +1,4 @@
 *.pyc
 *.dat
-*.DS_Store
+.DS_Store
 *.lnk
