@@ -19,7 +19,7 @@ plot_model.plot_mesh(fem)
 
 
 ## --- Define input wave --- ##
-fsamp = 30
+fsamp = 5000
 duration = 0.5
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -29,7 +29,7 @@ ntim = len(tim)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
-# ax = plot_model.plot_mesh_update_init()
+ax = plot_model.plot_mesh_update_init()
 
 ## Iteration ##
 output_vel = np.zeros((ntim,fem.output_nnode))
@@ -48,7 +48,7 @@ for it in range(len(tim)):
 
 
     if it%10 == 0:      #terminal出力の時間間隔
-        # plot_model.plot_mesh_update(ax,fem,500.)
+        plot_model.plot_mesh_update(ax,fem,500.)
         print(it,output_vel[it,0],output_strain[it,0])
 
 ## --- Write output file --- ##
