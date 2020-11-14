@@ -15,7 +15,7 @@ outputs = io_data.input_outputs("input/output.in")
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-#plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
 
 
 ## --- Define input wave --- ##
@@ -34,6 +34,7 @@ fem.update_init(dt)
 ## Iteration ##
 output_vel = np.zeros((ntim,fem.output_nnode))
 output_strain = np.zeros((ntim,fem.output_nelem))
+output_disp = np.zeros((ntim,fem.output_nnode))
 
 for it in range(len(tim)):
     acc0 = np.array([0.0,0.0])
@@ -43,6 +44,7 @@ for it in range(len(tim)):
 
     output_vel[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
     output_strain[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
+    output_disp[it,:] = [node.u[0] for node in fem.output_nodes]
 
 
     if it%10 == 0:      #terminal出力の時間間隔
@@ -51,9 +53,13 @@ for it in range(len(tim)):
 
 ## --- Write output file --- ##
 output_tim = np.arange(ntim).reshape(ntim,1)
-_output_write = np.hstack((output_tim,output_vel))
-output_write = np.hstack((_output_write,output_strain))
-np.savetxt("output\output.dat",output_write,delimiter="    ")
+
+output_w_vel = np.hstack((output_tim,output_vel))
+np.savetxt("output\output_vel.dat",output_w_vel,delimiter="    ")
+output_w_strain = np.hstack((output_tim,output_strain))
+np.savetxt("output\output_strain.dat",output_w_strain,delimiter="    ")
+output_w_disp = np.hstack((output_tim,output_disp))
+np.savetxt("output\output_disp.dat",output_w_disp,delimiter="    ")
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")

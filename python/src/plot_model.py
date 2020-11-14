@@ -22,7 +22,7 @@ def plot_mesh(fem,amp=1.0):
             f2 = (element.nodes[2].xyz[0], element.nodes[2].xyz[1])
             f3 = (element.nodes[3].xyz[0], element.nodes[3].xyz[1])
 
-            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])
+            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])     #ec:edgecolor fc:facecolor
             ax.add_patch(fpoly)
 
     rc = 0.1
@@ -39,8 +39,8 @@ def plot_mesh_update_init():
     return ax
 
 def plot_mesh_update(ax,fem,amp=1.0):
-    ax.cla()
-    ax.grid()
+    ax.cla()        #axを初期化
+    ax.grid()       #グリッド線を表示
 
     x = [node.xyz[0] for node in fem.nodes]
     z = [node.xyz[1] for node in fem.nodes]
@@ -55,9 +55,10 @@ def plot_mesh_update(ax,fem,amp=1.0):
             f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
             f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
             f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
+            #element.nodes:各element内nodeの初期座標　element.nodes.u:各element内nodeの変位
 
             fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc="gray")
-            ax.add_patch(fpoly)
+            ax.add_patch(fpoly)     #追加で描画
 
     rc = 0.2
     for node in fem.nodes:

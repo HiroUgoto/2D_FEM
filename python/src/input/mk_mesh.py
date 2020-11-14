@@ -28,7 +28,7 @@ for k in range(len(zg)):
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz) ]
         inode += 1
-
+        
 ### Set element ###
 element_lines = []
 ielem = 0
@@ -76,10 +76,11 @@ nmaterial = len(material_lines)
 
 ### Set output ###
 output_node_lines = []
-output_node_lines += ["{} \n".format(nx)]       #outputするnode指定
+for i in range(0,nnode):
+    output_node_lines += ["{} \n".format(i)]       #outputするnode指定
 
 output_element_lines = []
-for i in range(nx,2*nx):        #outputするelement番号指定
+for i in range(0,nelem-nx):        #outputするelement番号指定
     output_element_lines += ["{} \n".format(i)]
 
 output_nnode = len(output_node_lines)
