@@ -32,9 +32,13 @@ fem.update_init(dt)
 ax = plot_model.plot_mesh_update_init()
 
 ## Iteration ##
-output_vel = np.zeros((ntim,fem.output_nnode))
-output_strain = np.zeros((ntim,fem.output_nelem))
-output_disp = np.zeros((ntim,fem.output_nnode))
+output_velx = np.zeros((ntim,fem.output_nnode))
+output_velz = np.zeros((ntim,fem.output_nnode))
+output_strainxx = np.zeros((ntim,fem.output_nelem))
+output_strainyy = np.zeros((ntim,fem.output_nelem))
+output_strainxy = np.zeros((ntim,fem.output_nelem))
+output_dispx = np.zeros((ntim,fem.output_nnode))
+output_dispz = np.zeros((ntim,fem.output_nnode))
 
 for it in range(len(tim)):
     acc0 = np.array([0.0,0.0])
@@ -42,24 +46,38 @@ for it in range(len(tim)):
 
     fem.update_time(acc0,vel0,input_wave=True)
 
-    output_vel[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
-    output_strain[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
-    output_disp[it,:] = [node.u[0] for node in fem.output_nodes]
+    output_velx[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
+    output_velz[it,:] = [node.v[1] for node in fem.output_nodes]
+    output_strainxx[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
+    output_strainyy[it,:] = [element.strain[1] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
+    output_strainxy[it,:] = [element.strain[2] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
+    output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
+    output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
-
-    if it%10 == 0:      #terminal出力の時間間隔
+    if it%50 == 0:      #terminal出力の時間間隔
         plot_model.plot_mesh_update(ax,fem,500.)
-        print(it,output_vel[it,0],output_strain[it,0])
+        plt.savefig("output_fig\img_"+str(it)+".png")
+        print(it,output_velx[it,0],output_strainxx[it,0])
 
 ## --- Write output file --- ##
 output_tim = np.arange(ntim).reshape(ntim,1)
 
-output_w_vel = np.hstack((output_tim,output_vel))
-np.savetxt("output\output_vel.dat",output_w_vel,delimiter="    ")
-output_w_strain = np.hstack((output_tim,output_strain))
-np.savetxt("output\output_strain.dat",output_w_strain,delimiter="    ")
-output_w_disp = np.hstack((output_tim,output_disp))
-np.savetxt("output\output_disp.dat",output_w_disp,delimiter="    ")
+output_w_velx = np.hstack((output_tim,output_velx))
+np.savetxt("output\output_velx.dat",output_w_velx,delimiter="    ")
+output_w_velz = np.hstack((output_tim,output_velz))
+np.savetxt("output\output_velz.dat",output_w_velz,delimiter="    ")
+
+output_w_strainxx = np.hstack((output_tim,output_strainxx))
+np.savetxt("output\output_strainxx.dat",output_w_strainxx,delimiter="    ")
+output_w_strainyy = np.hstack((output_tim,output_strainyy))
+np.savetxt("output\output_strainyy.dat",output_w_strainyy,delimiter="    ")
+output_w_strainxy = np.hstack((output_tim,output_strainxy))
+np.savetxt("output\output_strainxy.dat",output_w_strainxy,delimiter="    ")
+
+output_w_dispx = np.hstack((output_tim,output_dispx))
+np.savetxt("output\output_dispx.dat",output_w_dispx,delimiter="    ")
+output_w_dispz = np.hstack((output_tim,output_dispz))
+np.savetxt("output\output_dispz.dat",output_w_dispz,delimiter="    ")
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
@@ -67,5 +85,5 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 ## Output result ##
 plt.figure()
 plt.plot(tim,wave_vel)
-plt.plot(tim,output_vel[:,0])
+plt.plot(tim,output_velx[:,0])
 plt.show()
