@@ -8,8 +8,7 @@ class Element:
         self.id = id
         self.inode = inode
         self.material_id = material_id
-        # self.gravity = 9.8
-        self.gravity = 9.8 * 4.0/5.0
+        self.gravity = 9.8
 
         self.set_style(style)
 
@@ -40,7 +39,7 @@ class Element:
             self.u += (node.u.view(),)
             self.v += (node.v.view(),)
 
-    def set_xn(self):       #9*2ノード座標
+    def set_xn(self):
         self.xn = np.empty([self.nnode,2],dtype=np.float64)
         for i in range(self.nnode):
             self.xn[i,0] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
@@ -87,14 +86,18 @@ class Element:
     # ---------------------------------------------------------
     def mk_local_matrix(self):
         self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-
-        self.De = self.material.mk_d(self.dof)
-
         self.M_diag = np.diag(self.M)       #対角成分
+
+        self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
         self.C_diag = np.diag(self.C)
         self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
+
+        self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
+        self.K_diag = np.diag(self.K)
+        self.K_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
+
+        self.De = self.material.mk_d(self.dof)
+        self.Dv = self.material.mk_visco(self.dof)
 
         if self.dim == 2:
             for i in range(self.ng):
@@ -104,12 +107,21 @@ class Element:
 
                     B = mk_b(self.dof,self.nnode,self.xn,self.dnxz[i,j,:,:])
                     K = mk_k(B,self.De)
+                    C = mk_k(B,self.Dv)
 
                     self.M += self.Mxz[i,j,:,:] * detJ
                     self.K += K*detJ
+                    self.C += C*detJ
 
             tr_M = np.trace(self.M)/self.dof
             self.M_diag = np.diag(self.M) * self.mass/tr_M
+
+            self.K_diag = np.diag(self.K)
+            self.K_off_diag = self.K - np.diag(self.K_diag)
+
+            self.C_diag = np.diag(self.C)
+            self.C_off_diag = self.C - np.diag(self.C_diag)
+
 
         elif self.dim == 1:
             if "input" in self.style:
@@ -147,6 +159,12 @@ class Element:
             i0 = self.dof*i
             self.nodes[i].force[:] += ku[i0:i0+self.dof]
 
+    def mk_ku_off(self):
+        ku = np.dot(self.K_off_diag,np.hstack(self.u))       #横に結合
+        for i in range(self.nnode):
+            i0 = self.dof*i
+            self.nodes[i].force[:] += ku[i0:i0+self.dof]
+
     def mk_cv(self):
         cv = np.dot(self.C_off_diag,np.hstack(self.v))
         for i in range(self.nnode):
@@ -158,6 +176,22 @@ class Element:
         for i in range(self.nnode):
             i0 = self.dof*i
             self.nodes[i].force[:] += f[i0:i0+self.dof]
+
+    def mk_bodyforce(self,acc0):
+        self.force = np.zeros(self.dof*self.nnode,dtype=np.float64)
+
+        if self.dof == 1:
+            return
+        if self.dim == 2:
+            V = 0.0
+            for i in range(self.ng):
+                for j in range(self.ng):
+                    det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
+                    detJ = self.wxz[i,j]*det
+                    V += detJ
+                    self.force += (self.Nxz[i,j,0,:]*acc0[0] + self.Nxz[i,j,1,:]*acc0[1])*detJ
+
+            self.force = self.force * self.mass/V
 
     # --------------------------------------------------------
     def mk_B_stress(self):

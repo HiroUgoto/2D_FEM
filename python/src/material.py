@@ -55,6 +55,27 @@ class Material:
         return D
 
     # ---------------------------------------------------------
+    def mk_visco(self,dof):
+        mu = 0.001 # [Pa s]
+
+        if dof == 1:
+            D = np.zeros([2,2],dtype=np.float64)
+            D[0,0] = mu
+            D[1,1] = mu
+
+        elif dof == 2:
+            D = np.zeros([3,3],dtype=np.float64)
+            D[2,2] = mu
+
+        elif dof == 3:
+            D = np.zeros([5,5],dtype=np.float64)
+            D[2,2] = mu
+            D[3,3] = mu
+            D[4,4] = mu
+
+        return D
+
+    # ---------------------------------------------------------
     def mk_imp(self,dof):
         vs = np.sqrt(self.rmu/self.rho)
         vp = np.sqrt((self.rlambda +2*self.rmu)/self.rho)

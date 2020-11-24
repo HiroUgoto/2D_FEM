@@ -86,8 +86,92 @@ class Fem():
                 for i in range(self.dof):
                     node.mass[i] += element.M_diag[id]
                     node.c[i] += element.C_diag[id]
+                    node.k[i] += element.K_diag[id]
                     node.static_force[i] += element.force[id]
                     id += 1
+
+    # ------------------------------------------------
+    # ------------------------------------------------
+    def self_gravity(self):
+        ### Initial condition ###
+        H = 0.0
+        for node in self.nodes:
+            if node.xyz[1] > H:
+                H = node.xyz[1]
+
+        g,vp = 9.8,1500.0
+        for node in self.nodes:
+            node.u[0] = 0.0
+            node.u[1] = g/(2*vp**2) * (H**2 - node.xyz[1]**2)
+            node.um = np.copy(node.u)
+
+        ### CG Method ###
+        for node in self.nodes:
+            node.force = np.zeros(node.dof,dtype=np.float64)
+        for element in self.elements:
+            element.mk_ku()
+        for node in self.nodes:
+            for i in range(1,node.dof):
+                if node.freedom[i] == 0:
+                    node._ur[i] = 0.0
+                else:
+                    node._ur[i] = node.static_force[i] - node.force[i]
+                node._up = np.copy(node._ur)
+        for element in self.elements:
+            element._up = ()
+            for node in element.nodes:
+                element._up += (node._up.view(),)
+
+        for it in range(10*self.nnode):
+            ## y = Ap
+            for node in self.nodes:
+                node._uy = np.zeros(node.dof,dtype=np.float64)
+            for element in self.elements:
+                ku = np.dot(element.K,np.hstack(element._up))
+                for i in range(element.nnode):
+                    i0 = element.dof*i
+                    element.nodes[i]._uy[:] += ku[i0:i0+element.dof]
+
+            ## alpha = rr/py
+            rr,py = 0.0,0.0
+            for node in self.nodes:
+                for i in range(1,node.dof):
+                    if node.freedom[i] == 0:
+                        node._uy[i] = 0.0
+                rr += np.dot(node._ur,node._ur)
+                py += np.dot(node._up,node._uy)
+            alpha = rr/py
+
+            ## x = x + alpha*p
+            rr1 = 0.0
+            for node in self.nodes:
+                for i in range(1,node.dof):
+                    if node.freedom[i] == 0:
+                        pass
+                    else:
+                        node.u[i] += alpha*node._up[i]
+                        node._ur[i] -= alpha*node._uy[i]
+                rr1 += np.dot(node._ur,node._ur)
+
+            if rr1 < 1.e-10:
+                break
+
+            ## p = r + beta*p
+            beta = rr1/rr
+            for node in self.nodes:
+                for i in range(1,node.dof):
+                    if node.freedom[i] == 0:
+                        pass
+                    else:
+                        node._up[i] = node._ur[i] + beta*node._up[i]
+
+            # if it%100 == 0:
+            print(self.nodes[0].u[1],rr1)
+
+
+        for node in self.nodes:
+            node.u0 = np.copy(node.u)
+
 
     # ------------------------------------------------
     def update_init(self,dt):
@@ -114,7 +198,8 @@ class Fem():
     def _update_matrix_node_init(self,node):
         node.mass = np.zeros(self.dof,dtype=np.float64)
         node.c    = np.zeros(self.dof,dtype=np.float64)
-        node.dynamic_force = -np.copy(node.static_force)
+        node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+        # node.dynamic_force = -np.copy(node.static_force)
 
     def _update_matrix_set_elements(self,element):
         element.set_xn()
@@ -137,8 +222,13 @@ class Fem():
 
     # ------------------------------------------------
     # ------------------------------------------------
-    def update_time(self,acc0,vel0=None,input_wave=False):
-        # self.update_matrix()   # Finite deformation
+    def update_time(self,acc0,vel0=None,input_wave=False,FD=False):
+        if FD:
+            self.update_matrix()   # Finite deformation
+        else:
+            for node in self.nodes:
+                node.dynamic_force = np.copy(node.static_force)
+
         for node in self.nodes:
             self._update_time_node_init(node)
 
@@ -146,13 +236,19 @@ class Fem():
             for element in self.input_elements:
                 self._update_time_input_wave(element,vel0)
         else:
-            for node in self.nodes:
-                node.force += np.dot(np.diag(node.mass),acc0)
+            for element in self.elements:
+                self._update_bodyforce(element,acc0)
+            # for node in self.nodes:
+            #     node.force += np.dot(np.diag(node.mass),acc0)
 
-        for element in self.elements:
-            element.mk_ku()        # Not finite deformation
-            # element.mk_B_stress()    # Finite deformation
-            element.mk_cv()
+        if FD:
+            for element in self.elements:
+                element.mk_B_stress()    # Finite deformation
+                element.mk_cv()
+        else:
+            for element in self.elements:
+                element.mk_ku()        # Not finite deformation
+                element.mk_cv()
 
         for node in self.free_nodes:
             self._update_time_set_free_nodes(node)
@@ -171,6 +267,12 @@ class Fem():
         for i in range(element.nnode):
             i0 = self.dof*i
             element.nodes[i].force[:] -= 2*cv[i0:i0+self.dof]
+
+    def _update_bodyforce(self,element,acc0):
+        element.mk_bodyforce(acc0)
+        for i in range(element.nnode):
+            i0 = self.dof*i
+            element.nodes[i].force[:] -= element.force[i0:i0+self.dof]
 
     def _update_time_set_free_nodes(self,node):
         u = node.u.copy()

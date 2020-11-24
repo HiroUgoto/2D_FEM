@@ -10,7 +10,7 @@ def plot_mesh(fem,amp=1.0):
     z = [node.xyz[1] for node in fem.nodes]
 
     ax.set_xlim([min(x)-10,max(x)+10])
-    ax.set_ylim([max(z)+5,min(z)-5])
+    ax.set_ylim([max(z)+5,min(z)-7.5])
     ax.set_aspect('equal')
 
     for element in fem.elements:
@@ -46,7 +46,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
     z = [node.xyz[1] for node in fem.nodes]
 
     ax.set_xlim([min(x)-10,max(x)+10])
-    ax.set_ylim([max(z)+5,min(z)-5])
+    ax.set_ylim([max(z)+5,min(z)-7.5])
     ax.set_aspect('equal')
 
     for element in fem.elements:
@@ -59,7 +59,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
             fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc="gray")
             ax.add_patch(fpoly)
 
-    rc = 0.2
+    rc = 0.1
     for node in fem.nodes:
         p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
         ax.add_patch(p)

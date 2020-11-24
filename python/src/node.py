@@ -17,7 +17,12 @@ class Node:
 
         self.mass   = np.zeros(self.dof,dtype=np.float64)
         self.c      = np.zeros(self.dof,dtype=np.float64)
+        self.k      = np.zeros(self.dof,dtype=np.float64)
 
         self.force = np.zeros(self.dof,dtype=np.float64)
         self.static_force = np.zeros(self.dof,dtype=np.float64)
         self.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+
+        self._up = np.zeros(self.dof,dtype=np.float64)
+        self._ur = np.zeros(self.dof,dtype=np.float64)
+        self._uy = np.zeros(self.dof,dtype=np.float64)
