@@ -1,10 +1,11 @@
 import numpy as np
 
 class Node:
-    def __init__(self,id,xyz,freedom):
+    def __init__(self,id,xyz,freedom,freedom_static):
         self.id = id
         self.xyz = xyz
         self.freedom = freedom
+        self.freedom_static = freedom_static
         self.dof = len(freedom)
 
     def print(self):

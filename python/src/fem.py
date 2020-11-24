@@ -99,7 +99,7 @@ class Fem():
             if node.xyz[1] > H:
                 H = node.xyz[1]
 
-        g,vp = 9.8,1000.0
+        g,vp = 9.8,1500.0
         for node in self.nodes:
             node.u[0] = 0.0
             node.u[1] = g/(2*vp**2) * (H**2 - node.xyz[1]**2)
@@ -113,9 +113,9 @@ class Fem():
 
     # ------------------------------------------------
     def _self_gravity_cg(self,full=True):
-        if full:
+        if full:    # No constraint
             id = 0
-        else:
+        else:       # Calculate only vertical displacement
             id = 1
 
         ### CG Method ###
@@ -125,7 +125,7 @@ class Fem():
             element.mk_ku()
         for node in self.nodes:
             for i in range(id,node.dof):
-                if node.freedom[i] == 0:
+                if node.freedom_static[i] == 0:
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
@@ -149,7 +149,7 @@ class Fem():
             rr,py = 0.0,0.0
             for node in self.nodes:
                 for i in range(id,node.dof):
-                    if node.freedom[i] == 0:
+                    if node.freedom_static[i] == 0:
                         node._uy[i] = 0.0
                 rr += np.dot(node._ur,node._ur)
                 py += np.dot(node._up,node._uy)
@@ -159,7 +159,7 @@ class Fem():
             rr1 = 0.0
             for node in self.nodes:
                 for i in range(id,node.dof):
-                    if node.freedom[i] == 0:
+                    if node.freedom_static[i] == 0:
                         pass
                     else:
                         node.u[i] += alpha*node._up[i]
@@ -173,7 +173,7 @@ class Fem():
             beta = rr1/rr
             for node in self.nodes:
                 for i in range(id,node.dof):
-                    if node.freedom[i] == 0:
+                    if node.freedom_static[i] == 0:
                         pass
                     else:
                         node._up[i] = node._ur[i] + beta*node._up[i]

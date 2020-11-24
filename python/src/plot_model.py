@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 #--------------------------------------------------------#
 def plot_mesh(fem,amp=1.0):
-    pc = ["white","lightblue","yellow","green","pink"]
+    pc = ["lightblue","gray","yellow","green","pink"]
 
     fig,ax = plt.subplots(figsize=(12,4))
 
@@ -39,6 +39,8 @@ def plot_mesh_update_init():
     return ax
 
 def plot_mesh_update(ax,fem,amp=1.0,fin=False):
+    pc = ["lightblue","gray","yellow","green","pink"]
+
     ax.cla()
     ax.grid()
 
@@ -51,12 +53,14 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
 
     for element in fem.elements:
         if element.dim == 2:
+            ic = element.material_id % len(pc)
+
             f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
             f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
             f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
             f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
 
-            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc="gray")
+            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])
             ax.add_patch(fpoly)
 
     rc = 0.1

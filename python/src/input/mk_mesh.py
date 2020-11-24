@@ -1,11 +1,11 @@
 import numpy as np
 
 ### Set target area ###
-area_x = 20.0
-area_z = 15.0
+area_x = 50.0
+area_z = 10.0
 
-nx =  8
-nz =  6
+nx =  25
+nz =  5
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -18,23 +18,30 @@ node_lines = []
 for k in range(len(zg)):
     for i in range(len(xg)):
         dofx,dofz = 1,1
+        dofx_static,dofz_static = 1,1
         if k == len(zg)-1:
             dofz = 0
+            dofz_static = 0
         if i == 0:
-            dofx = 0
+            dofz = 0
+            dofx_static = 0
         if i == len(xg)-1:
-            dofx = 0
+            dofz = 0
+            dofx_static = 0
 
         node[i,k] = inode
-        node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz) ]
+        node_lines += [ "{} {} {} {} {} {} {}\n".format(inode,xg[i],zg[k],dofx,dofz,dofx_static,dofz_static) ]
         inode += 1
 
 ### Set element ###
 element_lines = []
 ielem = 0
 for k in range(nz):
+    im = 1
     for i in range(nx):
-        im = 0
+        im = 1
+        if k <= 1 and i >= int(nx/2):
+            im = 0
 
         style = "2d9solid"
 
@@ -46,16 +53,15 @@ for k in range(nz):
         element_lines += [param_line + style_line + "\n"]
         ielem += 1
 
+for i in range(nx):
+    style = "1d3input"
+    im = 1
 
-# for i in range(nx):
-#     style = "1d3input"
-#     im = 1
-#
-#     param_line = "{} {} {} ".format(ielem,style,im)
-#     style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
-#
-#     element_lines += [param_line + style_line + "\n"]
-#     ielem += 1
+    param_line = "{} {} {} ".format(ielem,style,im)
+    style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
+
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
 
 nnode = inode       #nodeの総数
 nelem = ielem       #elementの総数
@@ -63,7 +69,7 @@ nelem = ielem       #elementの総数
 ### Set material ###
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1000.0)]
-# material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
 
