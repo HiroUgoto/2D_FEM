@@ -8,7 +8,8 @@ class Element:
         self.id = id
         self.inode = inode
         self.material_id = material_id
-        self.gravity = 9.8
+        # self.gravity = 9.8
+        self.gravity = 9.8 * 4.0/5.0
 
         self.set_style(style)
 

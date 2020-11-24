@@ -138,7 +138,7 @@ class Fem():
     # ------------------------------------------------
     # ------------------------------------------------
     def update_time(self,acc0,vel0=None,input_wave=False):
-        self.update_matrix()
+        # self.update_matrix()   # Finite deformation
         for node in self.nodes:
             self._update_time_node_init(node)
 
@@ -150,10 +150,9 @@ class Fem():
                 node.force += np.dot(np.diag(node.mass),acc0)
 
         for element in self.elements:
-            # element.mk_ku_cv()
-            element.mk_B_stress()
+            element.mk_ku()        # Not finite deformation
+            # element.mk_B_stress()    # Finite deformation
             element.mk_cv()
-
 
         for node in self.free_nodes:
             self._update_time_set_free_nodes(node)

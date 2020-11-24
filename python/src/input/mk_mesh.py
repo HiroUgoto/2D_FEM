@@ -1,11 +1,11 @@
 import numpy as np
 
 ### Set target area ###
-area_x = 50.0
-area_z = 16.0
+area_x = 20.0
+area_z = 15.0
 
-nx =  10
-nz =  8
+nx =  8
+nz =  6
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -21,9 +21,9 @@ for k in range(len(zg)):
         if k == len(zg)-1:
             dofz = 0
         if i == 0:
-            dofz = 0
+            dofx = 0
         if i == len(xg)-1:
-            dofz = 0
+            dofx = 0
 
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz) ]
@@ -33,14 +33,8 @@ for k in range(len(zg)):
 element_lines = []
 ielem = 0
 for k in range(nz):
-    im = 1
-
     for i in range(nx):
-        if k < 3:
-            im = 0
-            if i == 0 or i == nx-1:
-                im = 1
-
+        im = 0
 
         style = "2d9solid"
 
@@ -53,30 +47,31 @@ for k in range(nz):
         ielem += 1
 
 
-for i in range(nx):
-    style = "1d3input"
-    im = 1
-
-    param_line = "{} {} {} ".format(ielem,style,im)
-    style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
-
-    element_lines += [param_line + style_line + "\n"]
-    ielem += 1
+# for i in range(nx):
+#     style = "1d3input"
+#     im = 1
+#
+#     param_line = "{} {} {} ".format(ielem,style,im)
+#     style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
+#
+#     element_lines += [param_line + style_line + "\n"]
+#     ielem += 1
 
 nnode = inode       #nodeの総数
 nelem = ielem       #elementの総数
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",20.0,1500.0,1750.0)]
-material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1000.0)]
+# material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
 
 
 ### Set output ###
 output_node_lines = []
-output_node_lines += ["{} \n".format(nx)]
+output_node_lines += ["{} \n".format(0)]
+output_node_lines += ["{} \n".format(2*nx)]
 
 output_element_lines = []
 for i in range(nx,2*nx):
