@@ -99,11 +99,24 @@ class Fem():
             if node.xyz[1] > H:
                 H = node.xyz[1]
 
-        g,vp = 9.8,1500.0
+        g,vp = 9.8,1000.0
         for node in self.nodes:
             node.u[0] = 0.0
             node.u[1] = g/(2*vp**2) * (H**2 - node.xyz[1]**2)
             node.um = np.copy(node.u)
+
+        self._self_gravity_cg(full=False)
+        self._self_gravity_cg(full=True)
+
+        for node in self.nodes:
+            node.u0 = np.copy(node.u)
+
+    # ------------------------------------------------
+    def _self_gravity_cg(self,full=True):
+        if full:
+            id = 0
+        else:
+            id = 1
 
         ### CG Method ###
         for node in self.nodes:
@@ -111,7 +124,7 @@ class Fem():
         for element in self.elements:
             element.mk_ku()
         for node in self.nodes:
-            for i in range(1,node.dof):
+            for i in range(id,node.dof):
                 if node.freedom[i] == 0:
                     node._ur[i] = 0.0
                 else:
@@ -135,7 +148,7 @@ class Fem():
             ## alpha = rr/py
             rr,py = 0.0,0.0
             for node in self.nodes:
-                for i in range(1,node.dof):
+                for i in range(id,node.dof):
                     if node.freedom[i] == 0:
                         node._uy[i] = 0.0
                 rr += np.dot(node._ur,node._ur)
@@ -145,7 +158,7 @@ class Fem():
             ## x = x + alpha*p
             rr1 = 0.0
             for node in self.nodes:
-                for i in range(1,node.dof):
+                for i in range(id,node.dof):
                     if node.freedom[i] == 0:
                         pass
                     else:
@@ -159,18 +172,14 @@ class Fem():
             ## p = r + beta*p
             beta = rr1/rr
             for node in self.nodes:
-                for i in range(1,node.dof):
+                for i in range(id,node.dof):
                     if node.freedom[i] == 0:
                         pass
                     else:
                         node._up[i] = node._ur[i] + beta*node._up[i]
 
-            # if it%100 == 0:
-            print(self.nodes[0].u[1],rr1)
-
-
-        for node in self.nodes:
-            node.u0 = np.copy(node.u)
+            if it%100 == 0:
+                print(" (self gravity process .. )",it,self.nodes[0].u[1])
 
 
     # ------------------------------------------------
