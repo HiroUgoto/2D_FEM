@@ -15,27 +15,14 @@ class Fem():
         self.free_nodes = []
         self.fixed_nodes = []
 
+    # ======================================================================= #
     def set_init(self):
-        self.set_mesh()
-        self.set_initial_condition()
-        self.set_initial_matrix()
+        self._set_mesh()
+        self._set_initial_condition()
+        self._set_initial_matrix()
 
-    # ------------------------------------------------
-    def set_output(self,outputs):
-        output_node_list,output_element_list = outputs
-
-        self.output_nodes = []
-        for inode in output_node_list:
-            self.output_nodes += [self.nodes[inode]]
-        self.output_nnode = len(self.output_nodes)
-
-        self.output_elements = []
-        for ielem in output_element_list:
-            self.output_elements += [self.elements[ielem]]
-        self.output_nelem = len(self.output_elements)
-
-    # ------------------------------------------------
-    def set_mesh(self):
+    # ---------------------------------------
+    def _set_mesh(self):
         for element in self.elements:
             nodes = []
             for inode in element.inode:
@@ -60,8 +47,8 @@ class Fem():
             if "input" in element.style:
                 self.input_elements += [element]
 
-    # ------------------------------------------------
-    def set_initial_condition(self):
+    # ---------------------------------------
+    def _set_initial_condition(self):
         for node in self.nodes:
             node.set_initial_condition()
 
@@ -73,8 +60,8 @@ class Fem():
         for element in self.elements:
             element.set_pointer_list()
 
-    # ------------------------------------------------
-    def set_initial_matrix(self):
+    # ---------------------------------------
+    def _set_initial_matrix(self):
         for element in self.elements:
             element.set_xn()
             element.mk_local_matrix_init(self.dof)
@@ -90,8 +77,21 @@ class Fem():
                     node.static_force[i] += element.force[id]
                     id += 1
 
-    # ------------------------------------------------
-    # ------------------------------------------------
+    # ======================================================================= #
+    def set_output(self,outputs):
+        output_node_list,output_element_list = outputs
+
+        self.output_nodes = []
+        for inode in output_node_list:
+            self.output_nodes += [self.nodes[inode]]
+        self.output_nnode = len(self.output_nodes)
+
+        self.output_elements = []
+        for ielem in output_element_list:
+            self.output_elements += [self.elements[ielem]]
+        self.output_nelem = len(self.output_elements)
+
+    # ======================================================================= #
     def self_gravity(self):
         ### Initial condition ###
         H = 0.0
@@ -111,11 +111,11 @@ class Fem():
         for node in self.nodes:
             node.u0 = np.copy(node.u)
 
-    # ------------------------------------------------
+    # ---------------------------------------
     def _self_gravity_cg(self,full=True):
-        if full:    # No constraint
+        if full:    # Calculate both components
             id = 0
-        else:       # Calculate only vertical displacement
+        else:       # Calculate only vertical component
             id = 1
 
         ### CG Method ###
@@ -129,7 +129,7 @@ class Fem():
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
-                node._up = np.copy(node._ur)
+            node._up = np.copy(node._ur)
         for element in self.elements:
             element._up = ()
             for node in element.nodes:
@@ -140,7 +140,7 @@ class Fem():
             for node in self.nodes:
                 node._uy = np.zeros(node.dof,dtype=np.float64)
             for element in self.elements:
-                ku = np.dot(element.K,np.hstack(element._up))
+                ku = element.K @ np.hstack(element._up)
                 for i in range(element.nnode):
                     i0 = element.dof*i
                     element.nodes[i]._uy[:] += ku[i0:i0+element.dof]
@@ -151,8 +151,8 @@ class Fem():
                 for i in range(id,node.dof):
                     if node.freedom_static[i] == 0:
                         node._uy[i] = 0.0
-                rr += np.dot(node._ur,node._ur)
-                py += np.dot(node._up,node._uy)
+                rr += node._ur @ node._ur
+                py += node._up @ node._uy
             alpha = rr/py
 
             ## x = x + alpha*p
@@ -164,7 +164,7 @@ class Fem():
                     else:
                         node.u[i] += alpha*node._up[i]
                         node._ur[i] -= alpha*node._uy[i]
-                rr1 += np.dot(node._ur,node._ur)
+                rr1 += node._ur @ node._ur
 
             if rr1 < 1.e-10:
                 break
@@ -182,7 +182,7 @@ class Fem():
                 print(" (self gravity process .. )",it,self.nodes[0].u[1])
 
 
-    # ------------------------------------------------
+    # ======================================================================= #
     def update_init(self,dt):
         for node in self.nodes:
             node.inv_mc = 1.0 / (node.mass[:] + 0.5*dt*node.c[:])
@@ -193,8 +193,7 @@ class Fem():
         self.dt = dt
         self.inv_dt2 = 1./(2.*dt)
 
-    # ------------------------------------------------
-    # ------------------------------------------------
+    # ======================================================================= #
     def update_matrix(self):
         for node in self.nodes:
             self._update_matrix_node_init(node)
@@ -203,12 +202,11 @@ class Fem():
         for node in self.nodes:
             self._update_matrix_set_nodes(node)
 
-    # ------------------------------------------------
+    # ---------------------------------------
     def _update_matrix_node_init(self,node):
         node.mass = np.zeros(self.dof,dtype=np.float64)
         node.c    = np.zeros(self.dof,dtype=np.float64)
         node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
-        # node.dynamic_force = -np.copy(node.static_force)
 
     def _update_matrix_set_elements(self,element):
         element.set_xn()
@@ -229,11 +227,10 @@ class Fem():
         node.c_inv_mc = node.c[:]*node.inv_mc[:]*0.5*self.dt
         node.dtdt_inv_mc = self.dt*self.dt*node.inv_mc[:]
 
-    # ------------------------------------------------
-    # ------------------------------------------------
+    # ======================================================================= #
     def update_time(self,acc0,vel0=None,input_wave=False,FD=False):
         if FD:
-            self.update_matrix()   # Finite deformation
+            self.update_matrix()
         else:
             for node in self.nodes:
                 node.dynamic_force = np.copy(node.static_force)
@@ -252,12 +249,11 @@ class Fem():
 
         if FD:
             for element in self.elements:
-                element.mk_B_stress()    # Finite deformation
+                element.mk_B_stress()
                 element.mk_cv()
         else:
             for element in self.elements:
-                element.mk_ku()        # Not finite deformation
-                element.mk_cv()
+                element.mk_ku_cv()
 
         for node in self.free_nodes:
             self._update_time_set_free_nodes(node)
@@ -267,12 +263,12 @@ class Fem():
         for element in self.output_elements:
             element.calc_stress()
 
-    # ------------------------------------------------
+    # ---------------------------------------
     def _update_time_node_init(self,node):
         node.force = -node.dynamic_force.copy()
 
     def _update_time_input_wave(self,element,vel0):
-        cv = np.dot(element.C,np.tile(vel0,element.nnode))
+        cv = element.C @ np.tile(vel0,element.nnode)
         for i in range(element.nnode):
             i0 = self.dof*i
             element.nodes[i].force[:] -= 2*cv[i0:i0+self.dof]
@@ -299,9 +295,7 @@ class Fem():
         node.v[:] = (node.u - node.um) * self.inv_dt2
         node.um = u
 
-
-    # ------------------------------------------------
-    # ------------------------------------------------
+    # ======================================================================= #
     def print_all(self):
         for node in self.nodes:
             node.print()
