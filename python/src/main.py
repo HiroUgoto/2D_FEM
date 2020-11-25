@@ -19,7 +19,7 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fsamp = 2500
-duration = 0.02
+duration = 1.0
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 wave_acc = input_wave.tapered_sin(tim,fp=5.0,taper=0.2,duration=1.0,amp=1.0)
@@ -29,9 +29,7 @@ ntim = len(tim)
 ax = plot_model.plot_mesh_update_init()
 ## --- Static deformation --- ##
 fem.self_gravity()
-# plot_model.plot_mesh_update(ax,fem,1.)
-# plot_model.plot_mesh_update(ax,fem,1000.,fin=True)
-# sys.exit()
+plot_model.plot_mesh_update(ax,fem,1.)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -53,17 +51,17 @@ for it in range(len(tim)):
     output_strain[it,:] = [element.strain[0] for element in fem.output_elements]
 
     if it%10 == 0:
-        # plot_model.plot_mesh_update(ax,fem,1.)
+        plot_model.plot_mesh_update(ax,fem,1.)
         print(it,"t=",it*dt,output_disp[it,:])
 
 
-# plot_model.plot_mesh_update(ax,fem,1.,fin=True)
+plot_model.plot_mesh_update(ax,fem,1.,fin=True)
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
 # ## Output result ##
-# plt.figure()
-# plt.plot(tim,wave_vel)
-# plt.plot(tim,output_vel[:,0])
-# plt.show()
+plt.figure()
+plt.plot(tim,wave_vel)
+plt.plot(tim,output_vel[:,0])
+plt.show()
