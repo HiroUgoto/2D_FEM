@@ -15,7 +15,7 @@ outputs = io_data.input_outputs("input/output.in")
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-# plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
 fsamp = 2500
