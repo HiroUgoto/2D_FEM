@@ -15,10 +15,10 @@ outputs = io_data.input_outputs("input/output.in")
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-plot_model.plot_mesh(fem)
+# plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 2500
+fsamp = 4000
 duration = 1.0
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -29,7 +29,7 @@ ntim = len(tim)
 ax = plot_model.plot_mesh_update_init()
 ## --- Static deformation --- ##
 fem.self_gravity()
-plot_model.plot_mesh_update(ax,fem,1.)
+plot_model.plot_mesh_update(ax,fem,100.)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -51,7 +51,7 @@ for it in range(len(tim)):
     output_strain[it,:] = [element.strain[0] for element in fem.output_elements]
 
     if it%10 == 0:
-        plot_model.plot_mesh_update(ax,fem,1.)
+        plot_model.plot_mesh_update(ax,fem,100.)
         print(it,"t=",it*dt,output_disp[it,:])
 
 

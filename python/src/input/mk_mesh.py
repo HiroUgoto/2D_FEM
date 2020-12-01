@@ -13,18 +13,28 @@ if  modelid == 0:
 
     xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
     zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
-elif modelid == 1:
-    area_x = 20.0
-    area_z = 8.0
 
-    nx =  20
-    nz =  8
+elif modelid == 1:
+    area_x = 50.0
+    area_z = 5.0
+
+    nx1,nx2 = 2, 8
+    nz1,nz2 = 3, 2
+    nx =  nx1 + nx2 + nx1
+    nz =  nz1 + nz2
     dof = 2
 
     zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
-    xg = np.empty((2*nz+1)*(2*nx+1)).reshape(2*nz+1,2*nx+1)        #全nodex座標
-    for k in range(len(zg)):
-        xg[k,:] = np.append(np.linspace(0,5+10/(len(zg)-1)*k,2*10,endpoint=False),np.linspace(5+10/(len(zg)-1)*k,area_x,2*10+1,endpoint=True))      #傾斜部分
+    xg = np.empty([2*nx+1,2*nz+1])       #全nodex座標
+
+    for k in range(2*nz1+1):
+        xg[:2*nx1,k] = np.linspace(0,10+10/(len(zg)-1)*k,2*nx1,endpoint=False)
+        xg[2*nx1:2*(nx1+nx2),k] = np.linspace(10+10/(len(zg)-1)*k,area_x-(10+10/(len(zg)-1)*k),2*nx2,endpoint=False)
+        xg[2*(nx1+nx2):,k] = np.linspace(area_x-(10+10/(len(zg)-1)*k),area_x,2*nx1+1,endpoint=True)      #傾斜部分
+
+    for k in range(2*nz1+1,2*nz+1):
+        xg[:,k] = np.copy(xg[:,2*nz1])
+
 
 ### Set node ###
 inode = 0
@@ -51,10 +61,10 @@ if modelid == 0:
             inode += 1
 
 elif modelid == 1:
-    node = np.empty([len(xg[0]),len(zg)],dtype=np.int32)       #node_idを振った配列(転置)
+    node = np.empty([len(xg[:,0]),len(zg)],dtype=np.int32)       #node_idを振った配列(転置)
     node_lines = []
     for k in range(len(zg)):
-        for i in range(len(xg[0])):
+        for i in range(len(xg[:,0])):
             dofx,dofz = 1,1
             dofx_static,dofz_static = 1,1
             if k == len(zg)-1:
@@ -63,12 +73,12 @@ elif modelid == 1:
             if i == 0:
                 dofz = 0
                 dofx_static = 0
-            if i == len(xg[0])-1:
+            if i == len(xg[:,0])-1:
                 dofz = 0
                 dofx_static = 0
 
             node[i,k] = inode
-            node_lines += [ "{} {} {} {} {} {} {}\n".format(inode,xg[k,i],zg[k],dofx,dofz,dofx_static,dofz_static) ]
+            node_lines += [ "{} {} {} {} {} {} {}\n".format(inode,xg[i,k],zg[k],dofx,dofz,dofx_static,dofz_static) ]
             inode += 1
 
 ### Set element ###
@@ -98,7 +108,7 @@ elif modelid == 1:
         im = 1
         for i in range(nx):
             im = 1
-            if k <= 2 and i >= 10:
+            if k < nz1 and nx1 <= i < nx1+nx2:
                 im = 0
 
             style = "2d9solid"
@@ -128,7 +138,7 @@ nelem = ielem       #elementの総数
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1000.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1750.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)

@@ -159,6 +159,12 @@ class Element:
             i0 = self.dof*i
             self.nodes[i].force[:] += ku[i0:i0+self.dof]
 
+    def mk_ku_u(self,u):
+        ku = self.K @ np.hstack(u)
+        for i in range(self.nnode):
+            i0 = self.dof*i
+            self.nodes[i].force[:] += ku[i0:i0+self.dof]
+
     def mk_cv(self):
         cv = self.C_off_diag @ np.hstack(self.v)
         for i in range(self.nnode):
@@ -208,6 +214,28 @@ class Element:
             for i in range(self.nnode):
                 i0 = self.dof*i
                 self.nodes[i].force[:] += force[i0:i0+self.dof]
+
+    def mk_B_stress_u(self,u):
+        if self.dim == 1:
+            self.mk_ku_u(u)
+
+        elif self.dim == 2:
+            force = np.zeros(self.dof*self.nnode,dtype=np.float64)
+
+            for i in range(self.ng):
+                for j in range(self.ng):
+                    det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
+                    detJ = self.wxz[i,j]*det
+
+                    B = mk_b(self.dof,self.nnode,self.xn,self.dnxz[i,j,:,:])
+                    stress = Hencky_stress(self.dof,self.nnode,self.xn,self.dnxz[i,j,:,:],self.De,u)
+
+                    force += B.T @ stress * detJ
+
+            for i in range(self.nnode):
+                i0 = self.dof*i
+                self.nodes[i].force[:] += force[i0:i0+self.dof]
+
 
     # ---------------------------------------------------------
     def calc_stress(self):

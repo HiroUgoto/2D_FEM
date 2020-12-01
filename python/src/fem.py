@@ -138,12 +138,11 @@ class Fem():
         for it in range(10*self.nnode):
             ## y = Ap
             for node in self.nodes:
-                node._uy = np.zeros(node.dof,dtype=np.float64)
+                node.force = np.zeros(node.dof,dtype=np.float64)
             for element in self.elements:
-                ku = element.K @ np.hstack(element._up)
-                for i in range(element.nnode):
-                    i0 = element.dof*i
-                    element.nodes[i]._uy[:] += ku[i0:i0+element.dof]
+                element.mk_ku_u(element._up)
+            for node in self.nodes:
+                node._uy = node.force
 
             ## alpha = rr/py
             rr,py = 0.0,0.0
@@ -179,7 +178,7 @@ class Fem():
                         node._up[i] = node._ur[i] + beta*node._up[i]
 
             if it%100 == 0:
-                print(" (self gravity process .. )",it,self.nodes[0].u[1])
+                print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
 
 
     # ======================================================================= #
