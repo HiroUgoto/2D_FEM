@@ -15,10 +15,10 @@ if  modelid == 0:
     zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
 elif modelid == 1:
-    area_x = 50.0
+    area_x = 70.0
     area_z = 5.0
 
-    nx1,nx2 = 2, 8
+    nx1,nx2 = 4, 8
     nz1,nz2 = 3, 2
     nx =  nx1 + nx2 + nx1
     nz =  nz1 + nz2
@@ -28,9 +28,9 @@ elif modelid == 1:
     xg = np.empty([2*nx+1,2*nz+1])       #全nodex座標
 
     for k in range(2*nz1+1):
-        xg[:2*nx1,k] = np.linspace(0,10+10/(len(zg)-1)*k,2*nx1,endpoint=False)
-        xg[2*nx1:2*(nx1+nx2),k] = np.linspace(10+10/(len(zg)-1)*k,area_x-(10+10/(len(zg)-1)*k),2*nx2,endpoint=False)
-        xg[2*(nx1+nx2):,k] = np.linspace(area_x-(10+10/(len(zg)-1)*k),area_x,2*nx1+1,endpoint=True)      #傾斜部分
+        xg[:2*nx1,k] = np.linspace(0,20+10/(len(zg)-1)*k,2*nx1,endpoint=False)
+        xg[2*nx1:2*(nx1+nx2),k] = np.linspace(20+10/(len(zg)-1)*k,area_x-(20+10/(len(zg)-1)*k),2*nx2,endpoint=False)
+        xg[2*(nx1+nx2):,k] = np.linspace(area_x-(20+10/(len(zg)-1)*k),area_x,2*nx1+1,endpoint=True)      #傾斜部分
 
     for k in range(2*nz1+1,2*nz+1):
         xg[:,k] = np.copy(xg[:,2*nz1])
@@ -147,6 +147,7 @@ nmaterial = len(material_lines)
 ### Set output ###
 output_node_lines = []
 output_node_lines += ["{} \n".format(0)]
+output_node_lines += ["{} \n".format(nx)]
 output_node_lines += ["{} \n".format(2*nx)]
 
 output_element_lines = []

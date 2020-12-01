@@ -22,7 +22,7 @@ fsamp = 4000
 duration = 1.0
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp=5.0,taper=0.2,duration=1.0,amp=1.0)
+wave_acc = input_wave.tapered_sin(tim,fp=5.0,taper=0.2,duration=1.0,amp=4.0)
 wave_vel = np.cumsum(wave_acc) * dt
 ntim = len(tim)
 
@@ -63,5 +63,6 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 # ## Output result ##
 plt.figure()
 plt.plot(tim,wave_vel)
-plt.plot(tim,output_vel[:,0])
+plt.plot(tim,(output_vel[:,0]+output_vel[:,2])/2.0)
+plt.plot(tim,output_vel[:,1])
 plt.show()
