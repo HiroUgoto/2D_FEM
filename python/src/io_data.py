@@ -17,10 +17,9 @@ def input_mesh(mesh_file):
 
             id = int(items[0])
             xyz = [float(s) for s in items[1:3]]        #node座標list2成分
-            freedom = [int(s) for s in items[3:3+dof]]
-            freedom_static = [int(s) for s in items[3+dof:]]
+            freedom = [int(s) for s in items[3:]]
 
-            nodes += [node.Node(id,xyz,freedom,freedom_static)]
+            nodes += [node.Node(id,xyz,freedom)]
 
         irec += nnode       #irecを1+nnodeで再定義
         elements = []

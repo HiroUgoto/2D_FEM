@@ -131,7 +131,7 @@ class Fem():
             element.mk_ku()
         for node in self.nodes:
             for i in range(id,node.dof):
-                if node.freedom_static[i] == 0:
+                if node.freedom[i] == 0:
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
@@ -160,7 +160,7 @@ class Fem():
             ## correction boundary condition
             for node in self.nodes:
                 for i in range(id,node.dof):
-                    if node.freedom_static[i] == 0:
+                    if node.freedom[i] == 0:
                         node._uy[i] = 0.0
             for element in self.connected_elements:
                 u = np.zeros_like(element.nodes[0]._uy)
@@ -180,7 +180,7 @@ class Fem():
             rr1 = 0.0
             for node in self.nodes:
                 for i in range(id,node.dof):
-                    if node.freedom_static[i] == 0:
+                    if node.freedom[i] == 0:
                         pass
                     else:
                         node.u[i] += alpha*node._up[i]
@@ -194,7 +194,7 @@ class Fem():
             beta = rr1/rr
             for node in self.nodes:
                 for i in range(id,node.dof):
-                    if node.freedom_static[i] == 0:
+                    if node.freedom[i] == 0:
                         pass
                     else:
                         node._up[i] = node._ur[i] + beta*node._up[i]

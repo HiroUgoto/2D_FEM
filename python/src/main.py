@@ -29,7 +29,7 @@ ntim = len(tim)
 ax = plot_model.plot_mesh_update_init()
 ## --- Static deformation --- ##
 fem.self_gravity()
-plot_model.plot_mesh_update(ax,fem,5000.)
+plot_model.plot_mesh_update(ax,fem,200.)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -51,11 +51,11 @@ for it in range(len(tim)):
     output_strain[it,:] = [element.strain[0] for element in fem.output_elements]
 
     if it%10 == 0:
-        plot_model.plot_mesh_update(ax,fem,5000.)
+        plot_model.plot_mesh_update(ax,fem,200.)
         print(it,"t=",it*dt,output_disp[it,:])
 
 
-plot_model.plot_mesh_update(ax,fem,5000.,fin=True)
+plot_model.plot_mesh_update(ax,fem,200.,fin=True)
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
@@ -63,6 +63,6 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 # ## Output result ##
 plt.figure()
 plt.plot(tim,wave_vel)
-plt.plot(tim,(output_vel[:,0]+output_vel[:,2])/2.0)
+plt.plot(tim,output_vel[:,0])
 plt.plot(tim,output_vel[:,1])
 plt.show()

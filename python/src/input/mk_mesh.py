@@ -66,19 +66,11 @@ elif modelid == 1:
     for k in range(len(zg)):
         for i in range(len(xg[:,0])):
             dofx,dofz = 1,1
-            dofx_static,dofz_static = 1,1
             if k == len(zg)-1:
                 dofz = 0
-                dofz_static = 0
-            # if i == 0:
-            #     dofz = 1
-            #     dofx_static = 1
-            # if i == len(xg[:,0])-1:
-            #     dofz = 1
-            #     dofx_static = 1
 
             node[i,k] = inode
-            node_lines += [ "{} {} {} {} {} {} {}\n".format(inode,xg[i,k],zg[k],dofx,dofz,dofx_static,dofz_static) ]
+            node_lines += [ "{} {} {} {} {}\n".format(inode,xg[i,k],zg[k],dofx,dofz) ]
             inode += 1
 
 ### Set element ###
