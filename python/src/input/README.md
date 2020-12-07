@@ -92,6 +92,13 @@ The element consists of node ID 0, 1, 3, 2 in the order.
 
 Input wave boundary is defined on the boundary consisting of node ID 0 and 1.
 
+```
+1 periodic 1 100
+```
+
+Periodic element is defined.
+The element consists of node ID 0, 100.
+
 ---
 ## Material block
 

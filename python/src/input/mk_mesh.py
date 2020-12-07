@@ -1,6 +1,6 @@
 import numpy as np
 
-modelid = 1     #0:square mesh,1:flexible mesh
+modelid = 0     #0:square mesh,1:flexible mesh
 
 ### Set target area ###
 if  modelid == 0:
@@ -122,7 +122,6 @@ elif modelid == 1:
             ielem += 1
 
 
-
 for i in range(nx):
     style = "1d3input"
     im = 1
@@ -133,13 +132,30 @@ for i in range(nx):
     element_lines += [param_line + style_line + "\n"]
     ielem += 1
 
+
+for k in range(2*nz+1):     #connected element
+    style = "periodic"
+    im = 2
+
+    param_line = "{} {} {} ".format(ielem,style,im)
+    style_line = "{} {}".format(node[0,k],node[2*nx,k])
+
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
+
+
 nnode = inode       #nodeの総数
 nelem = ielem       #elementの総数
+
+
+
+
 
 ### Set material ###
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1750.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(2,"nu_vp_rho",0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
 

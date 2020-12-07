@@ -2,7 +2,7 @@ import numpy as np
 from concurrent import futures
 
 class Fem():
-    def __init__(self,dof,nodes,elements,materials):
+    def __init__(self,dof,nodes,elements,materials,connected_elements):
         self.nnode = len(nodes)
         self.nelem = len(elements)
         self.dof = dof
@@ -14,6 +14,7 @@ class Fem():
         self.input_elements = []
         self.free_nodes = []
         self.fixed_nodes = []
+        self.connected_elements = []
 
     # ======================================================================= #
     def set_init(self):
@@ -46,6 +47,19 @@ class Fem():
 
             if "input" in element.style:
                 self.input_elements += [element]
+
+
+        for element in self.connected_elements:
+            nodes = []
+            for inode in element.inode:
+                if self.nodes[inode].id == inode:
+                    nodes += [self.nodes[inode]]
+                else:
+                    for n in self.nodes:
+                        if n.id == inode:
+                            nodes += [n]
+                            break
+            element.set_nodes(nodes)
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -259,6 +273,9 @@ class Fem():
         for node in self.fixed_nodes:
             self._update_time_set_fixed_nodes(node)
 
+        for element in self.connected_elements:
+            self._update_time_set_connected_elements_(node,connected_elements)
+
         for element in self.output_elements:
             element.calc_stress()
 
@@ -293,6 +310,14 @@ class Fem():
                 node.u[i] = node.mass_inv_mc[i]*(2.*u[i]-node.um[i]) + node.c_inv_mc[i]*node.um[i] - node.dtdt_inv_mc[i]*node.force[i]
         node.v[:] = (node.u - node.um) * self.inv_dt2
         node.um = u
+
+    def _update_time_set_connected_elements_(self,node,element):
+        for node in element.nodes:
+            u0 = np.zeros(2)
+            u0[:] += node.u[:]
+            for node in element.node:
+                node.u[:] = u0[:]/2
+
 
     # ======================================================================= #
     def print_all(self):
