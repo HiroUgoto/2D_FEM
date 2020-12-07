@@ -29,8 +29,12 @@ class Element:
         self.nodes = nodes
 
     def set_material(self,material):
-        self.material = material
-        self.rho = material.rho
+        if material is None:
+            self.material = None
+            self.rho = None
+        else:
+            self.material = material
+            self.rho = material.rho
 
     # ---------------------------------------------------------
     def set_pointer_list(self):
@@ -96,10 +100,10 @@ class Element:
         self.K_diag = np.diag(self.K)
         self.K_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
 
-        self.De = self.material.mk_d(self.dof)
-        self.Dv = self.material.mk_visco(self.dof)
-
         if self.dim == 2:
+            self.De = self.material.mk_d(self.dof)
+            self.Dv = self.material.mk_visco(self.dof)
+
             for i in range(self.ng):
                 for j in range(self.ng):
                     det,_ = mk_jacobi(self.xn,self.dnxz[i,j,:,:])
@@ -121,7 +125,6 @@ class Element:
 
             self.C_diag = np.diag(self.C)
             self.C_off_diag = self.C - np.diag(self.C_diag)
-
 
         elif self.dim == 1:
             if "input" in self.style:

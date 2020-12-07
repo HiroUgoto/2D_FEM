@@ -16,8 +16,8 @@ def set_style(style):
         return Input_1d_2Node()
     elif style == "1d3input":
         return Input_1d_3Node()
-    elif style == "periodic":
-        return Periodic()
+    elif style == "connect":
+        return Connect()
 
 # =================== Element style classes ============================ #
 class Solid_2d_4Node:
@@ -209,28 +209,10 @@ class Line_1d_3Node:
         return dn
 
 # ---------------------------------------------------------------------- #
-class Periodic:
+class Connect:
     def __init__(self):
-        self.dim = 2
-        self.gauss = np.polynomial.legendre.leggauss(5)
-
-    def init_dn(self,n):
-        return np.zeros([n,2])
-
-    @lru_cache()
-    def shape_function_n(self,xi,zeta=0.0):
-        n = np.zeros(2)
-        n[0] = (1.0 - xi) / 2.0
-        n[1] = (1.0 + xi) / 2.0
-        return n
-
-    @lru_cache()
-    def shape_function_dn(style,xi,zeta=0.0):
-        dn = np.zeros(2)
-        dn[0] = -0.5
-        dn[1] =  0.5
-        return dn
-
+        self.dim = 0
+        self.gauss = np.array([]),np.array([])
 
 # ---------------------------------------------------------------------- #
 

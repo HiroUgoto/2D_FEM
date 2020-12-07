@@ -2,7 +2,7 @@ import numpy as np
 from concurrent import futures
 
 class Fem():
-    def __init__(self,dof,nodes,elements,materials,connected_elements):
+    def __init__(self,dof,nodes,elements,materials):
         self.nnode = len(nodes)
         self.nelem = len(elements)
         self.dof = dof
@@ -36,30 +36,22 @@ class Fem():
                             break
             element.set_nodes(nodes)
 
-            if self.materials[element.material_id].id == element.material_id:
-                material = self.materials[element.material_id]
+            if element.material_id < 0:
+                element.set_material(None)
             else:
-                for m in self.materials:
-                    if m.id == element.material_id:
-                        material = m
-                        break
-            element.set_material(material)
+                if self.materials[element.material_id].id == element.material_id:
+                    material = self.materials[element.material_id]
+                else:
+                    for m in self.materials:
+                        if m.id == element.material_id:
+                            material = m
+                            break
+                element.set_material(material)
 
             if "input" in element.style:
                 self.input_elements += [element]
-
-
-        for element in self.connected_elements:
-            nodes = []
-            for inode in element.inode:
-                if self.nodes[inode].id == inode:
-                    nodes += [self.nodes[inode]]
-                else:
-                    for n in self.nodes:
-                        if n.id == inode:
-                            nodes += [n]
-                            break
-            element.set_nodes(nodes)
+            if "connect" in element.style:
+                self.connected_elements += [element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -143,6 +135,13 @@ class Fem():
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
+        for element in self.connected_elements:         # periodic boundary condition
+            u = np.zeros_like(element.nodes[0]._ur)
+            for node in element.nodes:
+                u += node._ur
+            for node in element.nodes:
+                node._ur = u/len(element.nodes)
+        for node in self.nodes:
             node._up = np.copy(node._ur)
         for element in self.elements:
             element._up = ()
@@ -158,12 +157,21 @@ class Fem():
             for node in self.nodes:
                 node._uy = node.force
 
-            ## alpha = rr/py
-            rr,py = 0.0,0.0
+            ## correction boundary condition
             for node in self.nodes:
                 for i in range(id,node.dof):
                     if node.freedom_static[i] == 0:
                         node._uy[i] = 0.0
+            for element in self.connected_elements:
+                u = np.zeros_like(element.nodes[0]._uy)
+                for node in element.nodes:
+                    u += node._uy
+                for node in element.nodes:
+                    node._uy = u/len(element.nodes)
+
+            ## alpha = rr/py
+            rr,py = 0.0,0.0
+            for node in self.nodes:
                 rr += node._ur @ node._ur
                 py += node._up @ node._uy
             alpha = rr/py
@@ -274,7 +282,7 @@ class Fem():
             self._update_time_set_fixed_nodes(node)
 
         for element in self.connected_elements:
-            self._update_time_set_connected_elements_(node,connected_elements)
+            self._update_time_set_connected_elements_(element)
 
         for element in self.output_elements:
             element.calc_stress()
@@ -311,13 +319,12 @@ class Fem():
         node.v[:] = (node.u - node.um) * self.inv_dt2
         node.um = u
 
-    def _update_time_set_connected_elements_(self,node,element):
+    def _update_time_set_connected_elements_(self,element):
+        u = np.zeros_like(element.nodes[0].u)
         for node in element.nodes:
-            u0 = np.zeros(2)
-            u0[:] += node.u[:]
-            for node in element.node:
-                node.u[:] = u0[:]/2
-
+            u[:] += node.u[:]
+        for node in element.nodes:
+            node.u[:] = u[:]/len(element.nodes)
 
     # ======================================================================= #
     def print_all(self):

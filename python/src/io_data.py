@@ -9,7 +9,6 @@ def input_mesh(mesh_file):
         lines = f.readlines()
 
         nnode,nelem,nmaterial,dof = [int(s) for s in lines[0].split()]
-        ncelem = mk_mesh.nz*2+1     #connected element個数
 
         irec = 1
         nodes = []
@@ -25,7 +24,7 @@ def input_mesh(mesh_file):
 
         irec += nnode       #irecを1+nnodeで再定義
         elements = []
-        for ielem in range(nelem-ncelem):
+        for ielem in range(nelem):
             items = lines[ielem+irec].split()       #mesh.in1+nnode行以降
 
             id = int(items[0])
@@ -34,20 +33,6 @@ def input_mesh(mesh_file):
             inode = [int(s) for s in items[3:]]
 
             elements += [element.Element(id,style,material_id,inode)]
-
-        iprec = 0
-        iprec += irec+nelem-ncelem
-        connected_elements = []
-        for ipelem in range(ncelem):
-            items = lines[ipelem+iprec].split()
-
-            id = int(items[0])
-            style = items[1]
-            material_id = int(items[2])
-            inode = [int(s) for s in items[3:]]
-
-            connected_elements += [element.Element(id,style,material_id,inode)]
-        print(len(elements))
 
         irec += nelem
         materials = []
@@ -60,7 +45,7 @@ def input_mesh(mesh_file):
 
             materials += [material.Material(id,style,param)]
 
-        return fem.Fem(dof,nodes,elements,materials,connected_elements)
+        return fem.Fem(dof,nodes,elements,materials)
 
 # ------------------------------------------------------------------- #
 def input_outputs(output_file):
