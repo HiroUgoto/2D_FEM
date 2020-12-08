@@ -150,12 +150,11 @@ nmaterial = len(material_lines)
 
 ### Set output ###
 output_node_lines = []
-output_node_lines += ["{} \n".format(0)]
-output_node_lines += ["{} \n".format(nx)]
-output_node_lines += ["{} \n".format(2*nx)]
+for i in range(0,nnode):
+    output_node_lines += ["{} \n".format(i)]       #outputするnode指定
 
 output_element_lines = []
-for i in range(nx,2*nx):
+for i in range(0,nelem-nx-len(zg)):        #outputするelement番号指定
     output_element_lines += ["{} \n".format(i)]
 
 output_nnode = len(output_node_lines)
