@@ -5,9 +5,15 @@ import time
 import io_data
 import input_wave
 import plot_model
+import os
+import shutil
+import datetime
+
+dir = "output/outputdir"
+os.makedirs(dir,exist_ok=True)      #make output folder
+os.makedirs(dir+"/fig",exist_ok=True)
 
 start = time.time()
-
 ## --- Input FEM Mesh --- ##
 fem = io_data.input_mesh("input/mesh.in")
 outputs = io_data.input_outputs("input/output.in")
@@ -61,30 +67,37 @@ for it in range(len(tim)):
     if it%10 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
         print(it,"t=",it*dt,output_dispx[it,:])
-        plt.savefig("output_fig\img_"+str(it)+".png")
+        plt.savefig(dir+"/fig/img_"+str(it)+".png")
 
 
 plot_model.plot_mesh_update(ax,fem,200.,fin=True)
 
 ## --- Write output file --- ##
+shutil.copy("input/mesh.in",dir)        #movefile to output folder
+shutil.copy("input/output.in",dir)
+shutil.copy("input/var.in",dir)
+
 output_tim = np.arange(ntim).reshape(ntim,1)
 
 output_w_velx = np.hstack((output_tim,output_velx))
-np.savetxt("output\output_velx.dat",output_w_velx,delimiter="    ")
+np.savetxt(dir+"/velx.dat",output_w_velx,delimiter="    ")
 output_w_velz = np.hstack((output_tim,output_velz))
-np.savetxt("output\output_velz.dat",output_w_velz,delimiter="    ")
+np.savetxt(dir+"/velz.dat",output_w_velz,delimiter="    ")
 
 output_w_strainxx = np.hstack((output_tim,output_strainxx))
-np.savetxt("output\output_strainxx.dat",output_w_strainxx,delimiter="    ")
+np.savetxt(dir+"/strainxx.dat",output_w_strainxx,delimiter="    ")
 output_w_strainyy = np.hstack((output_tim,output_strainyy))
-np.savetxt("output\output_strainyy.dat",output_w_strainyy,delimiter="    ")
+np.savetxt(dir+"/strainyy.dat",output_w_strainyy,delimiter="    ")
 output_w_strainxy = np.hstack((output_tim,output_strainxy))
-np.savetxt("output\output_strainxy.dat",output_w_strainxy,delimiter="    ")
+np.savetxt(dir+"/strainxy.dat",output_w_strainxy,delimiter="    ")
 
 output_w_dispx = np.hstack((output_tim,output_dispx))
-np.savetxt("output\output_dispx.dat",output_w_dispx,delimiter="    ")
+np.savetxt(dir+"/dispx.dat",output_w_dispx,delimiter="    ")
 output_w_dispz = np.hstack((output_tim,output_dispz))
-np.savetxt("output\output_dispz.dat",output_w_dispz,delimiter="    ")
+np.savetxt(dir+"/dispz.dat",output_w_dispz,delimiter="    ")
+
+now = datetime.datetime.now()
+os.rename(dir,"output/"+now.strftime("%Y%m%d-%H%M"))
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")

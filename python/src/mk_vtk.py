@@ -1,46 +1,83 @@
+###---USE ONLY IN "output/<YYYYMMDD-time>"---###
+
 import numpy as np
 import pandas as pd
 import os
-if os.path.dirname(__file__):       #currentdirectoryをfile位置にセット
-    os.chdir(os.path.dirname(__file__))
+# if os.path.dirname(__file__):       #currentdirectoryをfile位置にセット
+#     os.chdir(os.path.dirname(__file__))
 import input.mk_mesh
 
-##---mesh setup---##
-xnodes = str(len(input.mk_mesh.xg[0]))      #x-nodeがz方向に変化しない時
-znodes = str(len(input.mk_mesh.zg))
-nnodes = str(len(input.mk_mesh.xg[0])*len(input.mk_mesh.zg))
+##---var setup---##
+modeid = 1
+xnodes = input.mk_mesh.xg.shape[0]      #x-nodeがz方向に変化しない時
+znodes = input.mk_mesh.zg.shape[0]
+node = input.mk_mesh.node
 
-points = [ "{} {} {} \n".format("POINTS",input.mk_mesh.output_nnode,"float") ]      #全ノード数
+nnodes = input.mk_mesh.output_nnode
+nelem = input.mk_mesh.output_nelem
+
+
+
+
+##---set nodepoints---##
+points = [ "{} {} {} \n".format("POINTS",nnodes,"float") ]      #全ノード数
 
 nodeset = []      #set node
-for k in range(len(input.mk_mesh.zg)):
-    for i in range(len(input.mk_mesh.xg[0])):
-        nodeset += [ "{} {} {} \n".format(input.mk_mesh.xg[k,i],0,input.mk_mesh.zg[k]) ]
 
-cells = [ "{} {} {} \n".format("CELLS",input.mk_mesh.output_nelem,10*input.mk_mesh.output_nelem) ]      #アイソ接点数+1
+if modeid == 0:
+    for k in range(znodes):
+        for i in range(xnodes):
+            nodeset += [ "{} {} {} \n".format(input.mk_mesh.xg[i],0,input.mk_mesh.zg[k]) ]
 
-node = input.mk_mesh.node
+elif modeid == 1:
+    for k in range(znodes):
+        for i in range(xnodes):
+            nodeset += [ "{} {} {} \n".format(input.mk_mesh.xg[i,k],0,input.mk_mesh.zg[k]) ]
+
+
+cells = [ "{} {} {} \n".format("CELLS",nelem,10*nelem) ]      #アイソ接点数+1
+
+
+
+
+
+##---set element---##
 cellset = []
-for k in range(input.mk_mesh.nz):       #set element　except1d3input
-    im = 1
-    for i in range(input.mk_mesh.nx):
-        if k < 3:
-            im = 0
-            if i == 0 or i == input.mk_mesh.nx-1:
-                im = 1
-        cellset += [ "{} {} {} {} {} {} {} {} {} {} \n".format("9",node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
-                                                         node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
-                                                         node[2*i+1,2*k+1])]        #9-node
-celltypes = [ "{} {}\n".format("CELL_TYPES",input.mk_mesh.output_nelem)]       #"CELL_TYPES,nelement"
+if modeid == 0:
+    for k in range(input.mk_mesh.nz):
+        im = 1
+        for i in range(input.mk_mesh.nx):
+            im = 1
+            if k <= 1 and i >= int(input.mk_mesh.nx/2):
+                im = 0
+            cellset += [ "{} {} {} {} {} {} {} {} {} {} \n".format("9",node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])]        #9-node
+
+elif modeid == 1:
+    for k in range(input.mk_mesh.nz):
+        im = 1
+        for i in range(input.mk_mesh.nx):
+            im = 1
+            if k < input.mk_mesh.nz1 and input.mk_mesh.nx1 <= i < input.mk_mesh.nx1+input.mk_mesh.nx2:
+                im = 0
+
+            cellset += [ "{} {} {} {} {} {} {} {} {} {} \n".format("9",node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])]        #9-node
+
+
+celltypes = [ "{} {}\n".format("CELL_TYPES",nelem)]       #"CELL_TYPES,nelement"
 
 _celltypesset = ["28 "]     #9-nodeVTK_BIQUADRATIC_QUAD
 celltypesset = []
-for i in range(input.mk_mesh.output_nelem):
+for i in range(nelem):
     celltypesset += _celltypesset
+
 
 ##---cell data---##
 celldatasetlines1 = ["{} {}\n".format("CELL_DATA",input.mk_mesh.output_nelem)]
-celldatasetlines2 = ["{} {} {}\n".format("SCALARS","strainxx","default")]
+celldatasetlines2 = ["{} {} {}\n".format("SCALARS","strainxx","float")]
 
 
 
@@ -54,6 +91,7 @@ celldata = []
 for k in range(0,len(stxxdf.columns)):
     celldata += ["{}\n".format(stxxdf.iloc[i,k])]
 
+
 ##--node data---##
 
 
@@ -62,16 +100,16 @@ with open("vtk/output.vtk","w") as f:
 
     ###---mesh---###
     f.write("# vtk DataFile Version 3.0\n")
-    f.write("output\n")       #data title
+    f.write("output\n")       #vtk title
     f.write("ASCII\n")
     f.write("DATASET UNSTRUCTURED_GRID\n")
-    f.writelines(points)
-    f.writelines(nodeset)
-    f.writelines(cells)
-    f.writelines(cellset)
-    f.writelines(celltypes)
-    f.writelines(celltypesset)
-    
+    f.writelines(points)        #"POINTS",nnode,dtype
+    f.writelines(nodeset)       #define nodes
+    f.writelines(cells)         #"CELLS",nelem,node_in_element+1
+    f.writelines(cellset)       #define cells
+    f.writelines(celltypes)     #"CELL_TYPES",nelem
+    f.writelines(celltypesset)  #define celltype]
+    f.write("\n")
 
     ###---cell data---###
     f.writelines(celldatasetlines1)        #"CELL_DATA",nelement
