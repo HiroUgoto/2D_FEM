@@ -25,10 +25,10 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fsamp = 4000
-duration = 1.0
+duration = 2.0
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp=5.0,taper=0.2,duration=1.0,amp=4.0)
+wave_acc = input_wave.tapered_sin(tim,fp=2.5,taper=0.2,duration=1.0,amp=2.0)
 wave_vel = np.cumsum(wave_acc) * dt
 ntim = len(tim)
 

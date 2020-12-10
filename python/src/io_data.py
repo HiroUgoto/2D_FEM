@@ -1,7 +1,6 @@
 import numpy as np
 import fem
 import node,element,material
-from input import mk_mesh
 
 # ------------------------------------------------------------------- #
 def input_mesh(mesh_file):
