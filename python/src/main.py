@@ -44,8 +44,8 @@ fem.update_init(dt)
 output_velx = np.zeros((ntim,fem.output_nnode))
 output_velz = np.zeros((ntim,fem.output_nnode))
 output_strainxx = np.zeros((ntim,fem.output_nelem))
-output_strainyy = np.zeros((ntim,fem.output_nelem))
-output_strainxy = np.zeros((ntim,fem.output_nelem))
+output_strainzz = np.zeros((ntim,fem.output_nelem))
+output_strainxz = np.zeros((ntim,fem.output_nelem))
 output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
 
@@ -60,9 +60,9 @@ for it in range(len(tim)):
     output_dispx[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
     output_velx[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
     output_velz[it,:] = [node.v[1] for node in fem.output_nodes]
-    output_strainxx[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
-    output_strainyy[it,:] = [element.strain[1] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
-    output_strainxy[it,:] = [element.strain[2] for element in fem.output_elements]        #axis [0]:xx [1]:yy [2]:xy
+    output_strainxx[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:zz [2]:xz
+    output_strainzz[it,:] = [element.strain[1] for element in fem.output_elements]
+    output_strainxz[it,:] = [element.strain[2] for element in fem.output_elements]
 
     if it%10 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
@@ -73,6 +73,8 @@ for it in range(len(tim)):
 plot_model.plot_mesh_update(ax,fem,200.,fin=True)
 
 ## --- Write output file --- ##
+# with open("input/var.in","a") as f:
+#     f.write("{} {} {} {}\n".format("inputwave",fsamp,duration,)
 shutil.copy("input/mesh.in",dir)        #movefile to output folder
 shutil.copy("input/output.in",dir)
 shutil.copy("input/var.in",dir)
@@ -86,10 +88,10 @@ np.savetxt(dir+"/velz.dat",output_w_velz,delimiter="    ")
 
 output_w_strainxx = np.hstack((output_tim,output_strainxx))
 np.savetxt(dir+"/strainxx.dat",output_w_strainxx,delimiter="    ")
-output_w_strainyy = np.hstack((output_tim,output_strainyy))
-np.savetxt(dir+"/strainyy.dat",output_w_strainyy,delimiter="    ")
-output_w_strainxy = np.hstack((output_tim,output_strainxy))
-np.savetxt(dir+"/strainxy.dat",output_w_strainxy,delimiter="    ")
+output_w_strainzz = np.hstack((output_tim,output_strainzz))
+np.savetxt(dir+"/strainzz.dat",output_w_strainzz,delimiter="    ")
+output_w_strainxz = np.hstack((output_tim,output_strainxz))
+np.savetxt(dir+"/strainxz.dat",output_w_strainxz,delimiter="    ")
 
 output_w_dispx = np.hstack((output_tim,output_dispx))
 np.savetxt(dir+"/dispx.dat",output_w_dispx,delimiter="    ")
@@ -97,7 +99,7 @@ output_w_dispz = np.hstack((output_tim,output_dispz))
 np.savetxt(dir+"/dispz.dat",output_w_dispz,delimiter="    ")
 
 now = datetime.datetime.now()
-os.rename(dir,"output/"+now.strftime("%Y%m%d-%H%M"))
+os.rename(dir,"output/"+now.strftime("%Y%m%d-%H%M"))        #"outputdir"-->>"time"
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")

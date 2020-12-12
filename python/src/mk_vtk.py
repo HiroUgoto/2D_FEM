@@ -3,8 +3,8 @@
 import numpy as np
 import pandas as pd
 import os
-# if os.path.dirname(__file__):       #currentdirectoryをfile位置にセット
-#     os.chdir(os.path.dirname(__file__))
+if os.path.dirname(__file__):       #currentdirectoryをfile位置にセット
+    os.chdir(os.path.dirname(__file__))
 
 ##--read files--##
 with open("var.in") as f:
@@ -79,29 +79,37 @@ celltypesset = []
 for i in range(nselem):
     celltypesset += _celltypesset
 
+##---read table--##
+strxx = pd.read_table('strainxx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+strzz = pd.read_table('strainzz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+strxz = pd.read_table('strainxz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+dispx = pd.read_table('dispx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+dispz = pd.read_table('dispz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+velx = pd.read_table('velx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+velz = pd.read_table('velz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
 
 ##---cell data---##
-celldatasetlines1 = ["{} {}\n".format("CELL_DATA",nselem)]
-celldatasetlines2 = ["{} {} {}\n".format("SCALARS","strainxx","float")]
+celldatasetlines = ["{} {}\n".format("CELL_DATA",nselem)]
 
+celldatasetlines1 = ["{} {} {}\n".format("SCALARS","shearstrain","float")]
+celldata1 = []
+maxstrxz = strxz.max(axis=0)
+for i in range(len(maxstrxz)):
+    celldata1 += ["{}\n".format(maxstrxz[i+1])]
 
-
-
-
-stxxdf = pd.read_table('strainxx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-    #1列目を除き読み込み
-i = 100        #writeする行(時刻)
-
-celldata = []
-for k in range(0,len(stxxdf.columns)):
-    celldata += ["{}\n".format(stxxdf.iloc[i,k])]
-
+celldatasetlines2 = ["{} {} {}\n".format("SCALARS","volstrain","float")]
+celldata2 = []
+volstr = strxx+strzz
+maxvstr = volstr.max(axis=0)
+for i in range(len(maxvstr)):
+    celldata2 += ["{}\n".format(maxvstr[i+1])]
 
 ##--node data---##
 
 
 ##---write vtkfile---##
-with open("output.vtk","w") as f:
+os.makedirs("vtk",exist_ok=True)
+with open("vtk/output.vtk","w") as f:
 
     ###---mesh---###
     f.write("# vtk DataFile Version 3.0\n")
@@ -117,7 +125,12 @@ with open("output.vtk","w") as f:
     f.write("\n")
 
     ###---cell data---###
-    f.writelines(celldatasetlines1)        #"CELL_DATA",nselem
+    f.writelines(celldatasetlines)        #"CELL_DATA",nselem
+
+    f.writelines(celldatasetlines1)       #"SCALARS",dataname,dtype
+    f.writelines("LOOKUP_TABLE default\n")      #data　reference
+    f.writelines(celldata1)
+
     f.writelines(celldatasetlines2)       #"SCALARS",dataname,dtype
     f.writelines("LOOKUP_TABLE default\n")      #data　reference
-    f.writelines(celldata)
+    f.writelines(celldata2)

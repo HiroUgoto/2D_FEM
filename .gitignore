@@ -3,3 +3,4 @@
 .DS_Store
 *.lnk
 *.png
+/python/src/output
