@@ -1,8 +1,10 @@
 import numpy as np
+import os
 
 modelid = 1     #0:square mesh,1:flexible mesh
 
 ### Set target area ###
+## add model---fix make var.in,mk_vtk.py ##
 if  modelid == 0:
     area_x = 50.0
     area_z = 10.0
@@ -25,7 +27,7 @@ elif modelid == 1:
     dof = 2
 
     zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
-    xg = np.empty([2*nx+1,2*nz+1])       #全nodex座標
+    xg = np.empty([2*nx+1,2*nz+1])       #node coordinate
 
     for k in range(2*nz1+1):
         xg[:2*nx1,k] = np.linspace(0,20+10/(len(zg)-1)*k,2*nx1,endpoint=False)
@@ -136,13 +138,13 @@ for k in range(len(zg)):     #connected element
     ielem += 1
 
 
-nnode = inode       #nodeの総数
-nelem = ielem       #elementの総数
+nnode = inode       #number of nodes
+nelem = ielem       #number of elements
 
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",80.0,1500.0,1750.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
@@ -150,12 +152,11 @@ nmaterial = len(material_lines)
 
 ### Set output ###
 output_node_lines = []
-output_node_lines += ["{} \n".format(0)]
-output_node_lines += ["{} \n".format(nx)]
-output_node_lines += ["{} \n".format(2*nx)]
+for i in range(0,nnode):
+    output_node_lines += ["{} \n".format(i)]        #define output nodes
 
 output_element_lines = []
-for i in range(nx,2*nx):
+for i in range(0,nelem-nx-len(zg)):        #define output elements
     output_element_lines += ["{} \n".format(i)]
 
 output_nnode = len(output_node_lines)
@@ -172,3 +173,12 @@ with open("output.in","w") as f:
     f.write("{} {} \n".format(output_nnode,output_nelem))
     f.writelines(output_node_lines)
     f.writelines(output_element_lines)
+
+
+with open("var.in","w") as f:       #save var, depend on target area
+    f.write("{} {}\n".format(modelid,"modelid"))
+    f.write("{} {} {} {}\n".format(area_x,area_z,"area_x","area_z"))
+    f.write("{} {} {} {}\n".format(nx,nz,"nx","nz"))
+    if modelid == 1:
+        f.write("{} {} {} {}\n".format(nx1,nx2,"nx1","nx2"))
+        f.write("{} {} {} {}\n".format(nz1,nz2,"nz1","nz2"))
