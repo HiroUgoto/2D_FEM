@@ -6,6 +6,7 @@ import os
 if os.path.dirname(__file__):       #currentdirectoryをfile位置にセット
     os.chdir(os.path.dirname(__file__))
 
+
 ##--read files--##
 with open("var.in") as f:
     lines = f.readlines()
@@ -48,20 +49,12 @@ with open("mesh.in") as f:
         param = [float(s) for s in items[2:11]]
 
 
-
-
-##---var setup---##
-
-
-
-
-
 ##---set nodepoints---##
 points = [ "{} {} {} \n".format("POINTS",nnode,"float") ]      #全ノード数
 
 nodeset = []      #set node
 for i in range(nnode):
-    nodeset += [ "{} {} {}\n".format(nodes[i][1],0,nodes[i][2])]
+    nodeset += [ "{} {} {}\n".format(nodes[i][1],0.0,nodes[i][2])]
 
 ##---set element---##
 cellset = []
@@ -79,30 +72,33 @@ celltypesset = []
 for i in range(nselem):
     celltypesset += _celltypesset
 
+
 ##---read table--##
-strxx = pd.read_table('strainxx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-strzz = pd.read_table('strainzz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-strxz = pd.read_table('strainxz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-dispx = pd.read_table('dispx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-dispz = pd.read_table('dispz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-velx = pd.read_table('velx.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
-velz = pd.read_table('velz.dat',header=None,sep="    ",usecols=lambda x: x not in[0],engine='python')
+strxx = pd.read_table('strainxx.dat',header=None,sep="    ",engine='python')
+strzz = pd.read_table('strainzz.dat',header=None,sep="    ",engine='python')
+strxz = pd.read_table('strainxz.dat',header=None,sep="    ",engine='python')
+dispx = pd.read_table('dispx.dat',header=None,sep="    ",engine='python')
+dispz = pd.read_table('dispz.dat',header=None,sep="    ",engine='python')
+velx = pd.read_table('velx.dat',header=None,sep="    ",engine='python')
+velz = pd.read_table('velz.dat',header=None,sep="    ",engine='python')
+
 
 ##---cell data---##
 celldatasetlines = ["{} {}\n".format("CELL_DATA",nselem)]
 
 celldatasetlines1 = ["{} {} {}\n".format("SCALARS","shearstrain","float")]
 celldata1 = []
-maxstrxz = strxz.max(axis=0)
+maxstrxz = strxz.drop(0,axis=1).max(axis=0)
 for i in range(len(maxstrxz)):
     celldata1 += ["{}\n".format(maxstrxz[i+1])]
 
 celldatasetlines2 = ["{} {} {}\n".format("SCALARS","volstrain","float")]
 celldata2 = []
-volstr = strxx+strzz
+volstr = strxx.drop(0,axis=1)+strzz.drop(0,axis=1)
 maxvstr = volstr.max(axis=0)
 for i in range(len(maxvstr)):
     celldata2 += ["{}\n".format(maxvstr[i+1])]
+
 
 ##--node data---##
 

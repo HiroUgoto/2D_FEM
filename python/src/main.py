@@ -54,10 +54,10 @@ for it in range(len(tim)):
     vel0 = np.array([wave_vel[it],0.0])
 
     fem.update_time(acc0,vel0,input_wave=True,FD=True)
-    # fem.update_time(acc0,vel0,input_wave=True)
+    #fem.update_time(acc0,vel0,input_wave=True)
 
     output_dispx[it,:] = [node.u[0]-node.u0[0] for node in fem.output_nodes]
-    output_dispx[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
+    output_dispz[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
     output_velx[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
     output_velz[it,:] = [node.v[1] for node in fem.output_nodes]
     output_strainxx[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:zz [2]:xz
