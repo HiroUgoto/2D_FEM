@@ -35,7 +35,7 @@ ntim = len(tim)
 ax = plot_model.plot_mesh_update_init()
 ## --- Static deformation --- ##
 fem.self_gravity()
-plot_model.plot_mesh_update(ax,fem,200.)
+plot_model.plot_mesh_update(ax,fem,5.)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -65,12 +65,12 @@ for it in range(len(tim)):
     output_strainxz[it,:] = [element.strain[2] for element in fem.output_elements]
 
     if it%10 == 0:
-        plot_model.plot_mesh_update(ax,fem,200.)
+        plot_model.plot_mesh_update(ax,fem,5.)
         print(it,"t=",it*dt,output_dispx[it,:])
-        plt.savefig(dir+"/fig/img_"+str(it)+".png")
+        plt.savefig(dir+"/fig/img_"+str(it).zfill(4)+".png")
 
 
-plot_model.plot_mesh_update(ax,fem,200.,fin=True)
+plot_model.plot_mesh_update(ax,fem,5.,fin=True)
 
 ## --- Write output file --- ##
 # with open("input/var.in","a") as f:

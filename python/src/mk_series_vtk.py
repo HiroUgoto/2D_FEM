@@ -36,7 +36,7 @@ with open("mesh.in") as f:
     elements = []
     for ielem in range(nelem):
         items = lines[ielem+irec].split()
-        elements += [items]         #[id,style,im,nodeid
+        elements += [items]         #[id,style,im,nodeid]
 
 
     irec += nelem
@@ -82,7 +82,8 @@ dispz = pd.read_table('dispz.dat',header=None,sep="    ",engine='python')
 velx = pd.read_table('velx.dat',header=None,sep="    ",engine='python')
 velz = pd.read_table('velz.dat',header=None,sep="    ",engine='python')
 
-
+a =  20   #define read time interval
+n = 1       #vtk file number
 ##---cell data---##
 celldatasetlines = ["{} {}\n".format("CELL_DATA",nselem)]
 
@@ -91,7 +92,7 @@ celldata1 = []
 
 celldatasetlines2 = ["{} {} {}\n".format("SCALARS","volstrain","float")]
 celldata2 = []
-vstr = strxx+strzz        #time=0,2,4,...
+vstr = strxx+strzz        #time column=0,2,4,...
 
 
 ##--node data---##
@@ -104,49 +105,52 @@ pointdata2 = []
 
 
 ##---write vtkfile---##
-for i in range(4000):        #times
-    pointdata1.clear()
-    pointdata2.clear()
-    for k in range(nnode):
-        pointdata1 += ["{} {} {}\n".format(dispx[k+1][i],"0.0",dispz[k+1][i])]
-        pointdata2 += ["{} {} {}\n".format(velx[k+1][i],"0.0",velz[k+1][i])]
 
-    celldata1.clear()
-    celldata2.clear()
-    for j in range(nselem):
-        celldata1 += ["{}\n".format(strxz[j+1][i])]
-        celldata2 += ["{}\n".format(vstr[j+1][i])]
-    outputvtk = "{}{}{}".format("vtk/series-",str(i).zfill(4),".vtk")
-    with open(outputvtk,"w") as f:
-        ###---mesh---###
-        f.write("# vtk DataFile Version 3.0\n")
-        f.write("output\n")       #vtk title
-        f.write("ASCII\n")
-        f.write("DATASET UNSTRUCTURED_GRID\n")
-        f.writelines(points)        #"POINTS",nnode,dtype
-        f.writelines(nodeset)       #define nodes
-        f.writelines(cells)         #"CELLS",nselem,node_in_element+1
-        f.writelines(cellset)       #define cells
-        f.writelines(celltypes)     #"CELL_TYPES",nselem
-        f.writelines(celltypesset)  #define celltype]
-        f.write("\n")
-        ##---node data---##
-        f.writelines(pointdatasetlines)        #"POINT_DATA",nnode
+for i in range(8000):        #fsamp*duration
+    if i%a == 0:
+        pointdata1.clear()
+        pointdata2.clear()
+        for k in range(nnode):
+            pointdata1 += ["{} {} {}\n".format(dispx[k+1][i],"0.0",dispz[k+1][i])]
+            pointdata2 += ["{} {} {}\n".format(velx[k+1][i],"0.0",velz[k+1][i])]
 
-        f.writelines(pointdatasetlines1)       #"VECTORS",dataname,dtype
-        f.writelines(pointdata1)
-        f.writelines(pointdatasetlines2)       #"VECTORS",dataname,dtype
-        f.writelines(pointdata2)
-        ###---cell data---###
-        f.writelines(celldatasetlines)        #"CELL_DATA",nselem
+        celldata1.clear()
+        celldata2.clear()
+        for j in range(nselem):
+            celldata1 += ["{}\n".format(strxz[j+1][i])]
+            celldata2 += ["{}\n".format(vstr[j+1][i])]
+        outputvtk = "{}{}{}".format("vtk/series-",str(n).zfill(4),".vtk")
+        n += 1
+        with open(outputvtk,"w") as f:
+            ###---mesh---###
+            f.write("# vtk DataFile Version 3.0\n")
+            f.write("output\n")       #vtk title
+            f.write("ASCII\n")
+            f.write("DATASET UNSTRUCTURED_GRID\n")
+            f.writelines(points)        #"POINTS",nnode,dtype
+            f.writelines(nodeset)       #define nodes
+            f.writelines(cells)         #"CELLS",nselem,node_in_element+1
+            f.writelines(cellset)       #define cells
+            f.writelines(celltypes)     #"CELL_TYPES",nselem
+            f.writelines(celltypesset)  #define celltype]
+            f.write("\n")
+            ##---node data---##
+            f.writelines(pointdatasetlines)        #"POINT_DATA",nnode
 
-        f.writelines(celldatasetlines1)       #"SCALARS",dataname,dtype
-        f.writelines("LOOKUP_TABLE default\n")      #data　reference
-        f.writelines(celldata1)
+            f.writelines(pointdatasetlines1)       #"VECTORS",dataname,dtype
+            f.writelines(pointdata1)
+            f.writelines(pointdatasetlines2)       #"VECTORS",dataname,dtype
+            f.writelines(pointdata2)
+            ###---cell data---###
+            f.writelines(celldatasetlines)        #"CELL_DATA",nselem
 
-        f.writelines(celldatasetlines2)       #"SCALARS",dataname,dtype
-        f.writelines("LOOKUP_TABLE default\n")      #data　reference
-        f.writelines(celldata2)
+            f.writelines(celldatasetlines1)       #"SCALARS",dataname,dtype
+            f.writelines("LOOKUP_TABLE default\n")      #data　reference
+            f.writelines(celldata1)
+
+            f.writelines(celldatasetlines2)       #"SCALARS",dataname,dtype
+            f.writelines("LOOKUP_TABLE default\n")      #data　reference
+            f.writelines(celldata2)
 
 
     ###---cell data---###
