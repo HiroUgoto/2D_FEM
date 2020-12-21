@@ -24,18 +24,23 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 4000
-duration = 2.0
+fsamp = 1600
+duration = 5.0
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp=2.5,taper=0.2,duration=2.0,amp=2.0)
+# wave_acc = input_wave.tapered_sin(tim,fp=1.0,taper=0.0,duration=2.0,amp=2.0)
+wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
 wave_vel = np.cumsum(wave_acc) * dt
 ntim = len(tim)
+
+# plt.figure()
+# plt.plot(tim,wave_vel)
+# plt.show()
 
 ax = plot_model.plot_mesh_update_init()
 ## --- Static deformation --- ##
 fem.self_gravity()
-plot_model.plot_mesh_update(ax,fem,200.)
+plot_model.plot_mesh_update(ax,fem,10.)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -57,20 +62,21 @@ for it in range(len(tim)):
     # fem.update_time(acc0,vel0,input_wave=True)
 
     output_dispx[it,:] = [node.u[0]-node.u0[0] for node in fem.output_nodes]
-    output_dispx[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
+    output_dispz[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
     output_velx[it,:] = [node.v[0] for node in fem.output_nodes]     #axis [0]:x [1]:y
     output_velz[it,:] = [node.v[1] for node in fem.output_nodes]
     output_strainxx[it,:] = [element.strain[0] for element in fem.output_elements]        #axis [0]:xx [1]:zz [2]:xz
     output_strainzz[it,:] = [element.strain[1] for element in fem.output_elements]
     output_strainxz[it,:] = [element.strain[2] for element in fem.output_elements]
 
-    if it%10 == 0:
-        plot_model.plot_mesh_update(ax,fem,200.)
-        print(it,"t=",it*dt,output_dispx[it,:])
+    if it%50 == 0:
+        plot_model.plot_mesh_update(ax,fem,10.)
+        # print(it,"t=",it*dt,output_dispx[it,:])
+        print(it,"t=",it*dt,output_dispx[it,8])
         plt.savefig(dir+"/fig/img_"+str(it)+".png")
 
 
-plot_model.plot_mesh_update(ax,fem,200.,fin=True)
+plot_model.plot_mesh_update(ax,fem,10.,fin=True)
 
 ## --- Write output file --- ##
 # with open("input/var.in","a") as f:
@@ -108,5 +114,5 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 plt.figure()
 plt.plot(tim,wave_vel)
 plt.plot(tim,output_velx[:,0])
-plt.plot(tim,output_velx[:,1])
+plt.plot(tim,output_velx[:,8])
 plt.show()
