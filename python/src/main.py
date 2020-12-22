@@ -25,7 +25,7 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fsamp = 1600
-duration = 5.0
+duration = 10.0
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # wave_acc = input_wave.tapered_sin(tim,fp=1.0,taper=0.0,duration=2.0,amp=2.0)
@@ -114,5 +114,5 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 plt.figure()
 plt.plot(tim,wave_vel)
 plt.plot(tim,output_velx[:,0])
-plt.plot(tim,output_velx[:,8])
+plt.plot(tim,output_velx[:,6])
 plt.show()
