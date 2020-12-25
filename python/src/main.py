@@ -21,16 +21,25 @@ outputs = io_data.input_outputs("input/output.in")
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-# plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 1600
-duration = 5.0
+mode = 1
 
-tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.tapered_sin(tim,fp=1.0,taper=0.0,duration=2.0,amp=2.0)
-wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
-wave_vel = np.cumsum(wave_acc) * dt
+if mode == 0:
+    fsamp = 1600
+    duration = 5.0
+
+    tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
+    # wave_acc = input_wave.tapered_sin(tim,fp=1.0,taper=0.0,duration=2.0,amp=2.0)
+    wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
+    wave_vel = np.cumsum(wave_acc) * dt
+elif mode == 1:
+    wave_vel = input_wave.seismic_wave("./input/CHB008.vel")
+    fsamp = 2000
+    duration = 285
+    tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
+
 ntim = len(tim)
 
 # plt.figure()

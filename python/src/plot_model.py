@@ -68,7 +68,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
         p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
         ax.add_patch(p)
 
-    # if fin:
-    #     plt.show()
-    # else:
-    #     plt.pause(0.001)
+    if fin:
+        plt.show()
+    else:
+        plt.pause(0.001)

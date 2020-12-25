@@ -27,3 +27,7 @@ def simple_sin(tim,fp,amp):
 
 def smoothed_ramp(tim,fp,tp,amp=1.0):
     return amp * (1.+np.tanh(4*fp*(tim-tp)))/2.
+
+
+def seismic_wave(fname):
+    return np.loadtxt(fname)

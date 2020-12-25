@@ -4,3 +4,4 @@
 *.lnk
 *.png
 /python/src/output
+*.vel
