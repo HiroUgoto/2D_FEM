@@ -54,11 +54,24 @@ class Element:
     # ---------------------------------------------------------
     def mk_local_matrix_init(self,dof):
         self.dof = dof
+        self.ndof = dof*self.nnode
+
+        self.M_diag = np.zeros(self.ndof, dtype=np.float64)
+
+        self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+        self.K_diag = np.zeros(self.ndof, dtype=np.float64)
+        self.K_off_diag = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+
+        self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+        self.C_diag = np.zeros(self.ndof, dtype=np.float64)
+        self.C_off_diag = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
+        self.force = np.zeros(self.ndof,dtype=np.float64)
 
         if self.dim == 2:
             self.gauss_points = set()
             V = 0.0
-            for xi,wx in zip(self.xi,self.w):        #index付で(xi,w)を取得
+            for xi,wx in zip(self.xi,self.w):
                 for zeta,wz in zip(self.xi,self.w):
                     N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
                     M = mk_m(N)
@@ -85,22 +98,14 @@ class Element:
                 gp = element_style.Gauss_Points(dn,wx,N)
                 self.gauss_points.add(gp)
 
-
     # ---------------------------------------------------------
     def mk_local_matrix(self):
-        # self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
-        M = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
-        self.M_diag = np.zeros(self.dof*self.nnode, dtype=np.float64)
-
-        self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
-        self.C_diag = np.zeros(self.dof*self.nnode, dtype=np.float64)
-        self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
-
-        self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.K_diag = np.zeros(self.dof*self.nnode, dtype=np.float64)
-        self.K_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-
         if self.dim == 2:
+            M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
+            self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+
             self.De = self.material.mk_d(self.dof)
             self.Dv = self.material.mk_visco(self.dof)
 
@@ -110,14 +115,11 @@ class Element:
                 C = mk_k(B,self.Dv)
 
                 detJ = gp.w*det
-                # self.M += gp.M*detJ
                 M += gp.M*detJ
                 self.K += K*detJ
                 self.C += C*detJ
 
-            # tr_M = np.trace(self.M)/self.dof
             tr_M = np.trace(M)/self.dof
-            # self.M_diag = np.diag(self.M) * self.mass/tr_M
             self.M_diag = np.diag(M) * self.mass/tr_M
 
             self.K_diag = np.diag(self.K)
@@ -128,6 +130,8 @@ class Element:
 
         elif self.dim == 1:
             if "input" in self.style:
+                self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
                 for gp in self.gauss_points:
                     det,q = mk_q(self.dof,self.xnT,gp.dn)
                     detJ = gp.w*det
@@ -140,11 +144,10 @@ class Element:
 
     # ---------------------------------------------------------
     def mk_local_vector(self):
-        self.force = np.zeros(self.dof*self.nnode,dtype=np.float64)
-
         if self.dof == 1:
             return
         if self.dim == 2:
+            self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0
             for gp in self.gauss_points:
                 det,_ = mk_jacobi(self.xnT,gp.dn)
@@ -180,13 +183,11 @@ class Element:
             self.nodes[i].force[:] += f[i0:i0+self.dof]
 
     def mk_bodyforce(self,acc0):
-        self.force = np.zeros(self.dof*self.nnode,dtype=np.float64)
-
         if self.dof == 1:
             return
         if self.dim == 2:
+            self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0
-
             for gp in self.gauss_points:
                 det,_ = mk_jacobi(self.xnT,gp.dn)
                 detJ = gp.w*det
@@ -201,7 +202,7 @@ class Element:
             self.mk_ku()
 
         elif self.dim == 2:
-            force = np.zeros(self.dof*self.nnode,dtype=np.float64)
+            force = np.zeros(self.ndof,dtype=np.float64)
 
             for gp in self.gauss_points:
                 det,BT = mk_b_T(self.dof,self.nnode,self.xnT,gp.dn)
@@ -219,7 +220,7 @@ class Element:
             self.mk_ku_u(u)
 
         elif self.dim == 2:
-            force = np.zeros(self.dof*self.nnode,dtype=np.float64)
+            force = np.zeros(self.ndof,dtype=np.float64)
 
             for gp in self.gauss_points:
                 det,BT = mk_b_T(self.dof,self.nnode,self.xnT,gp.dn)

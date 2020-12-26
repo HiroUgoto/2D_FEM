@@ -149,7 +149,7 @@ class Fem():
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
-        for element in self.connected_element_set:         # periodic boundary condition
+        for element in self.connected_element_set:
             u = np.zeros_like(element.nodes[0]._ur)
             for node in element.node_set:
                 u += node._ur
@@ -279,8 +279,6 @@ class Fem():
         else:
             for element in self.element_set:
                 self._update_bodyforce(element,acc0)
-            # for node in self.nodes:
-            #     node.force += np.dot(np.diag(node.mass),acc0)
 
         if FD:
             for element in self.element_set:
@@ -318,13 +316,13 @@ class Fem():
             element.nodes[i].force[:] -= element.force[i0:i0+self.dof]
 
     def _update_time_set_free_nodes(self,node):
-        u = node.u.copy()
+        u = np.copy(node.u)
         node.u[:] = node.mass_inv_mc*(2.*u-node.um) + node.c_inv_mc*node.um - node.dtdt_inv_mc*node.force
         node.v[:] = (node.u - node.um) * self.inv_dt2
         node.um = u
 
     def _update_time_set_fixed_nodes(self,node):
-        u = node.u.copy()
+        u = np.copy(node.u)
         for i in range(self.dof):
             if node.freedom[i] == 0:
                 node.u[i]  = 0.0

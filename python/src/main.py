@@ -36,7 +36,7 @@ ntim = len(tim)
 # plt.plot(tim,wave_vel)
 # plt.show()
 
-ax = plot_model.plot_mesh_update_init()
+# ax = plot_model.plot_mesh_update_init()
 
 ## --- Static deformation --- ##
 fem.self_gravity()
@@ -54,8 +54,9 @@ output_strainxz = np.zeros((ntim,fem.output_nelem))
 output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
 
+acc0 = np.array([0.0,0.0])
 for it in range(len(tim)):
-    acc0 = np.array([0.0,0.0])
+    # acc0 = np.array([0.0,0.0])
     vel0 = np.array([wave_vel[it],0.0])
 
     fem.update_time(acc0,vel0,input_wave=True,FD=True)
@@ -69,11 +70,11 @@ for it in range(len(tim)):
     output_strainzz[it,:] = [element.strain[1] for element in fem.output_elements]
     output_strainxz[it,:] = [element.strain[2] for element in fem.output_elements]
 
-    if it%20 == 0:
+    if it%50 == 0:
         # plot_model.plot_mesh_update(ax,fem,10.)
         # print(it,"t=",it*dt,output_dispx[it,:])
         print(it,"t=",it*dt,output_dispx[it,8])
-        plt.savefig(dir+"/fig/img_"+str(it)+".png")
+        # plt.savefig(dir+"/fig/img_"+str(it)+".png")
 
 
 # plot_model.plot_mesh_update(ax,fem,10.,fin=True)
