@@ -26,8 +26,7 @@ elif modelid == 1:
     nz =  nz1 + nz2
     dof = 2
 
-    zg0 = np.linspace(0,area_z,2*nz+1,endpoint=True)
-    zg0 = np.linspace(0,area_z,2*nz+1,endpoint=True)
+    zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
     xg = np.empty([2*nx+1,2*nz+1])       #node coordinate
 
     for k in range(2*nz1+1):
@@ -45,6 +44,10 @@ elif modelid == 2:
     area_z = 70
     dof = 2
 
+    area_z1 = 13
+    area_z2 = 40
+    area_z3 = 70
+
     nza = 4
     nzb = 1
     nzc = 1
@@ -52,10 +55,11 @@ elif modelid == 2:
     nze = 1
     nzf = 1
     nzg = 1     #12-13
-    nzh = 27
-    nzi = 10
-    nzj = 10
-    nzk = 10
+    nzh = 9
+    nzi = 2
+    nzj = 2
+    nzk = 2
+
     nz = nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj+nzk
 
     nx = 200
@@ -87,46 +91,47 @@ elif modelid == 2:
     nxk1 = 95
 
 
-    zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
+    _zg = np.append(np.linspace(0,13,2*(nza+nzb+nzc+nzd+nze+nzf+nzg),endpoint=False),np.linspace(area_z1,area_z2,2*(nzh),endpoint=False))
+    zg = np.append(_zg,np.linspace(area_z2,area_z3,2*(nzi+nzj+nzk)+1,endpoint=True))
     xg = np.empty([2*nx+1,2*nz+1])       #node coordinate
 
     for k in range(2*nza+1):        #0-4
         xg[:,k] = np.linspace(0,area_x,2*nx+1,endpoint=True)
     for k in range(2*nza+1,2*(nza+nzb)+1):      #4-5
-        xg[:2*nxb0,k] = np.linspace(0,100-(50/nzb*nz)/(len(zg)-1)*(k-2*nza),2*nxb0,endpoint=False)
-        xg[2*nxb0:2*(nxb0+nxb1),k] = np.linspace(100-(50/nzb*nz)/(len(zg)-1)*(k-2*nza),210,2*nxb1,endpoint=False)
-        xg[2*(nxb0+nxb1):2*(nxb0+nxb1+nxb2),k] = np.linspace(210,360-(10/nzb*nz)/(len(zg)-1)*(k-2*nza),2*nxb2,endpoint=False)
-        xg[2*(nxb0+nxb1+nxb2):,k] = np.linspace(360-(10/nzb*nz)/(len(zg)-1)*(k-2*nza),area_x,2*nxb3+1,endpoint=True)
+        xg[:2*nxb0,k] = np.linspace(0,100-50/(2*nzb)*(k-2*nza),2*nxb0,endpoint=False)
+        xg[2*nxb0:2*(nxb0+nxb1),k] = np.linspace(100-50/(2*nzb)*(k-2*nza),210,2*nxb1,endpoint=False)
+        xg[2*(nxb0+nxb1):2*(nxb0+nxb1+nxb2),k] = np.linspace(210,360-10/(2*nzb)*(k-2*nza),2*nxb2,endpoint=False)
+        xg[2*(nxb0+nxb1+nxb2):,k] = np.linspace(360-10/(2*nzb)*(k-2*nza),area_x,2*nxb3+1,endpoint=True)
     for k in range(2*(nza+nzb)+1,2*(nza+nzb+nzc)+1):        #5-6
-        xg[:2*nxc0,k] = np.linspace(0,50+(50/nzc*nz)/(len(zg)-1)*(k-2*(nza+nzb)),2*nxc0,endpoint=False)
-        xg[2*nxc0:2*(nxc0+nxc1),k] = np.linspace(50+(50/nzc*nz)/(len(zg)-1)*(k-2*(nza+nzb)),210,2*nxc1,endpoint=False)
-        xg[2*(nxc0+nxc1):2*(nxc0+nxc1+nxc2),k] = np.linspace(210,350-(10/nzb*nz)/(len(zg)-1)*(k-2*(nza+nzb)),2*nxc2,endpoint=False)
-        xg[2*(nxc0+nxc1+nxc2):,k] = np.linspace(350-(10/nzb*nz)/(len(zg)-1)*(k-2*(nza+nzb)),area_x,2*nxc3+1,endpoint=True)
+        xg[:2*nxc0,k] = np.linspace(0,50+50/(2*nzc)*(k-2*(nza+nzb)),2*nxc0,endpoint=False)
+        xg[2*nxc0:2*(nxc0+nxc1),k] = np.linspace(50+50/(2*nzc)*(k-2*(nza+nzb)),210,2*nxc1,endpoint=False)
+        xg[2*(nxc0+nxc1):2*(nxc0+nxc1+nxc2),k] = np.linspace(210,350-10/(2*nzc)*(k-2*(nza+nzb)),2*nxc2,endpoint=False)
+        xg[2*(nxc0+nxc1+nxc2):,k] = np.linspace(350-10/(2*nzc)*(k-2*(nza+nzb)),area_x,2*nxc3+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc)+1,2*(nza+nzb+nzc+nzd)+1):        #6-10
-        xg[:2*nxd0,k] = np.linspace(0,210+(10/nzd*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc)+1),2*nxd0,endpoint=False)
-        xg[2*nxd0:2*(nxd0+nxd1),k] = np.linspace(210+(10/nzd*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc)+1),340-(10/nzd*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc)+1),2*nxd1,endpoint=False)
-        xg[2*(nxd0+nxd1):,k] = np.linspace(340-(10/nzd*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc)+1),area_x,2*nxd2+1,endpoint=True)
+        xg[:2*nxd0,k] = np.linspace(0,210+10/(2*nzd)*(k-2*(nza+nzb+nzc)),2*nxd0,endpoint=False)
+        xg[2*nxd0:2*(nxd0+nxd1),k] = np.linspace(210+10/(2*nzd)*(k-2*(nza+nzb+nzc)),340-10/(2*nzd)*(k-2*(nza+nzb+nzc)),2*nxd1,endpoint=False)
+        xg[2*(nxd0+nxd1):,k] = np.linspace(340-10/(2*nzd)*(k-2*(nza+nzb+nzc)),area_x,2*nxd2+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd)+1,2*(nza+nzb+nzc+nzd+nze)+1):        #10-11
-        xg[:2*nxe0,k] = np.linspace(0,220+(120/nze*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd)),2*nxe0,endpoint=False)
-        xg[2*nxe0:,k] = np.linspace(220+(120/nze*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd)),area_x,2*nxe1+1,endpoint=True)
+        xg[:2*nxe0,k] = np.linspace(0,220+120/(2*nze)*(k-2*(nza+nzb+nzc+nzd)),2*nxe0,endpoint=False)
+        xg[2*nxe0:,k] = np.linspace(220+120/(2*nze)*(k-2*(nza+nzb+nzc+nzd)),area_x,2*nxe1+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd+nze)+1,2*(nza+nzb+nzc+nzd+nze+nzf)+1):        #11-12
-        xg[:2*nxf0,k] = np.linspace(0,340-(100/nzf*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze)),2*nxf0,endpoint=False)
-        xg[2*nxf0:,k] = np.linspace(340-(100/nzf*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze)),area_x,2*nxf1+1,endpoint=True)
+        xg[:2*nxf0,k] = np.linspace(0,340-100/(2*nzf)*(k-2*(nza+nzb+nzc+nzd+nze)),2*nxf0,endpoint=False)
+        xg[2*nxf0:,k] = np.linspace(340-100/(2*nzf)*(k-2*(nza+nzb+nzc+nzd+nze)),area_x,2*nxf1+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd+nze+nzf)+1,2*(nza+nzb+nzc+nzd+nze+nzf+nzg)+1):        #12-13
-        xg[:2*nxg0,k] = np.linspace(0,240-(90/nzg*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf)+1),2*nxg0,endpoint=False)
-        xg[2*nxg0:,k] = np.linspace(240-(90/nzg*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf)),area_x,2*nxg1+1,endpoint=True)
+        xg[:2*nxg0,k] = np.linspace(0,240-90/(2*nzg)*(k-2*(nza+nzb+nzc+nzd+nze+nzf)),2*nxg0,endpoint=False)
+        xg[2*nxg0:,k] = np.linspace(240-90/(2*nzg)*(k-2*(nza+nzb+nzc+nzd+nze+nzf)),area_x,2*nxg1+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd+nze+nzf+nzg)+1,2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh)+1):        #13-40
-        xg[:2*nxh0,k] = np.linspace(0,150+(190/nzh*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg)),2*nxh0,endpoint=False)
-        xg[2*nxh0:,k] = np.linspace(150+(190/nzh*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg)),area_x,2*nxh1+1,endpoint=True)
+        xg[:2*nxh0,k] = np.linspace(0,150+190/(2*nzh)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg)),2*nxh0,endpoint=False)
+        xg[2*nxh0:,k] = np.linspace(150+190/(2*nzh)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg)),area_x,2*nxh1+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh)+1,2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi)+1):        #40-50
-        xg[:2*nxi0,k] = np.linspace(0,340-(100/nzi*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh)),2*nxi0,endpoint=False)
-        xg[2*nxi0:,k] = np.linspace(340-(100/nzi*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh)),area_x,2*nxi1+1,endpoint=True)
+        xg[:2*nxi0,k] = np.linspace(0,340-100/(2*nzi)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh)),2*nxi0,endpoint=False)
+        xg[2*nxi0:,k] = np.linspace(340-100/(2*nzi)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh)),area_x,2*nxi1+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi)+1,2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj)+1):        #50-60
-        xg[:2*nxj0,k] = np.linspace(0,240-(140/nzj*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi)+1),2*nxj0,endpoint=False)
-        xg[2*nxj0:,k] = np.linspace(240-(140/nzj*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi)+1),area_x,2*nxj1+1,endpoint=True)
+        xg[:2*nxj0,k] = np.linspace(0,240-140/(2*nzj)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi)),2*nxj0,endpoint=False)
+        xg[2*nxj0:,k] = np.linspace(240-140/(2*nzj)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi)),area_x,2*nxj1+1,endpoint=True)
     for k in range(2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj)+1,2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj+nzk)+1):        #50-60
-        xg[:2*nxk0,k] = np.linspace(0,100+(110/nzk*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj)+1),2*nxk0,endpoint=False)
-        xg[2*nxj0:,k] = np.linspace(100+(110/nzj*nz)/(len(zg)-1)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj)+1),area_x,2*nxk1+1,endpoint=True)
+        xg[:2*nxk0,k] = np.linspace(0,100+110/(2*nzk)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj)),2*nxk0,endpoint=False)
+        xg[2*nxj0:,k] = np.linspace(100+110/(2*nzk)*(k-2*(nza+nzb+nzc+nzd+nze+nzf+nzg+nzh+nzi+nzj)),area_x,2*nxk1+1,endpoint=True)
 
 
 ### Set node ###
@@ -209,11 +214,25 @@ elif modelid == 1:
 
 elif modelid == 2:
     for k in range(nz):
-        im = 1
+        im = 0
         for i in range(nx):
-            im = 1
-            # if k < nz1 and nx1 <= i < nx1+nx2:
-            #     im = 0
+            im = 0
+            if 4 <= k < 5 and 180 <= i < 200:
+                im = 2
+            if 5 <= k < 6 and (0 <= i < 50 or 180 <= i < 200):
+                im = 2
+            if 6 <= k < 10 and (0 <= i < 105 or 180 <= i < 200):
+                im = 2
+            if 10 <= k < 11:
+                im = 2
+            if 11 <= k:
+                im = 3
+                if 11 <= k < 13 and 0 <= i < 105:
+                    im = 2
+                if 22 <= k < 26 and 105 <= i < 200:
+                    im = 1
+                if 26 <= k < 28:
+                    im = 1
 
             style = "2d9solid"
 
@@ -247,14 +266,22 @@ for k in range(len(zg)):     #connected element
     ielem += 1
 
 
+
 nnode = inode       #number of nodes
 nelem = ielem       #number of elements
 
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1750.0)]
-material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
+if modelid == 0 or modelid == 1:
+    material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1750.0)]
+    material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
+
+elif modelid ==2:
+    material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",5.0,1500.0,1750.0)]     #Fs
+    material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",295.0,1500.0,1750.0)]   #Kys
+    material_lines += ["{} {} {} {} {} \n".format(2,"vs_vp_rho",140.0,1500.0,1750.0)]     #As
+    material_lines += ["{} {} {} {} {} \n".format(3,"vs_vp_rho",135.0,1500.0,1750.0)]   #Ac,N
 
 nmaterial = len(material_lines)
 
