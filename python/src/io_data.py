@@ -43,7 +43,7 @@ def input_mesh(mesh_file):
 
             materials[imaterial] = material.Material(id,style,param)
 
-        return fem.Fem(dof,nodes,elements,materials)
+    return fem.Fem(dof,nodes,elements,materials)
 
 # ------------------------------------------------------------------- #
 def input_outputs(output_file):
@@ -68,4 +68,4 @@ def input_outputs(output_file):
             id = int(items[0])
             elements[ielem] = id
 
-        return nodes, elements
+    return nodes, elements

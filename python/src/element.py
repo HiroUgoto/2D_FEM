@@ -27,6 +27,7 @@ class Element:
 
     def set_nodes(self,nodes):
         self.nodes = nodes
+        self.node_set = set(nodes)
 
     def set_material(self,material):
         if material is None:
@@ -57,8 +58,8 @@ class Element:
         if self.dim == 2:
             self.gauss_points = set()
             V = 0.0
-            for i,(xi,wx) in enumerate(zip(self.xi,self.w)):        #index付で(xi,w)を取得
-                for j,(zeta,wz) in enumerate(zip(self.xi,self.w)):
+            for xi,wx in zip(self.xi,self.w):        #index付で(xi,w)を取得
+                for zeta,wz in zip(self.xi,self.w):
                     N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
                     M = mk_m(N)
                     dn = self.estyle.shape_function_dn(xi,zeta)
@@ -76,7 +77,7 @@ class Element:
             self.gauss_points = set()
             self.imp = self.material.mk_imp(self.dof)
 
-            for i,(xi,wx) in enumerate(zip(self.xi,self.w)):
+            for xi,wx in zip(self.xi,self.w):
                 dn = self.estyle.shape_function_dn(xi,0.0)
                 N = mk_n(self.dof,self.estyle,self.nnode,xi,0.0)
                 w = wx
@@ -87,15 +88,16 @@ class Element:
 
     # ---------------------------------------------------------
     def mk_local_matrix(self):
-        self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.M_diag = np.diag(self.M)       #対角成分
+        # self.M = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
+        M = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
+        self.M_diag = np.zeros(self.dof*self.nnode, dtype=np.float64)
 
-        self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.C_diag = np.diag(self.C)
-        self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
+        self.C = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
+        self.C_diag = np.zeros(self.dof*self.nnode, dtype=np.float64)
+        self.C_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode], dtype=np.float64)
 
         self.K = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
-        self.K_diag = np.diag(self.K)
+        self.K_diag = np.zeros(self.dof*self.nnode, dtype=np.float64)
         self.K_off_diag = np.zeros([self.dof*self.nnode,self.dof*self.nnode],dtype=np.float64)
 
         if self.dim == 2:
@@ -108,12 +110,15 @@ class Element:
                 C = mk_k(B,self.Dv)
 
                 detJ = gp.w*det
-                self.M += gp.M*detJ
+                # self.M += gp.M*detJ
+                M += gp.M*detJ
                 self.K += K*detJ
                 self.C += C*detJ
 
-            tr_M = np.trace(self.M)/self.dof
-            self.M_diag = np.diag(self.M) * self.mass/tr_M
+            # tr_M = np.trace(self.M)/self.dof
+            tr_M = np.trace(M)/self.dof
+            # self.M_diag = np.diag(self.M) * self.mass/tr_M
+            self.M_diag = np.diag(M) * self.mass/tr_M
 
             self.K_diag = np.diag(self.K)
             self.K_off_diag = self.K - np.diag(self.K_diag)

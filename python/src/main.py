@@ -25,10 +25,9 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fsamp = 1600
-duration = 0.2
+duration = 0.5
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.tapered_sin(tim,fp=1.0,taper=0.0,duration=2.0,amp=2.0)
 wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
 wave_vel = np.cumsum(wave_acc) * dt
 ntim = len(tim)
@@ -38,6 +37,7 @@ ntim = len(tim)
 # plt.show()
 
 ax = plot_model.plot_mesh_update_init()
+
 ## --- Static deformation --- ##
 fem.self_gravity()
 # plot_model.plot_mesh_update(ax,fem,10.)
