@@ -20,6 +20,14 @@ def set_style(style):
         return Connect()
 
 # =================== Element style classes ============================ #
+class Gauss_Points:
+    def __init__(self,dn,w,N,M=None):
+        self.dn = dn
+        self.w = w
+        self.N = N
+        self.M = M
+
+# =================== Element style classes ============================ #
 class Solid_2d_4Node:
     def __init__(self):
         self.dim = 2

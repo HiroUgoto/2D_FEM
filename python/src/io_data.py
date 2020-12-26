@@ -10,38 +10,38 @@ def input_mesh(mesh_file):
         nnode,nelem,nmaterial,dof = [int(s) for s in lines[0].split()]
 
         irec = 1
-        nodes = []
+        nodes = [None] * nnode
         for inode in range(nnode):
             items = lines[inode+irec].split()       #mesh.in2行以降
 
             id = int(items[0])
-            xyz = [float(s) for s in items[1:3]]        #node座標list2成分
-            freedom = [int(s) for s in items[3:]]
+            xyz = np.array([float(s) for s in items[1:3]])        #node座標list2成分
+            freedom = np.array([int(s) for s in items[3:]])
 
-            nodes += [node.Node(id,xyz,freedom)]
+            nodes[inode] = node.Node(id,xyz,freedom)
 
         irec += nnode       #irecを1+nnodeで再定義
-        elements = []
+        elements = [None] * nelem
         for ielem in range(nelem):
             items = lines[ielem+irec].split()       #mesh.in1+nnode行以降
 
             id = int(items[0])
             style = items[1]
             material_id = int(items[2])
-            inode = [int(s) for s in items[3:]]
+            inode = np.array([int(s) for s in items[3:]])
 
-            elements += [element.Element(id,style,material_id,inode)]
+            elements[ielem] = element.Element(id,style,material_id,inode)
 
         irec += nelem
-        materials = []
+        materials = [None] * nmaterial
         for imaterial in range(nmaterial):
             items = lines[imaterial+irec].split()
 
             id = int(items[0])
             style = items[1]
-            param = [float(s) for s in items[2:]]
+            param = np.array([float(s) for s in items[2:]])
 
-            materials += [material.Material(id,style,param)]
+            materials[imaterial] = material.Material(id,style,param)
 
         return fem.Fem(dof,nodes,elements,materials)
 
@@ -53,19 +53,19 @@ def input_outputs(output_file):
         nnode,nelem = [int(s) for s in lines[0].split()]    #output.inの1行目を分割し割当
 
         irec = 1
-        nodes = []
+        nodes = [None] * nnode
         for inode in range(nnode):
             items = lines[inode+irec].split()       #output.inの2~nnode行まで
 
-            inode = int(items[0])
-            nodes += [inode]
+            id = int(items[0])
+            nodes[inode] = id
 
         irec += nnode
-        elements = []
+        elements = [None] * nelem
         for ielem in range(nelem):
             items = lines[ielem+irec].split()       #output.inのnnode+1~nelem+2行目まで
 
-            ielem = int(items[0])
-            elements += [ielem]
+            id = int(items[0])
+            elements[ielem] = id
 
         return nodes, elements
