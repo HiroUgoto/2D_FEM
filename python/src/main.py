@@ -21,26 +21,46 @@ outputs = io_data.input_outputs("input/output.in")
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-# plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 1600
-duration = 1.0
+input_mode = 0
 
-tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
-wave_vel = np.cumsum(wave_acc) * dt
-ntim = len(tim)
+if input_mode == 0:
+    fsamp = 1600
+    duration = 1.0
+
+    tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
+    wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
+    wave_vel = np.cumsum(wave_acc) * dt
+    ntim = len(tim)
+
+elif input_mode == 1:
+    fsamp = 1600
+    duration = 1.0
+
+    tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
+    wave_acc = input_wave.tapered_sin(tim,fp=1.0,tp=1.0,amp=2.0)
+    wave_vel = np.cumsum(wave_acc) * dt
+    ntim = len(tim)
+
+elif input_mode == 2:
+    fsamp = 2000
+    duration = 285
+
+    tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
+    wave_vel = input_wave.seismic_wave("./input/CHB008.vel")
+    ntim = len(tim)
 
 # plt.figure()
 # plt.plot(tim,wave_vel)
 # plt.show()
 
-# ax = plot_model.plot_mesh_update_init()
+ax = plot_model.plot_mesh_update_init()
 
 ## --- Static deformation --- ##
 fem.self_gravity()
-# plot_model.plot_mesh_update(ax,fem,10.)
+plot_model.plot_mesh_update(ax,fem,10.)
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -71,10 +91,10 @@ for it in range(len(tim)):
     output_strainxz[it,:] = [element.strain[2] for element in fem.output_elements]
 
     if it%100 == 0:
-        # plot_model.plot_mesh_update(ax,fem,10.)
-        # print(it,"t=",it*dt,output_dispx[it,:])
+        plot_model.plot_mesh_update(ax,fem,10.)
+        print(it,"t=",it*dt,output_dispx[it,:])
         print(it,"t=",it*dt,output_dispx[it,8])
-        # plt.savefig(dir+"/fig/img_"+str(it)+".png")
+        plt.savefig(dir+"/fig/img_"+str(it).zfill(4)+".png")
 
 
 # plot_model.plot_mesh_update(ax,fem,10.,fin=True)
@@ -82,31 +102,31 @@ for it in range(len(tim)):
 ## --- Write output file --- ##
 # with open("input/var.in","a") as f:
 #     f.write("{} {} {} {}\n".format("inputwave",fsamp,duration,)
-# shutil.copy("input/mesh.in",dir)        #movefile to output folder
-# shutil.copy("input/output.in",dir)
-# shutil.copy("input/var.in",dir)
-#
-# output_tim = np.arange(ntim).reshape(ntim,1)
-#
-# output_w_velx = np.hstack((output_tim,output_velx))
-# np.savetxt(dir+"/velx.dat",output_w_velx,delimiter="    ")
-# output_w_velz = np.hstack((output_tim,output_velz))
-# np.savetxt(dir+"/velz.dat",output_w_velz,delimiter="    ")
-#
-# output_w_strainxx = np.hstack((output_tim,output_strainxx))
-# np.savetxt(dir+"/strainxx.dat",output_w_strainxx,delimiter="    ")
-# output_w_strainzz = np.hstack((output_tim,output_strainzz))
-# np.savetxt(dir+"/strainzz.dat",output_w_strainzz,delimiter="    ")
-# output_w_strainxz = np.hstack((output_tim,output_strainxz))
-# np.savetxt(dir+"/strainxz.dat",output_w_strainxz,delimiter="    ")
-#
-# output_w_dispx = np.hstack((output_tim,output_dispx))
-# np.savetxt(dir+"/dispx.dat",output_w_dispx,delimiter="    ")
-# output_w_dispz = np.hstack((output_tim,output_dispz))
-# np.savetxt(dir+"/dispz.dat",output_w_dispz,delimiter="    ")
-#
-# now = datetime.datetime.now()
-# os.rename(dir,"output/"+now.strftime("%Y%m%d-%H%M"))        #"outputdir"-->>"time"
+shutil.copy("input/mesh.in",dir)        #movefile to output folder
+shutil.copy("input/output.in",dir)
+shutil.copy("input/var.in",dir)
+
+output_tim = np.arange(ntim).reshape(ntim,1)
+
+output_w_velx = np.hstack((output_tim,output_velx))
+np.savetxt(dir+"/velx.dat",output_w_velx,delimiter="    ")
+output_w_velz = np.hstack((output_tim,output_velz))
+np.savetxt(dir+"/velz.dat",output_w_velz,delimiter="    ")
+
+output_w_strainxx = np.hstack((output_tim,output_strainxx))
+np.savetxt(dir+"/strainxx.dat",output_w_strainxx,delimiter="    ")
+output_w_strainzz = np.hstack((output_tim,output_strainzz))
+np.savetxt(dir+"/strainzz.dat",output_w_strainzz,delimiter="    ")
+output_w_strainxz = np.hstack((output_tim,output_strainxz))
+np.savetxt(dir+"/strainxz.dat",output_w_strainxz,delimiter="    ")
+
+output_w_dispx = np.hstack((output_tim,output_dispx))
+np.savetxt(dir+"/dispx.dat",output_w_dispx,delimiter="    ")
+output_w_dispz = np.hstack((output_tim,output_dispz))
+np.savetxt(dir+"/dispz.dat",output_w_dispz,delimiter="    ")
+
+now = datetime.datetime.now()
+os.rename(dir,"output/"+now.strftime("%Y%m%d-%H%M"))        #"outputdir"-->>"time"
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")

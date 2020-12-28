@@ -304,7 +304,7 @@ def mk_n(dof,estyle,nnode,xi,zeta):
     return N
 
 # ---------------------------------------------------------
-def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
+def mk_nqn(dof,n,q,imp):
     nqn = np.linalg.multi_dot([n.T,q.T,imp,q,n])
     return nqn
 
