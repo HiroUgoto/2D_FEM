@@ -110,7 +110,8 @@ class Element:
             self.Dv = self.material.mk_visco(self.dof)
 
             for gp in self.gauss_points:
-                det,B = mk_b(self.dof,self.nnode,self.xnT,gp.dn)
+                det,dnj = mk_dnj(self.xnT,gp.dn)
+                B = mk_b(self.dof,self.nnode,dnj)
                 K = mk_k(B,self.De)
                 C = mk_k(B,self.Dv)
 
@@ -158,6 +159,51 @@ class Element:
             self.force = self.force * self.mass/V
 
     # ---------------------------------------------------------
+    def mk_local_update(self):
+        if self.dim == 2:
+            M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            self.Dv = self.material.mk_visco(self.dof)
+
+            self.force = np.zeros(self.ndof,dtype=np.float64)
+            V = 0.0
+
+            for gp in self.gauss_points:
+                det,dnj = mk_dnj(self.xnT,gp.dn)
+                B = mk_b(self.dof,self.nnode,dnj)
+                C = mk_k(B,self.Dv)
+
+                detJ = gp.w*det
+                M += gp.M*detJ
+                self.C += C*detJ
+
+                V += detJ
+                self.force += gp.N[1,:]*detJ * self.gravity
+
+            tr_M = np.trace(M)/self.dof
+            self.M_diag = np.diag(M) * self.mass/tr_M
+
+            self.C_diag = np.diag(self.C)
+            self.C_off_diag = self.C - np.diag(self.C_diag)
+
+            self.force *= self.mass/V
+
+        elif self.dim == 1:
+            if "input" in self.style:
+                self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
+                for gp in self.gauss_points:
+                    det,q = mk_q(self.dof,self.xnT,gp.dn)
+                    detJ = gp.w*det
+
+                    NqN = mk_nqn(self.dof,gp.N,q,self.imp)
+                    self.C += NqN*detJ
+
+                self.C_diag = np.diag(self.C)
+                self.C_off_diag = self.C - np.diag(self.C_diag)
+
+
+    # ---------------------------------------------------------
     def mk_ku(self):
         ku = self.K @ np.hstack(self.u)
         for i in range(self.nnode):
@@ -176,7 +222,7 @@ class Element:
             i0 = self.dof*i
             self.nodes[i].force[:] += cv[i0:i0+self.dof]
 
-    def mk_ku_cv(self):     #ku項とcv項まとめる
+    def mk_ku_cv(self):
         f = self.K @ np.hstack(self.u) + self.C_off_diag @ np.hstack(self.v)
         for i in range(self.nnode):
             i0 = self.dof*i
@@ -205,8 +251,9 @@ class Element:
             force = np.zeros(self.ndof,dtype=np.float64)
 
             for gp in self.gauss_points:
-                det,BT = mk_b_T(self.dof,self.nnode,self.xnT,gp.dn)
-                stress = Hencky_stress(self.dof,self.nnode,self.xnT,gp.dn,self.De,self.u)
+                det,dnj = mk_dnj(self.xnT,gp.dn)
+                BT = mk_b_T(self.dof,self.nnode,dnj)
+                stress = Hencky_stress(self.dof,self.nnode,self.De,dnj,self.u)
 
                 detJ = gp.w*det
                 force += BT @ stress * detJ
@@ -223,8 +270,9 @@ class Element:
             force = np.zeros(self.ndof,dtype=np.float64)
 
             for gp in self.gauss_points:
-                det,BT = mk_b_T(self.dof,self.nnode,self.xnT,gp.dn)
-                stress = Hencky_stress(self.dof,self.nnode,self.xnT,gp.dn,self.De,u)
+                det,dnj = mk_dnj(self.xnT,gp.dn)
+                BT = mk_b_T(self.dof,self.nnode,dnj)
+                stress = Hencky_stress(self.dof,self.nnode,self.De,dnj,u)
 
                 detJ = gp.w*det
                 force += BT @ stress * detJ
@@ -237,7 +285,8 @@ class Element:
     # ---------------------------------------------------------
     def calc_stress(self):
         dn = self.estyle.shape_function_dn(0.0,0.0)
-        _,B = mk_b(self.dof,self.nnode,self.xnT,dn)
+        _,dnj = mk_dnj(self.xnT,dn)
+        B = mk_b(self.dof,self.nnode,dnj)
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
 
@@ -281,8 +330,7 @@ def mk_q(dof,xnT,dn):
 def mk_k(B,D):
     return B.T @ D @ B
 
-def mk_b(dof,nnode,xnT,dn):
-    det,dnj = mk_dnj(xnT,dn)
+def mk_b(dof,nnode,dnj):
     if dof == 1:
         B = np.zeros([2,nnode],dtype=np.float64)
         B[0,:] = dnj[:,0]
@@ -303,10 +351,9 @@ def mk_b(dof,nnode,xnT,dn):
         B[3,2::3] = dnj[:,0]
         B[4,2::3] = dnj[:,1]
 
-    return det, B
+    return B
 
-def mk_b_T(dof,nnode,xnT,dn):
-    det,dnj = mk_dnj(xnT,dn)
+def mk_b_T(dof,nnode,dnj):
     if dof == 1:
         B = np.zeros([nnode,2],dtype=np.float64)
         B[:,0] = dnj[:,0]
@@ -327,47 +374,69 @@ def mk_b_T(dof,nnode,xnT,dn):
         B[2::3,3] = dnj[:,0]
         B[2::3,4] = dnj[:,1]
 
-    return det, B
+    return B
 
 # ---------------------------------------------------------
-def Hencky_stress(dof,nnode,xnT,dn,D,u):     #キルヒホッフ応力tau,Kマト算定
-    strain = Euler_log_strain(nnode,xnT,dn,u)
-    # strain = micro_strain(nnode,xnT,dn,u)
-    strain_vector = np.array([strain[0,0],strain[1,1],strain[0,1]+strain[1,0]])
+def Hencky_stress(dof,nnode,D,dnj,u):
+    J,strain = Euler_log_strain(nnode,dnj,u)
+    # strain = micro_strain(nnode,dnj,u)
+    # J,_ = mk_F(nnode,xnT,dn,u)
 
+    strain_vector = np.array([strain[0,0],strain[1,1],strain[0,1]+strain[1,0]])
     K_stress = D @ strain_vector
-    J,_ = mk_F(nnode,xnT,dn,u)
 
     return K_stress/J
 
-def Euler_log_strain(nnode,xnT,dn,u):
-    FF = mk_FF(nnode,xnT,dn,u)
+def Euler_log_strain(nnode,dnj,u):
+    J,FF = mk_FF(nnode,dnj,u)
     L,P = np.linalg.eigh(FF)
     log_L = np.log(L)
-    EL_strain = 0.5* P @ np.diag(log_L) @ P.T
-    return EL_strain
 
-def micro_strain(nnode,xnT,dn,u):
-    dnu = mk_dnu(nnode,xnT,dn,u)
+    # J,F = mk_F(nnode,dnj,u)
+    # log_L,P = self_eigh(F)
+    EL_strain = 0.5* P @ np.diag(log_L) @ P.T
+    return J,EL_strain
+
+def self_eigh(F):
+    FF = F**2
+
+    D = F[0,0]*F[1,1] - F[0,1]*F[1,0]
+    r0 = np.sum(FF)/2.0
+    r0D = np.sqrt(r0**2-D**2)
+    rp = r0 + r0D
+    rm = r0 - r0D
+
+    p0 = F[0,0]*F[1,0] + F[0,1]*F[1,1]
+    p02 = p0**2
+    p1p = -FF[0,0]-FF[0,1] + rp
+    p1m = -FF[0,0]-FF[0,1] + rm
+    ap = np.sqrt(p02+p1p**2)
+    am = np.sqrt(p02+p1m**2)
+
+    P = np.array([  [p0 /ap,  p0/am],
+                    [p1p/ap, p1m/am]  ])
+    return np.log([rp,rm]), P
+
+def micro_strain(nnode,dnj,u):
+    dnu = mk_dnu(nnode,dnj,u)
     strain = np.array([ [dnu[0,0], 0.5*(dnu[0,1]+dnu[1,0])],
                         [0.5*(dnu[0,1]+dnu[1,0]), dnu[1,1]] ])
     return strain
 
-def mk_FF(nnode,xnT,dn,u):    #Euler対数ひずみでのBマト
-    _,F = mk_F(nnode,xnT,dn,u)
+def mk_FF(nnode,dnj,u):
+    J,F = mk_F(nnode,dnj,u)
     FF = F @ F.T
-    return FF
+    return J,FF
 
-def mk_F(nnode,xnT,dn,u):
-    dnu = mk_dnu(nnode,xnT,dn,u)
+def mk_F(nnode,dnj,u):
+    dnu = mk_dnu(nnode,dnj,u)
     det = (1.0-dnu[0,0])*(1.0-dnu[1,1]) - dnu[0,1]*dnu[1,0]
     F = np.array([  [1.0-dnu[1,1],     dnu[0,1]],
                     [    dnu[1,0], 1.0-dnu[0,0]] ]) / det
     return 1./det, F
 
-def mk_dnu(nnode,xnT,dn,u):
-    u_mt = np.vstack(u)
-    _,dnj = mk_dnj(xnT,dn)
+def mk_dnu(nnode,dnj,u):
+    u_mt = np.array(u)
     return u_mt.T @ dnj
 
 # ---------------------------------------------------------
@@ -382,6 +451,6 @@ def mk_inv_jacobi(xnT,dn):
     return det, jacobi_inv
 
 def mk_jacobi(xnT,dn):
-    jacobi = xnT @ dn
+    jacobi = np.dot(xnT,dn)
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
     return det, jacobi

@@ -245,8 +245,9 @@ class Fem():
 
     def _update_matrix_set_elements(self,element):
         element.set_xn()
-        element.mk_local_matrix()
-        element.mk_local_vector()
+        # element.mk_local_matrix()
+        # element.mk_local_vector()
+        element.mk_local_update()
 
         id = 0
         for node in element.nodes:

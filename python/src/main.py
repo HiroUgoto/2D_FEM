@@ -24,8 +24,8 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 1600
-duration = 0.5
+fsamp = 8000
+duration = 0.01
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 wave_acc = input_wave.ricker(tim,fp=1.0,tp=1.0,amp=2.0)
@@ -70,7 +70,7 @@ for it in range(len(tim)):
     output_strainzz[it,:] = [element.strain[1] for element in fem.output_elements]
     output_strainxz[it,:] = [element.strain[2] for element in fem.output_elements]
 
-    if it%50 == 0:
+    if it%10 == 0:
         # plot_model.plot_mesh_update(ax,fem,10.)
         # print(it,"t=",it*dt,output_dispx[it,:])
         print(it,"t=",it*dt,output_dispx[it,8])
