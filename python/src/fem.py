@@ -150,7 +150,7 @@ class Fem():
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
         for element in self.connected_element_set:
-            u = np.zeros_like(element.nodes[0]._ur)
+            u = np.zeros(element.nodes[0].dof,dtype=np.float64)
             for node in element.node_set:
                 u += node._ur
             for node in element.node_set:
@@ -177,7 +177,7 @@ class Fem():
                     if node.freedom[i] == 0:
                         node._uy[i] = 0.0
             for element in self.connected_element_set:
-                u = np.zeros_like(element.nodes[0]._uy)
+                u = np.zeros(element.nodes[0].dof,dtype=np.float64)
                 for node in element.node_set:
                     u += node._uy
                 for node in element.node_set:
@@ -234,26 +234,25 @@ class Fem():
             self._update_matrix_node_init(node)
         for element in self.element_set:
             self._update_matrix_set_elements(element)
-        for node in self.node_set:
-            self._update_matrix_set_nodes(node)
+        # for node in self.node_set:
+        #     self._update_matrix_set_nodes(node)
 
     # ---------------------------------------
     def _update_matrix_node_init(self,node):
-        node.mass = np.zeros(self.dof,dtype=np.float64)
-        node.c    = np.zeros(self.dof,dtype=np.float64)
+        # node.mass = np.zeros(self.dof,dtype=np.float64)
+        # node.c    = np.zeros(self.dof,dtype=np.float64)
         node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
     def _update_matrix_set_elements(self,element):
         element.set_xn()
-        # element.mk_local_matrix()
-        # element.mk_local_vector()
-        element.mk_local_update()
+        # element.mk_local_update()
+        element.mk_local_vector()
 
         id = 0
         for node in element.nodes:
             for i in range(self.dof):
-                node.mass[i] += element.M_diag[id]
-                node.c[i] += element.C_diag[id]
+                # node.mass[i] += element.M_diag[id]
+                # node.c[i] += element.C_diag[id]
                 node.dynamic_force[i] += element.force[id]
                 id += 1
 

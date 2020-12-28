@@ -145,8 +145,8 @@ class Element:
 
     # ---------------------------------------------------------
     def mk_local_vector(self):
-        if self.dof == 1:
-            return
+        # if self.dof == 1:
+        #     return
         if self.dim == 2:
             self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0
@@ -382,8 +382,8 @@ def Hencky_stress(dof,nnode,D,dnj,u):
     # strain = micro_strain(nnode,dnj,u)
     # J,_ = mk_F(nnode,xnT,dn,u)
 
-    strain_vector = np.array([strain[0,0],strain[1,1],strain[0,1]+strain[1,0]])
-    K_stress = D @ strain_vector
+    strain_vector = [strain[0,0],strain[1,1],strain[0,1]+strain[1,0]]
+    K_stress = np.dot(D,strain_vector)
 
     return K_stress/J
 
@@ -394,6 +394,7 @@ def Euler_log_strain(nnode,dnj,u):
 
     # J,F = mk_F(nnode,dnj,u)
     # log_L,P = self_eigh(F)
+
     EL_strain = 0.5* P @ np.diag(log_L) @ P.T
     return J,EL_strain
 
@@ -425,29 +426,29 @@ def micro_strain(nnode,dnj,u):
 
 def mk_FF(nnode,dnj,u):
     J,F = mk_F(nnode,dnj,u)
-    FF = F @ F.T
+    FF = np.dot(F,F.T)
     return J,FF
 
 def mk_F(nnode,dnj,u):
     dnu = mk_dnu(nnode,dnj,u)
     det = (1.0-dnu[0,0])*(1.0-dnu[1,1]) - dnu[0,1]*dnu[1,0]
-    F = np.array([  [1.0-dnu[1,1],     dnu[0,1]],
-                    [    dnu[1,0], 1.0-dnu[0,0]] ]) / det
+    F = [ [1.0-dnu[1,1],     dnu[0,1]],
+          [    dnu[1,0], 1.0-dnu[0,0]] ] / det
     return 1./det, F
 
 def mk_dnu(nnode,dnj,u):
     u_mt = np.array(u)
-    return u_mt.T @ dnj
+    return np.dot(u_mt.T,dnj)
 
 # ---------------------------------------------------------
 def mk_dnj(xnT,dn):
     det,jacobi_inv = mk_inv_jacobi(xnT,dn)
-    return det, dn @ jacobi_inv
+    return det, np.dot(dn,jacobi_inv)
 
 def mk_inv_jacobi(xnT,dn):
     det,jacobi = mk_jacobi(xnT,dn)
-    jacobi_inv = np.array([ [ jacobi[1,1],-jacobi[0,1]],
-                            [-jacobi[1,0], jacobi[0,0]] ]) / det
+    jacobi_inv = [ [ jacobi[1,1],-jacobi[0,1]],
+                   [-jacobi[1,0], jacobi[0,0]] ] / det
     return det, jacobi_inv
 
 def mk_jacobi(xnT,dn):
