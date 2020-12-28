@@ -229,8 +229,8 @@ class Element:
             self.nodes[i].force[:] += f[i0:i0+self.dof]
 
     def mk_bodyforce(self,acc0):
-        if self.dof == 1:
-            return
+        # if self.dof == 1:
+            # return
         if self.dim == 2:
             self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0
@@ -305,13 +305,12 @@ def mk_n(dof,estyle,nnode,xi,zeta):
 
 # ---------------------------------------------------------
 def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
-    qiq = q.T @ imp @ q
-    nqn = n.T @ qiq @ n
+    nqn = np.linalg.multi_dot([n.T,q.T,imp,q,n])
     return nqn
 
 def mk_q(dof,xnT,dn):
     t = xnT @ dn
-    n = np.cross(t,np.array([0.0,0.0,1.0]))
+    n = np.cross(t,[0.0,0.0,1.0])
     det = np.linalg.norm(t)
 
     if dof == 1:
@@ -328,7 +327,7 @@ def mk_q(dof,xnT,dn):
 
 # ---------------------------------------------------------
 def mk_k(B,D):
-    return B.T @ D @ B
+    return np.linalg.multi_dot([B.T,D,B])
 
 def mk_b(dof,nnode,dnj):
     if dof == 1:
@@ -383,7 +382,7 @@ def Hencky_stress(dof,nnode,D,dnj,u):
     # J,_ = mk_F(nnode,xnT,dn,u)
 
     strain_vector = [strain[0,0],strain[1,1],strain[0,1]+strain[1,0]]
-    K_stress = np.dot(D,strain_vector)
+    K_stress = np.matmul(D,strain_vector)
 
     return K_stress/J
 
@@ -426,32 +425,32 @@ def micro_strain(nnode,dnj,u):
 
 def mk_FF(nnode,dnj,u):
     J,F = mk_F(nnode,dnj,u)
-    FF = np.dot(F,F.T)
+    FF = np.matmul(F,F.T)
     return J,FF
 
 def mk_F(nnode,dnj,u):
     dnu = mk_dnu(nnode,dnj,u)
     det = (1.0-dnu[0,0])*(1.0-dnu[1,1]) - dnu[0,1]*dnu[1,0]
-    F = [ [1.0-dnu[1,1],     dnu[0,1]],
-          [    dnu[1,0], 1.0-dnu[0,0]] ] / det
+    F = np.array([ [1.0-dnu[1,1],     dnu[0,1]],
+                 [    dnu[1,0], 1.0-dnu[0,0]] ]) / det
     return 1./det, F
 
 def mk_dnu(nnode,dnj,u):
     u_mt = np.array(u)
-    return np.dot(u_mt.T,dnj)
+    return np.matmul(u_mt.T,dnj)
 
 # ---------------------------------------------------------
 def mk_dnj(xnT,dn):
     det,jacobi_inv = mk_inv_jacobi(xnT,dn)
-    return det, np.dot(dn,jacobi_inv)
+    return det, np.matmul(dn,jacobi_inv)
 
 def mk_inv_jacobi(xnT,dn):
     det,jacobi = mk_jacobi(xnT,dn)
-    jacobi_inv = [ [ jacobi[1,1],-jacobi[0,1]],
-                   [-jacobi[1,0], jacobi[0,0]] ] / det
+    jacobi_inv = np.array([ [ jacobi[1,1],-jacobi[0,1]],
+                            [-jacobi[1,0], jacobi[0,0]] ]) / det
     return det, jacobi_inv
 
 def mk_jacobi(xnT,dn):
-    jacobi = np.dot(xnT,dn)
+    jacobi = np.matmul(xnT,dn)
     det = jacobi[0,0]*jacobi[1,1] - jacobi[0,1]*jacobi[1,0]
     return det, jacobi

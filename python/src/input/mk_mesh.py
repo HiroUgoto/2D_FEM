@@ -20,8 +20,8 @@ elif modelid == 1:
     area_x = 50.0
     area_z = 5.0
 
-    nx1,nx2 = 4, 16
-    nz1,nz2 = 4, 4
+    nx1,nx2 = 1, 4
+    nz1,nz2 = 1, 1
     nx =  nx1 + nx2 + nx1
     nz =  nz1 + nz2
     dof = 2
