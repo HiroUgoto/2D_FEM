@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-modelid = 2     #0:square mesh,1:flexible mesh
+modelid = 0     #0:square mesh,1:flexible mesh
 
 ### Set target area ###
 ## add model---fix make var.in,mk_vtk.py ##
@@ -208,7 +208,7 @@ nelem = ielem       #number of elements
 ### Set material ###
 material_lines = []
 if modelid == 0 or modelid == 1:
-    material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1750.0)]
+    material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",10.0,1500.0,1750.0)]
     material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
 
 elif modelid ==2:
@@ -244,7 +244,7 @@ with open("output.in","w") as f:
     f.writelines(output_element_lines)
 
 
-with open("var.in","w") as f:       #save var, depend on target area
+with open("var.txt","w") as f:       #save var, depend on target area
     f.write("{} {}\n".format(modelid,"modelid"))
     f.write("{} {} {} {}\n".format(area_x,area_z,"area_x","area_z"))
     f.write("{} {} {} {}\n".format(nx,nz,"nx","nz"))

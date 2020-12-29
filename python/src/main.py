@@ -27,7 +27,8 @@ plot_model.plot_mesh(fem)
 input_mode = 0
 
 if input_mode == 0:
-    fsamp = 1600
+    wavename = "ricker"
+    fsamp = 100
     duration = 1.0
 
     tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -36,6 +37,7 @@ if input_mode == 0:
     ntim = len(tim)
 
 elif input_mode == 1:
+    wavename = "tapered_sin"
     fsamp = 1600
     duration = 1.0
 
@@ -45,11 +47,13 @@ elif input_mode == 1:
     ntim = len(tim)
 
 elif input_mode == 2:
+    wavefilename = "CHB008.vel"
+    wavename = "seisemic-"+wavefilename
     fsamp = 2000
     duration = 285
 
     tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-    wave_vel = input_wave.seismic_wave("./input/CHB008.vel")
+    wave_vel = input_wave.seismic_wave("./input/"+wavefilename)
     ntim = len(tim)
 
 # plt.figure()
@@ -100,11 +104,12 @@ for it in range(len(tim)):
 # plot_model.plot_mesh_update(ax,fem,10.,fin=True)
 
 ## --- Write output file --- ##
-# with open("input/var.in","a") as f:
-#     f.write("{} {} {} {}\n".format("inputwave",fsamp,duration,)
+with open("input/var.txt","a") as f:
+    f.write("{} {} {} {}\n".format("inputwave",wavename,fsamp,duration))
+
 shutil.copy("input/mesh.in",dir)        #movefile to output folder
 shutil.copy("input/output.in",dir)
-shutil.copy("input/var.in",dir)
+shutil.copy("input/var.txt",dir)
 
 output_tim = np.arange(ntim).reshape(ntim,1)
 
