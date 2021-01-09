@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-modelid = 0     #0:square mesh,1:flexible mesh
+modelid = 4     #0:square mesh,1:flexible mesh
 
 ### Set target area ###
 ## add model---fix make var.in,mk_vtk.py ##
@@ -79,6 +79,73 @@ elif modelid == 2:      #Maihama-2 model
     for k in range(2*(nza+nzb+nzc)+1,2*(nza+nzb+nzc+nzd)+1):        #12-15
         xg[:,k] = np.linspace(0,area_x,2*nx+1,endpoint=True)
 
+elif modelid == 3:      #Maihama-2 model,W.L.-3.0
+    area_x = 210
+    area_z = 12
+    dof = 2
+
+    nza = 4
+    nzb = 2
+    nzc = 1
+
+    nz = nza+nzb+nzc
+
+    nx = 42
+    nxb0 = 12
+    nxb1 = 24
+    nxb2 = 6
+    nxc0 = 12
+    nxc1 = 24
+    nxc2 = 6
+
+    zg = np.append(np.linspace(0,6,2*nza,endpoint=False),np.linspace(6,12,2*(nzb+nzc)+1,endpoint=True))
+    xg = np.empty([2*nx+1,2*nz+1])       #node coordinate
+
+    for k in range(2*nza+1):        #0-5
+        xg[:,k] = np.linspace(0,area_x,2*nx+1,endpoint=True)
+    for k in range(2*nza+1,2*(nza+nzb)+1):      #5-10
+        xg[:2*nxb0,k] = np.linspace(0,60+10/(2*nzb)*(k-2*nza),2*nxb0,endpoint=False)
+        xg[2*nxb0:2*(nxb0+nxb1),k] = np.linspace(60+10/(2*nzb)*(k-2*nza),180-10/(2*nzb)*(k-2*nza),2*nxb1,endpoint=False)
+        xg[2*(nxb0+nxb1):,k] = np.linspace(180-10/(2*nzb)*(k-2*nza),area_x,2*nxb2+1,endpoint=True)
+    for k in range(2*(nza+nzb)+1,2*(nza+nzb+nzc)+1):        #10-15
+        xg[:2*nxc0,k] = np.linspace(0,70,2*nxc0,endpoint=False)
+        xg[2*nxc0:2*(nxc0+nxc1),k] = np.linspace(70,170,2*nxc1,endpoint=False)
+        xg[2*(nxc0+nxc1):,k] = np.linspace(170,area_x,2*nxc2+1,endpoint=True)
+
+
+elif modelid == 4:      #Maihama-2 model,W.L.-1.5
+    area_x = 210
+    area_z = 12
+    dof = 2
+
+    nza = 4
+    nzb = 2
+    nzc = 1
+
+    nz = nza+nzb+nzc
+
+    nx = 42
+    nxb0 = 12
+    nxb1 = 24
+    nxb2 = 6
+    nxc0 = 12
+    nxc1 = 24
+    nxc2 = 6
+
+    zg = np.append(np.linspace(0,6,2*nza,endpoint=False),np.linspace(6,12,2*(nzb+nzc)+1,endpoint=True))
+    xg = np.empty([2*nx+1,2*nz+1])       #node coordinate
+
+    for k in range(2*nza+1):        #0-5
+        xg[:,k] = np.linspace(0,area_x,2*nx+1,endpoint=True)
+    for k in range(2*nza+1,2*(nza+nzb)+1):      #5-10
+        xg[:2*nxb0,k] = np.linspace(0,60+10/(2*nzb)*(k-2*nza),2*nxb0,endpoint=False)
+        xg[2*nxb0:2*(nxb0+nxb1),k] = np.linspace(60+10/(2*nzb)*(k-2*nza),180-10/(2*nzb)*(k-2*nza),2*nxb1,endpoint=False)
+        xg[2*(nxb0+nxb1):,k] = np.linspace(180-10/(2*nzb)*(k-2*nza),area_x,2*nxb2+1,endpoint=True)
+    for k in range(2*(nza+nzb)+1,2*(nza+nzb+nzc)+1):        #10-15
+        xg[:2*nxc0,k] = np.linspace(0,70,2*nxc0,endpoint=False)
+        xg[2*nxc0:2*(nxc0+nxc1),k] = np.linspace(70,170,2*nxc1,endpoint=False)
+        xg[2*(nxc0+nxc1):,k] = np.linspace(170,area_x,2*nxc2+1,endpoint=True)
+
 
 ### Set node ###
 inode = 0
@@ -104,7 +171,7 @@ if modelid == 0:
             node_lines += [ "{} {} {} {} {} {} {}\n".format(inode,xg[i],zg[k],dofx,dofz,dofx_static,dofz_static) ]
             inode += 1
 
-elif modelid == 1 or modelid ==2:
+elif modelid == 1 or modelid == 2 or modelid == 3 or modelid == 4:
     node = np.empty([len(xg[:,0]),len(zg)],dtype=np.int32)       #node_idを振った配列(転置)
     node_lines = []
     for k in range(len(zg)):
@@ -179,6 +246,52 @@ elif modelid == 2:
             element_lines += [param_line + style_line + "\n"]
             ielem += 1
 
+elif modelid == 3:
+    for k in range(nz):
+        im = 0
+        for i in range(nx):
+            im = 0
+            if 0 <= k < 2:
+                im = 3
+            if 4 <= k < 6 and (0 <= i < 12 or 37 <= i < 42):
+                im = 2
+            if 6 <= k < 7:
+                im = 1
+
+            style = "2d9solid"
+
+            param_line = "{} {} {} ".format(ielem,style,im)
+            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])
+
+            element_lines += [param_line + style_line + "\n"]
+            ielem += 1
+
+elif modelid == 4:
+    for k in range(nz):
+        im = 0
+        for i in range(nx):
+            im = 0
+            if 0 <= k < 1:
+                im = 3
+            if 1 <= k < 2:
+                im = 4
+            if 4 <= k < 6 and (0 <= i < 12 or 37 <= i < 42):
+                im = 2
+            if 6 <= k < 7:
+                im = 1
+
+            style = "2d9solid"
+
+            param_line = "{} {} {} ".format(ielem,style,im)
+            style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
+                                                             node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
+                                                             node[2*i+1,2*k+1])
+
+            element_lines += [param_line + style_line + "\n"]
+            ielem += 1
+
 for i in range(nx):
     style = "1d3input"
     im = 1
@@ -211,10 +324,18 @@ if modelid == 0 or modelid == 1:
     material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",10.0,1500.0,1750.0)]
     material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
 
-elif modelid ==2:
+elif modelid == 2:
     material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",10.0,1500.0,1836.7)]     #Fs
     material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",135.0,1500.0,1734.7)]   #Ac,N
     material_lines += ["{} {} {} {} {} \n".format(2,"vs_vp_rho",140.0,1500.0,1836.7)]   #Kys
+
+elif modelid == 3 or modelid == 4:
+    material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",10.0,1500.0,1836.7)]     #Fs
+    material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",135.0,1500.0,1734.7)]   #Ac,N
+    material_lines += ["{} {} {} {} {} \n".format(2,"vs_vp_rho",140.0,1500.0,1836.7)]   #As
+    material_lines += ["{} {} {} {} {} \n".format(3,"vs_vp_rho",140.0,279.8,1734.7)]   #Bs(unliquified)
+    material_lines += ["{} {} {} {} {} \n".format(4,"vs_vp_rho",10.0,1500.0,1734.7)]   #Bs(liquified)
+
 
 nmaterial = len(material_lines)
 

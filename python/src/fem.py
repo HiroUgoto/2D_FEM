@@ -162,7 +162,7 @@ class Fem():
             for node in element.nodes:
                 element._up += (node._up.view(),)
 
-        for it in range(10*self.nnode):
+        for it in range(100*self.nnode):
             ## y = Ap
             for node in self.node_set:
                 node.force = np.zeros(node.dof,dtype=np.float64)
