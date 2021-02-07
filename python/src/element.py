@@ -389,31 +389,8 @@ def Euler_log_strain(nnode,dnj,u):
     L,P = np.linalg.eigh(FF)
     log_L = np.log(L)
 
-    # J,F = mk_F(nnode,dnj,u)
-    # log_L,P = self_eigh(F)
-
     EL_strain = 0.5* P @ np.diag(log_L) @ P.T
     return J,EL_strain
-
-def self_eigh(F):
-    FF = F**2
-
-    D = F[0,0]*F[1,1] - F[0,1]*F[1,0]
-    r0 = np.sum(FF)/2.0
-    r0D = np.sqrt(r0**2-D**2)
-    rp = r0 + r0D
-    rm = r0 - r0D
-
-    p0 = F[0,0]*F[1,0] + F[0,1]*F[1,1]
-    p02 = p0**2
-    p1p = -FF[0,0]-FF[0,1] + rp
-    p1m = -FF[0,0]-FF[0,1] + rm
-    ap = np.sqrt(p02+p1p**2)
-    am = np.sqrt(p02+p1m**2)
-
-    P = np.array([  [p0 /ap,  p0/am],
-                    [p1p/ap, p1m/am]  ])
-    return np.log([rp,rm]), P
 
 def micro_strain(nnode,dnj,u):
     dnu = mk_dnu(nnode,dnj,u)
