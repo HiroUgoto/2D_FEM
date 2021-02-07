@@ -68,7 +68,7 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim,output_dispz[:,0]]).T
-np.savetxt(output_dir+"z0_vs20.disp",output_line)
+np.savetxt(output_dir+"z0_vs00.disp",output_line)
 
 ## Output result ##
 plt.figure()
