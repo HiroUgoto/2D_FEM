@@ -229,8 +229,6 @@ class Element:
             self.nodes[i].force[:] += f[i0:i0+self.dof]
 
     def mk_bodyforce(self,acc0):
-        # if self.dof == 1:
-            # return
         if self.dim == 2:
             self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0

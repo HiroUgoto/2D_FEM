@@ -4,13 +4,16 @@ import matplotlib.pyplot as plt
 def plot_mesh(fem,amp=1.0):
     pc = ["lightblue","gray","yellow","green","pink"]
 
-    fig,ax = plt.subplots(figsize=(12,4))
+    fig,ax = plt.subplots(figsize=(6,4))
 
     x = [node.xyz[0] for node in fem.nodes]
     z = [node.xyz[1] for node in fem.nodes]
 
-    ax.set_xlim([min(x)-10,max(x)+10])
-    ax.set_ylim([max(z)+5,min(z)-7.5])
+    area_x = max(x)-min(x)
+    area_z = max(z)-min(z)
+
+    ax.set_xlim([min(x)-0.1*area_x,max(x)+0.1*area_x])
+    ax.set_ylim([max(z)+0.1*area_z,min(z)-0.25*area_z])
     ax.set_aspect('equal')
 
     for element in fem.elements:
@@ -25,7 +28,7 @@ def plot_mesh(fem,amp=1.0):
             fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])
             ax.add_patch(fpoly)
 
-    rc = 0.1
+    rc = 0.01*area_z
     for node in fem.nodes:
         p = plt.Circle((node.xyz[0],node.xyz[1]),rc,color="k")
         ax.add_patch(p)
@@ -34,7 +37,7 @@ def plot_mesh(fem,amp=1.0):
 
 #--------------------------------------------------------#
 def plot_mesh_update_init():
-    _,ax = plt.subplots(figsize=(12,4))
+    _,ax = plt.subplots(figsize=(6,4))
     ax.set_axisbelow(True)
     return ax
 
@@ -47,8 +50,11 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
     x = [node.xyz[0] for node in fem.nodes]
     z = [node.xyz[1] for node in fem.nodes]
 
-    ax.set_xlim([min(x)-10,max(x)+10])
-    ax.set_ylim([max(z)+5,min(z)-7.5])
+    area_x = max(x)-min(x)
+    area_z = max(z)-min(z)
+
+    ax.set_xlim([min(x)-0.1*area_x,max(x)+0.1*area_x])
+    ax.set_ylim([max(z)+0.1*area_z,min(z)-0.25*area_z])
     ax.set_aspect('equal')
 
     for element in fem.elements:
@@ -63,7 +69,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
             fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])
             ax.add_patch(fpoly)
 
-    rc = 0.1
+    rc = 0.01*area_z
     for node in fem.nodes:
         p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
         ax.add_patch(p)

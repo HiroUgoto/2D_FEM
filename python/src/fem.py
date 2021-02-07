@@ -239,20 +239,20 @@ class Fem():
 
     # ---------------------------------------
     def _update_matrix_node_init(self,node):
-        # node.mass = np.zeros(self.dof,dtype=np.float64)
-        # node.c    = np.zeros(self.dof,dtype=np.float64)
+        node.mass = np.zeros(self.dof,dtype=np.float64)
+        node.c    = np.zeros(self.dof,dtype=np.float64)
         node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
     def _update_matrix_set_elements(self,element):
         element.set_xn()
-        # element.mk_local_update()
-        element.mk_local_vector()
+        element.mk_local_update()
+        # element.mk_local_vector()
 
         id = 0
         for node in element.nodes:
             for i in range(self.dof):
-                # node.mass[i] += element.M_diag[id]
-                # node.c[i] += element.C_diag[id]
+                node.mass[i] += element.M_diag[id]
+                node.c[i] += element.C_diag[id]
                 node.dynamic_force[i] += element.force[id]
                 id += 1
 
