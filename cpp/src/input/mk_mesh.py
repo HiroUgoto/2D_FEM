@@ -28,7 +28,7 @@ for k in range(len(zg)):
             dofx = 0
 
         node[i,k] = inode
-        node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
+        node_lines += [ "{} {} {} {} {}\n".format(inode,xg[i],zg[k],dofx,dofz)]
         inode += 1
 
 
@@ -78,14 +78,14 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",20.0,1500.0,1000.0)]
+material_lines += ["{} {} {} {} {}\n".format(0,"vs_vp_rho",20.0,1500.0,1000.0)]
 
 nmaterial = len(material_lines)
 
 ### Set output ###
 output_node_lines = []
 for i in range(len(xg)):
-    output_node_lines += ["{} \n".format(i)]        #define output nodes
+    output_node_lines += ["{}\n".format(i)]        #define output nodes
 
 output_element_lines = []
 # for i in range(0,nelem-nx-len(zg)):        #define output elements
@@ -96,13 +96,13 @@ output_nelem = len(output_element_lines)
 
 
 with open("mesh.in","w") as f:
-    f.write("{} {} {} {} \n".format(nnode,nelem,nmaterial,dof))
+    f.write("{} {} {} {}\n".format(nnode,nelem,nmaterial,dof))
     f.writelines(node_lines)
     f.writelines(element_lines)
     f.writelines(material_lines)
 
 with open("output.in","w") as f:
-    f.write("{} {} \n".format(output_nnode,output_nelem))
+    f.write("{} {}\n".format(output_nnode,output_nelem))
     f.writelines(output_node_lines)
     f.writelines(output_element_lines)
 
