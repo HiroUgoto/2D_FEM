@@ -31,7 +31,7 @@ void Element::print() {
 void Element::set_style() {
   Element::estyle_p = set_element_style(Element::style);
   Element::dim = Element::estyle_p->dim;
-  
+
   Element::ng = Element::estyle_p->ng;
   Element::xi = Element::estyle_p->xi;
   Element::w  = Element::estyle_p->w;

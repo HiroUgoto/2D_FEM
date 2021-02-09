@@ -10,6 +10,7 @@ public:
 
 // ----------------------------------------------------- //
 ElementStyle* set_element_style(const std::string style);
+
 void set_gauss_points (const size_t n, Eigen::VectorXd& xi, Eigen::VectorXd& w);
 
 // ----------------------------------------------------- //
