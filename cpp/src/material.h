@@ -1,11 +1,11 @@
 class Material {
 public:
-  int id;
+  size_t id;
   std::string style;
   std::vector<double> param;
   double rmu, rlambda, rho;
 
-  Material (int id, std::string style, std::vector<double> param);
+  Material (size_t id, std::string style, std::vector<double> param);
   void print() ;
 
 private:

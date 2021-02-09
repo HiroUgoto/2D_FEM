@@ -3,8 +3,10 @@ CXX = g++
 CPPFLAGS = -std=c++17 -Wall --pedantic-errors
 LIBRARY = /usr/local/include/eigen3
 
+BUILD_DIR = obj
+
 SRCS := $(shell find . -name '*.cpp')
-OBJS := $(SRCS:%=%.o)
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
 $(TARGET_EXEC): $(OBJS) all.h all.h.gch
 	$(CXX) $(CPPFLAGS) -include all.h $(OBJS) -o $@
@@ -12,12 +14,15 @@ $(TARGET_EXEC): $(OBJS) all.h all.h.gch
 all.h.gch: all.h
 	$(CXX) $(CPPFLAGS) -x c++-header -o $@ $<
 
-%.cpp.o: %.cpp
+$(BUILD_DIR)/%.cpp.o: %.cpp
+	$(MKDIR_P) $(dir $@)
 	$(CXX) $(CPPFLAGS) -c $< -o $@ -I$(LIBRARY)
 
 clean:
 	rm -f $(TARGET_EXEC)
 	rm -f ./all.h.gch
-	rm -f $(OBJS)
+	rm -rf $(BUILD_DIR)
 
 .PHONY: clean
+
+MKDIR_P = mkdir -pv

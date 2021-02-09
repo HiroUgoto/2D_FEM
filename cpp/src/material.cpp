@@ -1,8 +1,8 @@
 #include "all.h"
-#include "material.h"
 #include <Eigen/Core>
+#include "material.h"
 
-Material::Material (int id, std::string style, std::vector<double> param) {
+Material::Material (size_t id, std::string style, std::vector<double> param) {
     Material::id = id;
     Material::style = style;
     Material::param = param;
@@ -48,9 +48,4 @@ void Material::set_param() {
     Material::rho = rho;
 
   }
-
-  std::cout << Material::rmu << "\n";
-  std::cout << Material::rlambda << "\n";
-  std::cout << Material::rho << "\n";
-
 }

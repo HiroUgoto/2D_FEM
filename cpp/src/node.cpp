@@ -1,9 +1,9 @@
 #include "all.h"
-#include "node.h"
 #include <Eigen/Core>
+#include "node.h"
 
 
-Node::Node (int id, std::vector<double> xyz, std::vector<int> freedom)
+Node::Node (size_t id, std::vector<double> xyz, std::vector<size_t> freedom)
   : xyz(2)
   {
     Node::id = id;

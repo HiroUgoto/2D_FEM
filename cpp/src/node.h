@@ -1,10 +1,9 @@
 class Node {
 public:
-  int id;
-  int dof;
+  size_t id, dof;
   std::vector<double> xyz;
-  std::vector<int> freedom;
+  std::vector<size_t> freedom;
 
-  Node (int id, std::vector<double> xyz, std::vector<int> freedom);
+  Node (size_t id, std::vector<double> xyz, std::vector<size_t> freedom);
   void print() ;
 };

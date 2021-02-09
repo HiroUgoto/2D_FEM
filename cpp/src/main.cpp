@@ -1,4 +1,6 @@
 #include "all.h"
+#include <Eigen/Core>
+#include "element_style.h"
 #include "node.h"
 #include "element.h"
 #include "material.h"

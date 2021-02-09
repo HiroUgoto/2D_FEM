@@ -1,11 +1,11 @@
 class Fem {
 public:
-  int dof;
+  size_t dof;
   std::vector<Node> nodes;
   std::vector<Element> elements;
   std::vector<Material> materials;
 
-  Fem (int dof, std::vector<Node> nodes,
+  Fem (size_t dof, std::vector<Node> nodes,
                 std::vector<Element> elements,
                 std::vector<Material> materials);
 };

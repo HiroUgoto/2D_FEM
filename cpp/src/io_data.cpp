@@ -1,4 +1,6 @@
 #include "all.h"
+#include <Eigen/Core>
+#include "element_style.h"
 #include "node.h"
 #include "element.h"
 #include "material.h"
@@ -6,7 +8,7 @@
 
 // ------------------------------------------------------------------- //
 Fem input_mesh (const std::string mesh_file) {
-  int nnode, nelem, nmaterial, dof;
+  size_t nnode, nelem, nmaterial, dof;
   std::string line;
 
   // Open file //
@@ -19,20 +21,20 @@ Fem input_mesh (const std::string mesh_file) {
 
   // Read nodes //
   std::vector<Node> nodes;
-  for (int inode = 0 ; inode < nnode ; inode++) {
-    int id;
+  for (size_t inode = 0 ; inode < nnode ; inode++) {
+    size_t id;
     std::vector<double> xyz(2);
-    std::vector<int> freedom(dof);
+    std::vector<size_t> freedom(dof);
 
     std::getline(f, line);
     // std::cout << line + "\n";
 
     std::istringstream iss(line);
     iss >> id;
-    for (int i = 0 ; i < 2 ; i++) {
+    for (size_t i = 0 ; i < 2 ; i++) {
       iss >> xyz.at(i);
     }
-    for (int i = 0 ; i < dof ; i++) {
+    for (size_t i = 0 ; i < dof ; i++) {
       iss >> freedom.at(i);
     }
 
@@ -42,11 +44,10 @@ Fem input_mesh (const std::string mesh_file) {
 
   // Read elements //
   std::vector<Element> elements;
-  for (int ielem = 0 ; ielem < nelem ; ielem++) {
-    int id;
+  for (size_t ielem = 0 ; ielem < nelem ; ielem++) {
+    size_t id, material_id;
     std::string style;
-    int material_id;
-    std::vector<int> inode;
+    std::vector<size_t> inode;
 
     std::getline(f, line);
     // std::cout << line + "\n";
@@ -65,8 +66,8 @@ Fem input_mesh (const std::string mesh_file) {
 
   // Read materials //
   std::vector<Material> materials;
-  for (int imaterial = 0 ; imaterial < nmaterial ; imaterial++) {
-    int id;
+  for (size_t imaterial = 0 ; imaterial < nmaterial ; imaterial++) {
+    size_t id;
     std::string style;
     std::vector<double> param;
 
