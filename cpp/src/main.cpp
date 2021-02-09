@@ -9,6 +9,7 @@ int main() {
 
   // ----- Input FEM Mesh ----- //
   Fem fem = input_mesh("input/mesh.in");
+  auto outputs = input_outputs("input/output.in");
 
   // ----- FEM Set up ----- //
 

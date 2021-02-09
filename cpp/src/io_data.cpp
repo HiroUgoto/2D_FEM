@@ -88,3 +88,46 @@ Fem input_mesh (const std::string mesh_file) {
   Fem fem(dof,nodes,elements,materials);
   return fem;
 }
+
+// ------------------------------------------------------------------- //
+std::tuple<std::vector<int>, std::vector<int>> input_outputs (const std::string output_file) {
+  int nnode, nelem;
+  std::string line;
+
+  // Open file //
+  std::ifstream f(output_file);
+
+  // Read header //
+  std::getline(f, line);
+  std::istringstream iss(line);
+  iss >> nnode >> nelem;
+
+  // Read nodes //
+  std::vector<int> nodes;
+  for (int inode = 0 ; inode < nnode ; inode++) {
+    int id;
+
+    std::getline(f, line);
+    // std::cout << line + "\n";
+    std::istringstream iss(line);
+    iss >> id;
+
+    nodes.push_back(id);
+  }
+
+  std::vector<int> elements;
+  for (int ielem = 0 ; ielem < nelem ; ielem++) {
+    int id;
+
+    std::getline(f, line);
+    // std::cout << line + "\n";
+    std::istringstream iss(line);
+    iss >> id;
+
+    elements.push_back(id);
+  }
+
+  auto outputs = std::make_tuple(nodes,elements);
+  return outputs;
+
+}
