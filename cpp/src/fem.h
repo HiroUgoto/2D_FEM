@@ -17,10 +17,9 @@ class Fem {
                   std::vector<Element> elements,
                   std::vector<Material> materials);
 
+  public:
     void
       set_init();
-    void
-      set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs);
 
   private:
     void
@@ -29,4 +28,15 @@ class Fem {
       _set_initial_condition();
     void
       _set_initial_matrix();
+
+  public:
+    void
+      set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs);
+
+    void
+      self_gravity();
+
+  private:
+    void
+      _self_gravity_cg(const bool full=true);
 };

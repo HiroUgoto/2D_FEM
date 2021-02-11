@@ -149,12 +149,14 @@ class Fem():
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
+
         for element in self.connected_element_set:
             u = np.zeros(element.nodes[0].dof,dtype=np.float64)
             for node in element.node_set:
                 u += node._ur
             for node in element.node_set:
                 node._ur = u/element.nnode
+
         for node in self.node_set:
             node._up = np.copy(node._ur)
         for element in self.element_set:
@@ -170,6 +172,8 @@ class Fem():
                 element.mk_ku_u(element._up)
             for node in self.node_set:
                 node._uy = node.force
+            # print(self.nodes[0]._uy)
+            # sys.exit()
 
             ## correction boundary condition
             for node in self.node_set:

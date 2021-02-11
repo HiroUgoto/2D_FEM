@@ -32,6 +32,7 @@ int main() {
   size_t ntim = tim.size();
 
   // ----- Static deformation ----- //
+  fem.self_gravity();
 
 
   clock_t end = clock();

@@ -23,6 +23,7 @@ class Element {
     Eigen::MatrixXd De, Dv;
     Eigen::VectorXd force;
 
+    std::vector<Eigen::VectorXd*> _up_p;
 
     Element (size_t id, std::string style, size_t material_id, std::vector<size_t> inode);
 
@@ -49,6 +50,15 @@ class Element {
       mk_local_matrix();
     void
       mk_local_vector();
+
+    void
+      mk_ku();
+    void
+      mk_ku_u(const std::vector<Eigen::VectorXd*> u_p);
+
+  private:
+    Eigen::VectorXd
+      mk_u_stack(const std::vector<Eigen::VectorXd*> u_p);
 
   private:
     Eigen::MatrixXd
