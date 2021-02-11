@@ -3,6 +3,7 @@
 #include "node.h"
 
 
+Node::Node () {}
 Node::Node (size_t id, std::vector<double> xyz, std::vector<size_t> freedom)
   : xyz(2)
   {
@@ -22,4 +23,22 @@ void Node::print() {
     std::cout << Node::freedom.at(i) << " ";
   }
   std::cout << "\n";
+}
+
+void Node::set_initial_condition() {
+  Node::u  = Eigen::VectorXd::Zero(Node::dof);
+  Node::um = Eigen::VectorXd::Zero(Node::dof);
+  Node::v  = Eigen::VectorXd::Zero(Node::dof);
+
+  Node::mass = Eigen::VectorXd::Zero(Node::dof);
+  Node::c    = Eigen::VectorXd::Zero(Node::dof);
+  Node::k    = Eigen::VectorXd::Zero(Node::dof);
+
+  Node::force = Eigen::VectorXd::Zero(Node::dof);
+  Node::static_force  = Eigen::VectorXd::Zero(Node::dof);
+  Node::dynamic_force = Eigen::VectorXd::Zero(Node::dof);
+
+  Node::_up = Eigen::VectorXd::Zero(Node::dof);
+  Node::_ur = Eigen::VectorXd::Zero(Node::dof);
+  Node::_uy = Eigen::VectorXd::Zero(Node::dof);
 }

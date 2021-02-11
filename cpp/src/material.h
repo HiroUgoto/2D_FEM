@@ -10,4 +10,9 @@ public:
 
 private:
   void set_param();
+
+public:
+  Eigen::MatrixXd mk_d(const size_t dof);
+  Eigen::MatrixXd mk_visco(const size_t dof);
+
 };

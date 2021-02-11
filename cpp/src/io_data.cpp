@@ -1,9 +1,9 @@
 #include "all.h"
 #include <Eigen/Core>
-#include "element_style.h"
 #include "node.h"
-#include "element.h"
 #include "material.h"
+#include "element_style.h"
+#include "element.h"
 #include "fem.h"
 
 // ------------------------------------------------------------------- //
@@ -128,7 +128,6 @@ std::tuple<std::vector<int>, std::vector<int>> input_outputs (const std::string 
     elements.push_back(id);
   }
 
-  auto outputs = std::make_tuple(nodes,elements);
-  return outputs;
+  return std::forward_as_tuple(nodes,elements);
 
 }
