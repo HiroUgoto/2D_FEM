@@ -33,11 +33,16 @@ ntim = len(tim)
 # plt.plot(tim,wave_acc)
 # plt.show()
 
-ax = plot_model.plot_mesh_update_init()
+# ax = plot_model.plot_mesh_update_init()
 
 ## --- Static deformation --- ##
 fem.self_gravity()
-plot_model.plot_mesh_update(ax,fem,10.)
+# plot_model.plot_mesh_update(ax,fem,10.)
+
+elapsed_time = time.time() - start
+print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
+sys.exit()
+
 
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
@@ -57,7 +62,7 @@ for it in range(len(tim)):
     output_dispz[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
 
     if it%100 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.)
+        # plot_model.plot_mesh_update(ax,fem,10.)
         print(it,"t=",it*dt,output_dispz[it,0])
 
 elapsed_time = time.time() - start
@@ -70,6 +75,6 @@ output_line = np.vstack([tim,output_dispz[:,0]]).T
 np.savetxt(output_dir+"z0_vs20.disp",output_line)
 
 ## Output result ##
-plt.figure()
-plt.plot(tim,output_dispz[:,0])
-plt.show()
+# plt.figure()
+# plt.plot(tim,output_dispz[:,0])
+# plt.show()

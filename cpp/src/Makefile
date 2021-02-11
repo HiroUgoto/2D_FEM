@@ -1,6 +1,6 @@
 TARGET_EXEC = FEM
 CXX = g++
-CPPFLAGS = -std=c++17 -Wall --pedantic-errors
+CPPFLAGS = -std=c++17 -Wall --pedantic-errors -O
 LIBRARY = /usr/local/include/eigen3
 
 BUILD_DIR = obj

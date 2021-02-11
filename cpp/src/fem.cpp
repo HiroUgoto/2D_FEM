@@ -7,6 +7,7 @@
 #include "fem.h"
 
 // ------------------------------------------------------------------- //
+// ------------------------------------------------------------------- //
 Fem::Fem (size_t dof, std::vector<Node> nodes,
                 std::vector<Element> elements,
                 std::vector<Material> materials)
@@ -21,6 +22,7 @@ Fem::Fem (size_t dof, std::vector<Node> nodes,
 
   }
 
+// ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void Fem::set_init() {
   Fem::_set_mesh();
@@ -121,4 +123,17 @@ void Fem::_set_initial_matrix(){
       }
     }
   }
+}
+
+// ------------------------------------------------------------------- //
+// ------------------------------------------------------------------- //
+void Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs) {
+  std::vector<size_t> output_node_list, output_element_list;
+  std::tie(output_node_list, output_element_list) = outputs;
+
+  Fem::output_nnode = output_node_list.size();
+  Fem::output_nodes = output_node_list;
+
+  Fem::output_nelem = output_element_list.size();
+  Fem::output_elements = output_element_list;
 }
