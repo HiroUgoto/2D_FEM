@@ -46,6 +46,8 @@ void
     Element::n_list  = estyle_p->n_list;
     Element::dn_list = estyle_p->dn_list;
     Element::w_list = estyle_p->w_list;
+
+    Element::dn_center = estyle_p->dn_center;
   }
 
 void
@@ -225,6 +227,39 @@ void
 
   }
 
+void
+  Element::mk_cv() {
+    Eigen::VectorXd v, cv;
+
+    v = Element::mk_u_stack(Element::v_p);
+    cv = Element::C_off_diag * v;
+
+    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+      size_t i0 = inode*Element::dof;
+      for (size_t i = 0 ; i < Element::dof ; i++) {
+        Element::nodes_p[inode]->force(i) += cv(i0+i);
+      }
+    }
+  }
+
+void
+  Element::mk_ku_cv() {
+    Eigen::VectorXd u, ku;
+    Eigen::VectorXd v, cv;
+
+    u = Element::mk_u_stack(Element::u_p);
+    v = Element::mk_u_stack(Element::v_p);
+    ku = Element::K * u;
+    cv = Element::C_off_diag * v;
+
+    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+      size_t i0 = inode*Element::dof;
+      for (size_t i = 0 ; i < Element::dof ; i++) {
+        Element::nodes_p[inode]->force(i) += ku(i0+i) + cv(i0+i);
+      }
+    }
+  }
+
 Eigen::VectorXd
   Element::mk_u_stack(const std::vector<Eigen::VectorXd*> u_p) {
     Eigen::VectorXd u(Element::ndof);
@@ -238,6 +273,58 @@ Eigen::VectorXd
     return u;
   }
 
+// ------------------------------------------------------------------- //
+void
+  Element::update_bodyforce(const Eigen::VectorXd acc0) {
+    Element::mk_bodyforce(acc0);
+
+    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+      size_t i0 = inode*Element::dof;
+      for (size_t i = 0 ; i < Element::dof ; i++) {
+        Element::nodes_p[inode]->force(i) -= Element::force(i0+i);
+      }
+    }
+  }
+
+void
+  Element::mk_bodyforce(const Eigen::VectorXd acc0) {
+    if (Element::dim == 2) {
+      Element::force = Eigen::VectorXd::Zero(Element::ndof);
+
+      double V = 0.0;
+      for (size_t i = 0 ; i < Element::ng_all ; i++){
+        double det, detJ;
+        Eigen::Matrix2d jacobi;
+        Eigen::MatrixXd N;
+
+        std::tie(det, jacobi) = Element::mk_jacobi(Element::xnT, Element::dn_list[i]);
+        N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+
+        detJ = det * Element::w_list[i];
+
+        V += detJ;
+        Element::force += (N.row(0)*acc0[0] + N.row(1)*acc0[1]) *detJ;
+      }
+
+      Element::force *= Element::mass / V;
+    }
+
+  }
+
+// ------------------------------------------------------------------- //
+void
+  Element::calc_stress() {
+    double det;
+    Eigen::VectorXd u;
+    Eigen::MatrixXd dnj, B;
+
+    std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_center);
+    B = Element::mk_b(Element::dof, Element::nnode, dnj);
+    u = Element::mk_u_stack(Element::u_p);
+
+    Element::strain = B * u;
+    Element::stress = Element::De * Element::strain;
+  }
 
 // ------------------------------------------------------------------- //
 Eigen::MatrixXd

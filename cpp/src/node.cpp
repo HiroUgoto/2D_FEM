@@ -38,7 +38,13 @@ void Node::set_initial_condition() {
   Node::static_force  = Eigen::VectorXd::Zero(Node::dof);
   Node::dynamic_force = Eigen::VectorXd::Zero(Node::dof);
 
+  Node::inv_mc = Eigen::VectorXd::Zero(Node::dof);
+  Node::mass_inv_mc = Eigen::VectorXd::Zero(Node::dof);
+  Node::c_inv_mc = Eigen::VectorXd::Zero(Node::dof);
+  Node::dtdt_inv_mc = Eigen::VectorXd::Zero(Node::dof);
+
   Node::_up = Eigen::VectorXd::Zero(Node::dof);
   Node::_ur = Eigen::VectorXd::Zero(Node::dof);
   Node::_uy = Eigen::VectorXd::Zero(Node::dof);
+
 }

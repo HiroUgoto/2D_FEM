@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import time
+import time, sys
 
 import io_data
 import input_wave
@@ -39,11 +39,6 @@ ntim = len(tim)
 fem.self_gravity()
 # plot_model.plot_mesh_update(ax,fem,10.)
 
-elapsed_time = time.time() - start
-print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
-sys.exit()
-
-
 ## --- Prepare time solver --- ##
 fem.update_init(dt)
 
@@ -55,8 +50,8 @@ acc0 = np.array([0.0,0.0])
 for it in range(len(tim)):
     acc0 = np.array([wave_acc[it],0.0])
 
-    fem.update_time(acc0,FD=True)
-    # fem.update_time(acc0)
+    # fem.update_time(acc0,FD=True)
+    fem.update_time(acc0)
 
     output_dispx[it,:] = [node.u[0]-node.u0[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
@@ -72,7 +67,7 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim,output_dispz[:,0]]).T
-np.savetxt(output_dir+"z0_vs20.disp",output_line)
+np.savetxt(output_dir+"z0_vs20_md.disp",output_line)
 
 ## Output result ##
 # plt.figure()

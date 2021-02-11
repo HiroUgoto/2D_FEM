@@ -12,6 +12,8 @@ class Fem {
     size_t output_nnode, output_nelem;
     std::vector<size_t> output_nodes, output_elements;
 
+    double dt, inv_dt2;
+
 
     Fem (size_t dof, std::vector<Node> nodes,
                   std::vector<Element> elements,
@@ -39,4 +41,13 @@ class Fem {
   private:
     void
       _self_gravity_cg(const bool full=true);
+
+  public:
+    void
+      update_init(const double dt);
+
+    void
+      update_time(const Eigen::VectorXd acc0);
+
+
 };

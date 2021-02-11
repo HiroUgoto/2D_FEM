@@ -15,6 +15,7 @@ int main() {
   // ----- Input FEM Mesh ----- //
   Fem fem = io_data::input_mesh("input/mesh.in");
   auto outputs = io_data::input_outputs("input/output.in");
+  std::string output_dir = "result/";
 
   // ----- FEM Set up ----- //
   fem.set_init();
@@ -34,8 +35,44 @@ int main() {
   // ----- Static deformation ----- //
   fem.self_gravity();
 
+  // ----- Prepare time solver ----- //
+  fem.update_init(dt);
+
+  Eigen::MatrixXd output_dispx = Eigen::MatrixXd::Zero(ntim,fem.output_nnode);
+  Eigen::MatrixXd output_dispz = Eigen::MatrixXd::Zero(ntim,fem.output_nnode);
+
+  // ----- time iteration ----- //
+  Eigen::VectorXd acc0 = Eigen::Vector2d::Zero(fem.dof);
+
+  for (size_t it = 0 ; it < ntim ; it++) {
+    acc0[0] = wave_acc[it];
+
+    fem.update_time(acc0);
+
+    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
+      Node& node = fem.nodes[fem.output_nodes[i]];
+      output_dispx(it,i) = node.u(0) - node.u0(0);
+      output_dispz(it,i) = node.u(1) - node.u0(1);
+    }
+
+    if (it%1000 == 0) {
+      std::cout << it << " t= " << it*dt << " ";
+      std::cout << output_dispz(it,0) << "\n";
+    }
+  }
 
   clock_t end = clock();
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
+
+  // --- Write output file --- //
+  std::ofstream f(output_dir + "z0_vs20_md.disp");
+  for (size_t it = 0 ; it < ntim ; it++) {
+    f << tim(it) ;
+    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
+      f << " " << output_dispz(it,i);
+    }
+    f << "\n";
+  }
+  f.close();
 
 }

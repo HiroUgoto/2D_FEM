@@ -314,3 +314,83 @@ void
     }
 
   }
+
+// ------------------------------------------------------------------- //
+// ------------------------------------------------------------------- //
+void
+  Fem::update_init(const double dt) {
+    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+      Node& node = Fem::nodes[inode];
+
+      for (size_t i = 0 ; i < node.dof ; i++) {
+        node.inv_mc[i] = 1.0 / (node.mass[i] + 0.5*dt*node.c[i]);
+        node.mass_inv_mc[i] = node.mass[i] * node.inv_mc[i];
+        node.c_inv_mc[i] = node.c[i] * node.inv_mc[i] * 0.5*dt;
+        node.dtdt_inv_mc[i] = dt*dt*node.inv_mc[i];
+      }
+    }
+
+    Fem::dt = dt;
+    Fem::inv_dt2 = 1.0/(2.0*dt);
+  }
+
+// ------------------------------------------------------------------- //
+// ------------------------------------------------------------------- //
+void
+  Fem::update_time(const Eigen::VectorXd acc0) {
+    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+      Node& node = Fem::nodes[inode];
+      node.dynamic_force = node.static_force;
+    }
+
+    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+      Node& node = Fem::nodes[inode];
+      node.force = -node.dynamic_force;
+    }
+
+    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
+      Element& element = Fem::elements[ielem];
+      element.update_bodyforce(acc0);
+    }
+
+    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
+      Element& element = Fem::elements[ielem];
+      element.mk_ku_cv();
+    }
+
+    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+      Node& node = Fem::nodes[inode];
+      Eigen::VectorXd u = node.u;
+
+      for (size_t i = 0 ; i < node.dof ; i++) {
+        if (node.freedom[i] == 0) {
+          node.u[i] = 0.0;
+        } else {
+          node.u[i] = node.mass_inv_mc[i]*(2.0*u[i]-node.um[i]) + node.c_inv_mc[i]*node.um[i] - node.dtdt_inv_mc[i]*node.force[i];
+        }
+      }
+      node.v = (node.u - node.um) * Fem::inv_dt2;
+      node.um = u;
+    }
+
+    for (size_t i = 0 ; i < Fem::connected_elements.size() ; i++) {
+      size_t ielem = Fem::connected_elements[i];
+      Element& element = Fem::elements[ielem];
+      Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
+
+      for (size_t inode = 0 ; inode < element.nnode ; inode++) {
+        u += element.nodes_p[inode]->u;
+      }
+      for (size_t inode = 0 ; inode < element.nnode ; inode++) {
+        element.nodes_p[inode]->u = u/element.nnode;
+      }
+    }
+
+    for (size_t i = 0 ; i < Fem::output_elements.size() ; i++) {
+      size_t ielem = Fem::output_elements[i];
+      Element& element = Fem::elements[ielem];
+      element.calc_stress();
+    }
+  }
+
+// ------------------------------------------------------------------- //

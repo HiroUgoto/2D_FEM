@@ -9,6 +9,9 @@ class ElementStyle {
     std::vector<Eigen::MatrixXd> dn_list;
     std::vector<double> w_list;
 
+    Eigen::MatrixXd dn_center;
+
+
     ElementStyle ();
 
     virtual Eigen::VectorXd

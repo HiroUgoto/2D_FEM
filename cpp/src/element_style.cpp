@@ -44,7 +44,6 @@ void set_gauss_points (const size_t n, Eigen::VectorXd& xi, Eigen::VectorXd& w) 
         (322.0 - 13.0*sqrt(70.0))/900.0,
         (322.0 - 13.0*sqrt(70.0))/900.0;
   }
-
 }
 
 
@@ -86,6 +85,8 @@ Solid_2d_4Node::Solid_2d_4Node () {
       id++;
     }
   }
+
+  Solid_2d_4Node::dn_center = Solid_2d_4Node::shape_function_dn(0.0,0.0);
 }
 
 Eigen::VectorXd Solid_2d_4Node::shape_function_n (double xi, double zeta) {
@@ -136,6 +137,8 @@ Solid_2d_9Node::Solid_2d_9Node () {
       id++;
     }
   }
+
+  Solid_2d_9Node::dn_center = Solid_2d_9Node::shape_function_dn(0.0,0.0);
 }
 
 Eigen::VectorXd Solid_2d_9Node::shape_function_n (double xi, double zeta) {

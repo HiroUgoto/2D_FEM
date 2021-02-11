@@ -17,11 +17,14 @@ class Element {
     std::vector<Eigen::VectorXd> n_list;
     std::vector<Eigen::MatrixXd> dn_list;
     std::vector<double> w_list;
+    Eigen::MatrixXd dn_center;
 
     Eigen::VectorXd M_diag, K_diag, C_diag;
     Eigen::MatrixXd K, K_off_diag, C, C_off_diag;
     Eigen::MatrixXd De, Dv;
     Eigen::VectorXd force;
+
+    Eigen::VectorXd strain, stress;
 
     std::vector<Eigen::VectorXd*> _up_p;
 
@@ -56,9 +59,23 @@ class Element {
     void
       mk_ku_u(const std::vector<Eigen::VectorXd*> u_p);
 
+    void
+      mk_cv();
+    void
+      mk_ku_cv();
+
   private:
     Eigen::VectorXd
       mk_u_stack(const std::vector<Eigen::VectorXd*> u_p);
+
+  public:
+    void
+      update_bodyforce(const Eigen::VectorXd acc0);
+    void
+      mk_bodyforce(const Eigen::VectorXd acc0);
+
+    void
+      calc_stress();
 
   private:
     Eigen::MatrixXd
