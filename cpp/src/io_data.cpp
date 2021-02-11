@@ -47,7 +47,8 @@ Fem
     // Read elements //
     std::vector<Element> elements;
     for (size_t ielem = 0 ; ielem < nelem ; ielem++) {
-      size_t id, material_id;
+      size_t id;
+      int material_id;
       std::string style;
       std::vector<size_t> inode;
 
@@ -57,7 +58,7 @@ Fem
       std::istringstream iss(line);
       iss >> id >> style >> material_id ;
       while(!iss.eof()) {
-        int in;
+        size_t in;
         iss >> in;
         inode.push_back(in);
       }

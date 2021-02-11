@@ -75,7 +75,6 @@ void
       if (element.style.find("connect") != std::string::npos) {
         Fem::connected_elements.push_back(ielem);
       }
-
     }
   }
 
@@ -337,7 +336,7 @@ void
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void
-  Fem::update_time(const Eigen::VectorXd acc0) {
+  Fem::update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave) {
     for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
       Node& node = Fem::nodes[inode];
       node.dynamic_force = node.static_force;
@@ -348,9 +347,18 @@ void
       node.force = -node.dynamic_force;
     }
 
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-      Element& element = Fem::elements[ielem];
-      element.update_bodyforce(acc0);
+    if (input_wave) {
+      for (size_t i = 0 ; i < Fem::input_elements.size() ; i++) {
+        size_t ielem = Fem::input_elements[i];
+        Element& element = Fem::elements[ielem];
+        element.update_inputwave(vel0);
+      }
+
+    } else {
+      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
+        Element& element = Fem::elements[ielem];
+        element.update_bodyforce(acc0);
+      }
     }
 
     for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {

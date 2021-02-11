@@ -47,7 +47,6 @@ class Fem {
       update_init(const double dt);
 
     void
-      update_time(const Eigen::VectorXd acc0);
-
+      update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave=false);
 
 };

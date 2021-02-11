@@ -52,14 +52,13 @@ for k in range(nz):
 
 # for i in range(nx):
 #     style = "1d3input"
-#     im = 1
+#     im = 0
 #
 #     param_line = "{} {} {} ".format(ielem,style,im)
-#     style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
+#     style_line = "{} {} {}".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
 #
 #     element_lines += [param_line + style_line + "\n"]
 #     ielem += 1
-#
 #
 # for k in range(len(zg)):     #connected element
 #     style = "connect"

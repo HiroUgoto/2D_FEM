@@ -42,3 +42,29 @@ class Solid_2d_9Node: public ElementStyle {
     Eigen::VectorXd shape_function_n (double xi, double zeta);
     Eigen::MatrixXd shape_function_dn (double xi, double zeta);
 };
+
+// ----------------------------------------------------- //
+class Line_1d_2Node: public ElementStyle {
+  public:
+    Line_1d_2Node ();
+    Eigen::VectorXd shape_function_n (double xi, double zeta=0.0);
+    Eigen::MatrixXd shape_function_dn (double xi, double zeta=0.0);
+};
+
+// ----------------------------------------------------- //
+class Line_1d_3Node: public ElementStyle {
+  public:
+    Line_1d_3Node ();
+    Eigen::VectorXd shape_function_n (double xi, double zeta=0.0);
+    Eigen::MatrixXd shape_function_dn (double xi, double zeta=0.0);
+};
+
+// ----------------------------------------------------- //
+class Input_1d_2Node: public Line_1d_2Node {};
+class Input_1d_3Node: public Line_1d_3Node {};
+
+// ----------------------------------------------------- //
+class Connect: public Line_1d_2Node {
+  public:
+    Connect ();
+};

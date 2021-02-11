@@ -1,6 +1,7 @@
 class Element {
   public:
-    size_t id, material_id;
+    size_t id;
+    int material_id;
     std::string style;
     std::vector<size_t> inode;
     double gravity;
@@ -21,14 +22,14 @@ class Element {
 
     Eigen::VectorXd M_diag, K_diag, C_diag;
     Eigen::MatrixXd K, K_off_diag, C, C_off_diag;
-    Eigen::MatrixXd De, Dv;
+    Eigen::MatrixXd De, Dv, imp;
     Eigen::VectorXd force;
 
     Eigen::VectorXd strain, stress;
 
     std::vector<Eigen::VectorXd*> _up_p;
 
-    Element (size_t id, std::string style, size_t material_id, std::vector<size_t> inode);
+    Element (size_t id, std::string style, int material_id, std::vector<size_t> inode);
 
     void
       print() ;
@@ -75,6 +76,10 @@ class Element {
       mk_bodyforce(const Eigen::VectorXd acc0);
 
     void
+      update_inputwave(const Eigen::VectorXd vel0);
+
+
+    void
       calc_stress();
 
   private:
@@ -82,6 +87,11 @@ class Element {
       mk_m(const Eigen::MatrixXd N);
     Eigen::MatrixXd
       mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n);
+
+    Eigen::MatrixXd
+      mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp);
+    std::tuple<double, Eigen::MatrixXd>
+      mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
 
     Eigen::MatrixXd
       mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D);

@@ -7,7 +7,7 @@
 
 
 // ------------------------------------------------------------------- //
-Element::Element (size_t id, std::string style, size_t material_id, std::vector<size_t> inode)
+Element::Element (size_t id, std::string style, int material_id, std::vector<size_t> inode)
   {
     Element::id = id;
     Element::style = style;
@@ -118,7 +118,7 @@ void
       Element::mass = Element::rho * V;
 
     } else if (Element::dim == 1) {
-
+      Element::imp = Element::material_p->mk_imp(Element::dof);
     }
   }
 
@@ -166,7 +166,27 @@ void
       Element::C_off_diag = Element::C - Element::C_off_diag;
 
     } else if (Element::dim == 1) {
+      if (Element::style.find("input") != std::string::npos) {
+        Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
 
+        for (size_t i = 0 ; i < Element::ng_all ; i++){
+          double det, detJ;
+          Eigen::MatrixXd N, q, NqN;
+
+          std::tie(det, q) =
+              Element::mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
+
+          N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+          NqN = Element::mk_nqn(N, q, Element::imp);
+
+          detJ = det * Element::w_list[i];
+          Element::C += NqN * detJ;
+        }
+
+        Element::C_diag = Element::C.diagonal();
+        Element::C_off_diag = Element::C_diag.asDiagonal();
+        Element::C_off_diag = Element::C - Element::C_off_diag;
+      }
     }
   }
 
@@ -275,6 +295,28 @@ Eigen::VectorXd
 
 // ------------------------------------------------------------------- //
 void
+  Element::update_inputwave(const Eigen::VectorXd vel0) {
+    Eigen::VectorXd v(Element::ndof), cv(Element::ndof);
+    // Eigen::VectorXd cv(Element::ndof);
+
+    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+      size_t i0 = inode*Element::dof;
+      for (size_t i = 0 ; i < Element::dof ; i++) {
+        v(i0+i) = vel0(i);
+      }
+    }
+    cv = Element::C * v;
+
+    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+      size_t i0 = inode*Element::dof;
+      for (size_t i = 0 ; i < Element::dof ; i++) {
+        Element::nodes_p[inode]->force(i) -= 2.0*cv(i0+i);
+      }
+    }
+  }
+
+// ------------------------------------------------------------------- //
+void
   Element::update_bodyforce(const Eigen::VectorXd acc0) {
     Element::mk_bodyforce(acc0);
 
@@ -364,6 +406,44 @@ Eigen::MatrixXd
     }
 
     return N;
+  }
+
+// ------------------------------------------------------------------- //
+Eigen::MatrixXd
+  Element::mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp) {
+    Eigen::MatrixXd nqn;
+
+    nqn = N.transpose() * q.transpose() * imp * q * N;
+    return nqn;
+  }
+
+std::tuple<double, Eigen::MatrixXd>
+  Element::mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
+    Eigen::MatrixXd q;
+    Eigen::VectorXd n(2), t(2);
+    double det;
+
+    t = xnT * dn;
+    n(0) = t(1); n(1) = -t(0);
+    det = n.norm();
+
+    if (dof == 1){
+      q = Eigen::MatrixXd::Zero(1,1);
+      q(0,0) = 1.0;
+
+    } else if (dof == 2){
+      q = Eigen::MatrixXd::Zero(2,2);
+      q(0,0) = n(0)/det; q(0,1) = n(1)/det;
+      q(1,0) = t(0)/det; q(1,1) = t(1)/det;
+
+    } else if (dof == 3){
+      q = Eigen::MatrixXd::Zero(3,3);
+      q(0,0) = n(0)/det; q(0,1) = n(1)/det;
+      q(1,0) = t(0)/det; q(1,1) = t(1)/det;
+      q(2,2) = 1.0/det;
+    }
+
+    return std::forward_as_tuple(det, q);
   }
 
 // ------------------------------------------------------------------- //

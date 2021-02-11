@@ -53,58 +53,84 @@ void Material::set_param() {
 // ------------------------------------------------------------------- //
 Eigen::MatrixXd
   Material::mk_d(const size_t dof) {
-  Eigen::MatrixXd D;
+    Eigen::MatrixXd D;
 
-  if (dof == 1) {
-    D = Eigen::MatrixXd::Zero(2,2);
-    D(0,0) = Material::rmu;
-    D(1,1) = Material::rmu;
+    if (dof == 1) {
+      D = Eigen::MatrixXd::Zero(2,2);
+      D(0,0) = Material::rmu;
+      D(1,1) = Material::rmu;
 
-  } else if (dof == 2) {
-    D = Eigen::MatrixXd::Zero(3,3);
-    D(0,0) = Material::rlambda + 2.0*Material::rmu;
-    D(0,1) = Material::rlambda;
-    D(1,0) = Material::rlambda;
-    D(1,1) = Material::rlambda + 2.0*Material::rmu;
-    D(2,2) = Material::rmu;
+    } else if (dof == 2) {
+      D = Eigen::MatrixXd::Zero(3,3);
+      D(0,0) = Material::rlambda + 2.0*Material::rmu;
+      D(0,1) = Material::rlambda;
+      D(1,0) = Material::rlambda;
+      D(1,1) = Material::rlambda + 2.0*Material::rmu;
+      D(2,2) = Material::rmu;
 
-  } else if (dof == 2) {
-    D = Eigen::MatrixXd::Zero(5,5);
-    D(0,0) = Material::rlambda + 2.0*Material::rmu;
-    D(0,1) = Material::rlambda;
-    D(1,0) = Material::rlambda;
-    D(1,1) = Material::rlambda + 2.0*Material::rmu;
-    D(2,2) = Material::rmu;
-    D(3,3) = Material::rmu;
-    D(4,4) = Material::rmu;
+    } else if (dof == 2) {
+      D = Eigen::MatrixXd::Zero(5,5);
+      D(0,0) = Material::rlambda + 2.0*Material::rmu;
+      D(0,1) = Material::rlambda;
+      D(1,0) = Material::rlambda;
+      D(1,1) = Material::rlambda + 2.0*Material::rmu;
+      D(2,2) = Material::rmu;
+      D(3,3) = Material::rmu;
+      D(4,4) = Material::rmu;
 
+    }
+
+    return D;
   }
-
-  return D;
-}
 
 // ------------------------------------------------------------------- //
 Eigen::MatrixXd
   Material::mk_visco(const size_t dof) {
-  Eigen::MatrixXd D;
-  double mu = 0.001; // [Pa s]
+    Eigen::MatrixXd D;
+    double mu = 0.001; // [Pa s]
 
-  if (dof == 1) {
-    D = Eigen::MatrixXd::Zero(2,2);
-    D(0,0) = mu;
-    D(1,1) = mu;
+    if (dof == 1) {
+      D = Eigen::MatrixXd::Zero(2,2);
+      D(0,0) = mu;
+      D(1,1) = mu;
 
-  } else if (dof == 2) {
-    D = Eigen::MatrixXd::Zero(3,3);
-    D(2,2) = mu;
+    } else if (dof == 2) {
+      D = Eigen::MatrixXd::Zero(3,3);
+      D(2,2) = mu;
 
-  } else if (dof == 2) {
-    D = Eigen::MatrixXd::Zero(5,5);
-    D(2,2) = mu;
-    D(3,3) = mu;
-    D(4,4) = mu;
+    } else if (dof == 2) {
+      D = Eigen::MatrixXd::Zero(5,5);
+      D(2,2) = mu;
+      D(3,3) = mu;
+      D(4,4) = mu;
 
+    }
+
+    return D;
   }
 
-  return D;
-}
+// ------------------------------------------------------------------- //
+Eigen::MatrixXd
+  Material::mk_imp(const size_t dof) {
+    Eigen::MatrixXd imp;
+    double vs = sqrt(Material::rmu/Material::rho);
+    double vp = sqrt((Material::rlambda + 2.0*Material::rmu)/Material::rho);
+
+    if (dof == 1) {
+      imp = Eigen::MatrixXd::Zero(1,1);
+      imp(0,0) = Material::rho * vs;
+
+    } else if (dof == 2) {
+      imp = Eigen::MatrixXd::Zero(2,2);
+      imp(0,0) = Material::rho * vp;
+      imp(1,1) = Material::rho * vs;
+
+    } else if (dof == 3) {
+      imp = Eigen::MatrixXd::Zero(3,3);
+      imp(0,0) = Material::rho * vp;
+      imp(1,1) = Material::rho * vs;
+      imp(2,2) = Material::rho * vs;
+    }
+
+    return imp;
+  }
