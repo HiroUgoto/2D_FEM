@@ -47,16 +47,17 @@ output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
 
 acc0 = np.array([0.0,0.0])
-for it in range(len(tim)):
+# for it in range(len(tim)):
+for it in range(100):
     acc0 = np.array([wave_acc[it],0.0])
 
-    # fem.update_time(acc0,FD=True)
-    fem.update_time(acc0)
+    fem.update_time(acc0,FD=True)
+    # fem.update_time(acc0)
 
     output_dispx[it,:] = [node.u[0]-node.u0[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
 
-    if it%100 == 0:
+    if it%10 == 0:
         # plot_model.plot_mesh_update(ax,fem,10.)
         print(it,"t=",it*dt,output_dispz[it,0])
 
@@ -67,7 +68,7 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim,output_dispz[:,0]]).T
-np.savetxt(output_dir+"z0_vs20_md.disp",output_line)
+np.savetxt(output_dir+"z0_vs20.disp",output_line)
 
 ## Output result ##
 # plt.figure()

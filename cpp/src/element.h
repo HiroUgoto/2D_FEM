@@ -54,6 +54,8 @@ class Element {
       mk_local_matrix();
     void
       mk_local_vector();
+    void
+      mk_local_update();
 
     void
       mk_ku();
@@ -65,9 +67,15 @@ class Element {
     void
       mk_ku_cv();
 
+    void
+      mk_B_stress();
+
+
   private:
     Eigen::VectorXd
-      mk_u_stack(const std::vector<Eigen::VectorXd*> u_p);
+      mk_u_hstack(const std::vector<Eigen::VectorXd*> u_p);
+    Eigen::MatrixXd
+      mk_u_vstack(const std::vector<Eigen::VectorXd*> u_p);
 
   public:
     void
@@ -99,6 +107,17 @@ class Element {
       mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
     Eigen::MatrixXd
       mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
+
+    Eigen::VectorXd
+      Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+    std::tuple<double, Eigen::Matrix2d>
+      Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+    std::tuple<double, Eigen::Matrix2d>
+      mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+    std::tuple<double, Eigen::Matrix2d>
+      mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+    Eigen::Matrix2d
+      mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
 
     std::tuple<double, Eigen::MatrixXd>
       mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);

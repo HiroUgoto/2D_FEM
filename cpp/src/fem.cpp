@@ -336,10 +336,15 @@ void
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void
-  Fem::update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave) {
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
-      node.dynamic_force = node.static_force;
+  Fem::update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave, const bool FD) {
+    if (FD) {
+      Fem::update_matrix();
+
+    } else {
+      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+        Node& node = Fem::nodes[inode];
+        node.dynamic_force = node.static_force;
+      }
     }
 
     for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
@@ -361,9 +366,18 @@ void
       }
     }
 
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-      Element& element = Fem::elements[ielem];
-      element.mk_ku_cv();
+    if (FD) {
+      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
+        Element& element = Fem::elements[ielem];
+        element.mk_B_stress();
+        element.mk_cv();
+      }
+
+    } else {
+      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
+        Element& element = Fem::elements[ielem];
+        element.mk_ku_cv();
+      }
     }
 
     for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
@@ -402,3 +416,42 @@ void
   }
 
 // ------------------------------------------------------------------- //
+void
+  Fem::update_matrix() {
+    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+      Node& node = Fem::nodes[inode];
+
+      node.mass = Eigen::VectorXd::Zero(node.dof);
+      node.c    = Eigen::VectorXd::Zero(node.dof);
+      node.dynamic_force = Eigen::VectorXd::Zero(node.dof);
+    }
+
+    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
+      Element& element = Fem::elements[ielem];
+
+      element.set_xn();
+      element.mk_local_update();
+
+      size_t id = 0;
+      for (size_t inode = 0 ; inode < element.nnode ; inode++) {
+        for (size_t i = 0 ; i < Fem::dof ; i++) {
+          element.nodes_p[inode]->mass[i] += element.M_diag[id];
+          element.nodes_p[inode]->c[i] += element.C_diag[id];
+          element.nodes_p[inode]->dynamic_force[i] += element.force[id];
+          id++;
+        }
+      }
+    }
+
+    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
+      Node& node = Fem::nodes[inode];
+
+      for (size_t i = 0 ; i < node.dof ; i++) {
+        node.inv_mc[i] = 1.0 / (node.mass[i] + 0.5*dt*node.c[i]);
+        node.mass_inv_mc[i] = node.mass[i] * node.inv_mc[i];
+        node.c_inv_mc[i] = node.c[i] * node.inv_mc[i] * 0.5*dt;
+        node.dtdt_inv_mc[i] = dt*dt*node.inv_mc[i];
+      }
+    }
+
+  }

@@ -30,7 +30,6 @@ int main() {
   double dt;
   std::tie(tim, dt) = input_wave::linspace(0,duration,(int)(fsamp*duration));
   wave_acc = input_wave::simple_sin(tim,fp,0.1);
-  // wave_acc = input_wave::ricker(tim,fp,1.0/fp,0.1);
   size_t ntim = tim.size();
 
   // ----- Static deformation ----- //
@@ -50,10 +49,9 @@ int main() {
 
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
-    // acc0[0] = 0.0;
-    // vel0[0] += wave_acc[it]*dt ;
 
-    fem.update_time(acc0,vel0);
+    // fem.update_time(acc0,vel0,false,false);   // FD: false
+    fem.update_time(acc0,vel0,false,true);     // FD: true
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node& node = fem.nodes[fem.output_nodes[i]];
@@ -63,7 +61,7 @@ int main() {
       output_velz(it,i) = node.v(1);
     }
 
-    if (it%1000 == 0) {
+    if (it%500 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_dispz(it,0) << "\n";
     }
@@ -73,7 +71,7 @@ int main() {
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
 
   // --- Write output file --- //
-  std::ofstream f(output_dir + "z0_vs20_md.disp");
+  std::ofstream f(output_dir + "z0_vs00.disp");
   for (size_t it = 0 ; it < ntim ; it++) {
     f << tim(it) ;
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {

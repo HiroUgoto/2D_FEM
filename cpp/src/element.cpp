@@ -1,5 +1,5 @@
 #include "all.h"
-#include <Eigen/Core>
+#include <Eigen/Dense>
 #include "node.h"
 #include "material.h"
 #include "element_style.h"
@@ -217,10 +217,75 @@ void
 
 // ------------------------------------------------------------------- //
 void
+  Element::mk_local_update() {
+    if (Element::dim == 2) {
+      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+      Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+      Element::Dv = Element::material_p->mk_visco(Element::dof);
+      Element::force = Eigen::VectorXd::Zero(Element::ndof);
+
+      double V = 0.0;
+      for (size_t i = 0 ; i < Element::ng_all ; i++){
+        double det, detJ;
+        Eigen::MatrixXd dnj, N, Me, B, K, C;
+
+        std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_list[i]);
+
+        N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        Me = mk_m(N);
+
+        B = Element::mk_b(Element::dof, Element::nnode, dnj);
+        C = Element::mk_k(B, Element::Dv);
+
+        detJ = det * Element::w_list[i];
+        M += Me * detJ;
+        Element::C += C * detJ;
+
+        V += detJ;
+        Element::force += N.row(1)*detJ * Element::gravity;
+      }
+
+      double tr_M = M.trace() / Element::dof;
+      Element::M_diag = M.diagonal() * Element::mass/tr_M;
+
+      Element::C_diag = Element::C.diagonal();
+      Element::C_off_diag = Element::C_diag.asDiagonal();
+      Element::C_off_diag = Element::C - Element::C_off_diag;
+
+      Element::force *= Element::mass / V;
+
+    } else if (Element::dim == 1) {
+      if (Element::style.find("input") != std::string::npos) {
+        Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+
+        for (size_t i = 0 ; i < Element::ng_all ; i++){
+          double det, detJ;
+          Eigen::MatrixXd N, q, NqN;
+
+          std::tie(det, q) =
+              Element::mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
+
+          N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+          NqN = Element::mk_nqn(N, q, Element::imp);
+
+          detJ = det * Element::w_list[i];
+          Element::C += NqN * detJ;
+        }
+
+        Element::C_diag = Element::C.diagonal();
+        Element::C_off_diag = Element::C_diag.asDiagonal();
+        Element::C_off_diag = Element::C - Element::C_off_diag;
+      }
+    }
+  }
+
+
+// ------------------------------------------------------------------- //
+void
   Element::mk_ku() {
     Eigen::VectorXd u, ku;
 
-    u = Element::mk_u_stack(Element::u_p);
+    u = Element::mk_u_hstack(Element::u_p);
     ku = Element::K * u;
 
     for (size_t inode = 0 ; inode < Element::nnode ; inode++){
@@ -235,7 +300,7 @@ void
   Element::mk_ku_u(const std::vector<Eigen::VectorXd*> u_p) {
     Eigen::VectorXd u, ku;
 
-    u = Element::mk_u_stack(u_p);
+    u = Element::mk_u_hstack(u_p);
     ku = Element::K * u;
 
     for (size_t inode = 0 ; inode < Element::nnode ; inode++){
@@ -251,7 +316,7 @@ void
   Element::mk_cv() {
     Eigen::VectorXd v, cv;
 
-    v = Element::mk_u_stack(Element::v_p);
+    v = Element::mk_u_hstack(Element::v_p);
     cv = Element::C_off_diag * v;
 
     for (size_t inode = 0 ; inode < Element::nnode ; inode++){
@@ -267,8 +332,8 @@ void
     Eigen::VectorXd u, ku;
     Eigen::VectorXd v, cv;
 
-    u = Element::mk_u_stack(Element::u_p);
-    v = Element::mk_u_stack(Element::v_p);
+    u = Element::mk_u_hstack(Element::u_p);
+    v = Element::mk_u_hstack(Element::v_p);
     ku = Element::K * u;
     cv = Element::C_off_diag * v;
 
@@ -280,8 +345,43 @@ void
     }
   }
 
+// ------------------------------------------------------------------- //
+void
+  Element::mk_B_stress() {
+    if (Element::dim == 1) {
+      Element::mk_ku();
+
+    } else if (Element::dim == 2) {
+      Eigen::VectorXd force = Eigen::VectorXd::Zero(Element::ndof);
+      Eigen::MatrixXd u = Element::mk_u_vstack(Element::u_p);
+
+      for (size_t i = 0 ; i < Element::ng_all ; i++){
+        double det, detJ;
+        Eigen::MatrixXd dnj, BT;
+        Eigen::VectorXd stress;
+
+        std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_list[i]);
+        BT = Element::mk_b_T(Element::dof, Element::nnode, dnj);
+        stress = Element::Hencky_stress(Element::De, dnj, u);
+
+        detJ = det * Element::w_list[i];
+        force += BT * stress * detJ;
+      }
+
+      for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+        size_t i0 = inode*Element::dof;
+        for (size_t i = 0 ; i < Element::dof ; i++) {
+          Element::nodes_p[inode]->force(i) += force(i0+i);
+        }
+      }
+    }
+
+  }
+
+
+// ------------------------------------------------------------------- //
 Eigen::VectorXd
-  Element::mk_u_stack(const std::vector<Eigen::VectorXd*> u_p) {
+  Element::mk_u_hstack(const std::vector<Eigen::VectorXd*> u_p) {
     Eigen::VectorXd u(Element::ndof);
 
     for (size_t inode = 0 ; inode < Element::nnode ; inode++){
@@ -292,6 +392,19 @@ Eigen::VectorXd
     }
     return u;
   }
+
+Eigen::MatrixXd
+  Element::mk_u_vstack(const std::vector<Eigen::VectorXd*> u_p) {
+    Eigen::MatrixXd u(Element::nnode,Element::dof);
+
+    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
+      for (size_t i = 0 ; i < Element::dof ; i++) {
+        u(inode,i) = (*u_p[inode])(i);
+      }
+    }
+    return u;
+  }
+
 
 // ------------------------------------------------------------------- //
 void
@@ -362,7 +475,7 @@ void
 
     std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_center);
     B = Element::mk_b(Element::dof, Element::nnode, dnj);
-    u = Element::mk_u_stack(Element::u_p);
+    u = Element::mk_u_hstack(Element::u_p);
 
     Element::strain = B * u;
     Element::stress = Element::De * Element::strain;
@@ -542,6 +655,68 @@ Eigen::MatrixXd
   }
 
 // ------------------------------------------------------------------- //
+Eigen::VectorXd
+  Element::Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    double J;
+    Eigen::Matrix2d strain;
+    Eigen::VectorXd strain_vector(3), stress;
+
+    std::tie(J, strain) = Euler_log_strain(dnj, u);
+    strain_vector << strain(0,0), strain(1,1), strain(0,1)+strain(1,0);
+    stress = D * strain_vector / J;
+    return stress;
+  }
+
+std::tuple<double, Eigen::Matrix2d>
+  Element::Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    double J;
+    Eigen::Matrix2d FF, strain;
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> es;
+    Eigen::Vector2d L, log_L;
+    Eigen::Matrix2d P;
+
+    std::tie(J, FF) = Element::mk_FF(dnj, u);
+    es.compute(FF);
+    L = es.eigenvalues();
+    log_L = L.array().log();
+    P = es.eigenvectors();
+
+    strain = 0.5 * P * log_L.asDiagonal() * P.transpose();
+    return std::forward_as_tuple(J, strain);
+  }
+
+std::tuple<double, Eigen::Matrix2d>
+  Element::mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    double J;
+    Eigen::Matrix2d F, FF;
+
+    std::tie(J, F) = Element::mk_F(dnj, u);
+    FF = F * F.transpose();
+    return std::forward_as_tuple(J, FF);
+  }
+
+std::tuple<double, Eigen::Matrix2d>
+  Element::mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    double det;
+    Eigen::Matrix2d dnu, F;
+
+    dnu = Element::mk_dnu(dnj, u);
+    det = (1.0-dnu(0,0))*(1.0-dnu(1,1)) - dnu(0,1)*dnu(1,0);
+    F << 1.0-dnu(1,1),     dnu(0,1),
+             dnu(1,0), 1.0-dnu(0,0);
+    F /= det;
+    return std::forward_as_tuple(1.0/det, F);
+  }
+
+Eigen::Matrix2d
+  Element::mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    Eigen::Matrix2d dnu;
+
+    dnu = u.transpose() * dnj;
+    return dnu;
+  }
+
+// ------------------------------------------------------------------- //
 std::tuple<double, Eigen::MatrixXd>
   Element::mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
     double det;
@@ -550,7 +725,6 @@ std::tuple<double, Eigen::MatrixXd>
 
     std::tie(det, jacobi_inv) = Element::mk_inv_jacobi(xnT, dn);
     dnj = dn * jacobi_inv;
-
     return std::forward_as_tuple(det, dnj);
   }
 
@@ -563,7 +737,6 @@ std::tuple<double, Eigen::Matrix2d>
     jacobi_inv <<  jacobi(1,1), -jacobi(0,1),
                   -jacobi(1,0),  jacobi(0,0);
     jacobi_inv /= det;
-
     return std::forward_as_tuple(det, jacobi_inv);
   }
 
