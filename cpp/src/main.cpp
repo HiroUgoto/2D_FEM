@@ -23,14 +23,23 @@ int main() {
 
   // ----- Define input wave ----- //
   size_t fsamp = 10000;
-  double fp = 0.2;
-  double duration = 5.0/fp;
+  double fp = 0.196;
+  double duration = 8.0/fp;
 
   Eigen::VectorXd tim, wave_acc;
   double dt;
   std::tie(tim, dt) = input_wave::linspace(0,duration,(int)(fsamp*duration));
-  wave_acc = input_wave::simple_sin(tim,fp,5.0);
+  wave_acc = input_wave::simple_sin(tim,fp,0.01);
   size_t ntim = tim.size();
+
+  // std::ofstream f0(output_dir + "input.acc");
+  // for (size_t it = 0 ; it < ntim ; it++) {
+  //   f0 << tim(it) ;
+  //   f0 << " " << wave_acc(it) ;
+  //   f0 << "\n";
+  // }
+  // f0.close();
+  // exit(1);
 
   // ----- Static deformation ----- //
   fem.self_gravity();
@@ -61,7 +70,7 @@ int main() {
       output_velz(it,i) = node.v(1);
     }
 
-    if (it%100 == 0) {
+    if (it%1000 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_dispz(it,0) << "\n";
     }
@@ -71,7 +80,7 @@ int main() {
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
 
   // --- Write output file --- //
-  std::ofstream f(output_dir + "z0_vs01.disp");
+  std::ofstream f(output_dir + "z0_vs00.disp");
   for (size_t it = 0 ; it < ntim ; it++) {
     f << tim(it) ;
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
