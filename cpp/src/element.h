@@ -89,40 +89,39 @@ class Element {
 
     void
       calc_stress();
-
-  private:
-    Eigen::MatrixXd
-      mk_m(const Eigen::MatrixXd N);
-    Eigen::MatrixXd
-      mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n);
-
-    Eigen::MatrixXd
-      mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp);
-    std::tuple<double, Eigen::MatrixXd>
-      mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
-
-    Eigen::MatrixXd
-      mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D);
-    Eigen::MatrixXd
-      mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
-    Eigen::MatrixXd
-      mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
-
-    Eigen::VectorXd
-      Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-    std::tuple<double, Eigen::Matrix2d>
-      Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-    std::tuple<double, Eigen::Matrix2d>
-      mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-    std::tuple<double, Eigen::Matrix2d>
-      mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-    Eigen::Matrix2d
-      mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-
-    std::tuple<double, Eigen::MatrixXd>
-      mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
-    std::tuple<double, Eigen::Matrix2d>
-      mk_inv_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
-    std::tuple<double, Eigen::Matrix2d>
-      mk_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
 };
+
+Eigen::MatrixXd
+  mk_m(const Eigen::MatrixXd N);
+Eigen::MatrixXd
+  mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n);
+
+Eigen::MatrixXd
+  mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp);
+std::tuple<double, Eigen::MatrixXd>
+  mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
+
+Eigen::MatrixXd
+  mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D);
+Eigen::MatrixXd
+  mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
+Eigen::MatrixXd
+  mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
+
+Eigen::VectorXd
+  Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+std::tuple<double, Eigen::Matrix2d>
+  Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+std::tuple<double, Eigen::Matrix2d>
+  mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+std::tuple<double, Eigen::Matrix2d>
+  mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+Eigen::Matrix2d
+  mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+
+std::tuple<double, Eigen::MatrixXd>
+  mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
+std::tuple<double, Eigen::Matrix2d>
+  mk_inv_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
+std::tuple<double, Eigen::Matrix2d>
+  mk_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);

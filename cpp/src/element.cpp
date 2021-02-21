@@ -108,11 +108,7 @@ void
     if (Element::dim == 2) {
       double V = 0.0;
       for (size_t i = 0 ; i < Element::ng_all ; i++){
-        double det;
-        Eigen::Matrix2d jacobi;
-
-        std::tie(det, jacobi) = Element::mk_jacobi(Element::xnT, Element::dn_list[i]);
-
+        auto [det, jacobi] = mk_jacobi(Element::xnT, Element::dn_list[i]);
         V += det * Element::w_list[i];
       }
       Element::mass = Element::rho * V;
@@ -135,17 +131,17 @@ void
       Element::Dv = Element::material_p->mk_visco(Element::dof);
 
       for (size_t i = 0 ; i < Element::ng_all ; i++){
-        double det, detJ;
-        Eigen::MatrixXd dnj, N, Me, B, K, C;
+        double detJ;
+        Eigen::MatrixXd N, Me, B, K, C;
 
-        std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_list[i]);
+        auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_list[i]);
 
-        N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
         Me = mk_m(N);
 
-        B = Element::mk_b(Element::dof, Element::nnode, dnj);
-        K = Element::mk_k(B, Element::De);
-        C = Element::mk_k(B, Element::Dv);
+        B = mk_b(Element::dof, Element::nnode, dnj);
+        K = mk_k(B, Element::De);
+        C = mk_k(B, Element::Dv);
 
         detJ = det * Element::w_list[i];
 
@@ -170,14 +166,13 @@ void
         Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
 
         for (size_t i = 0 ; i < Element::ng_all ; i++){
-          double det, detJ;
-          Eigen::MatrixXd N, q, NqN;
+          double detJ;
+          Eigen::MatrixXd N, NqN;
 
-          std::tie(det, q) =
-              Element::mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
+          auto [det, q] = mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
 
-          N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
-          NqN = Element::mk_nqn(N, q, Element::imp);
+          N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+          NqN = mk_nqn(N, q, Element::imp);
 
           detJ = det * Element::w_list[i];
           Element::C += NqN * detJ;
@@ -198,12 +193,11 @@ void
 
       double V = 0.0;
       for (size_t i = 0 ; i < Element::ng_all ; i++){
-        double det, detJ;
-        Eigen::Matrix2d jacobi;
+        double detJ;
         Eigen::MatrixXd N;
 
-        std::tie(det, jacobi) = Element::mk_jacobi(Element::xnT, Element::dn_list[i]);
-        N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        auto [det, jacobi] = mk_jacobi(Element::xnT, Element::dn_list[i]);
+        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
 
         detJ = det * Element::w_list[i];
 
@@ -226,16 +220,16 @@ void
 
       double V = 0.0;
       for (size_t i = 0 ; i < Element::ng_all ; i++){
-        double det, detJ;
-        Eigen::MatrixXd dnj, N, Me, B, K, C;
+        double detJ;
+        Eigen::MatrixXd N, Me, B, K, C;
 
-        std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_list[i]);
+        auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_list[i]);
 
-        N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
         Me = mk_m(N);
 
-        B = Element::mk_b(Element::dof, Element::nnode, dnj);
-        C = Element::mk_k(B, Element::Dv);
+        B = mk_b(Element::dof, Element::nnode, dnj);
+        C = mk_k(B, Element::Dv);
 
         detJ = det * Element::w_list[i];
         M += Me * detJ;
@@ -259,14 +253,13 @@ void
         Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
 
         for (size_t i = 0 ; i < Element::ng_all ; i++){
-          double det, detJ;
-          Eigen::MatrixXd N, q, NqN;
+          double detJ;
+          Eigen::MatrixXd N, NqN;
 
-          std::tie(det, q) =
-              Element::mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
+          auto [det, q] = mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
 
-          N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
-          NqN = Element::mk_nqn(N, q, Element::imp);
+          N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+          NqN = mk_nqn(N, q, Element::imp);
 
           detJ = det * Element::w_list[i];
           Element::C += NqN * detJ;
@@ -356,13 +349,13 @@ void
       Eigen::MatrixXd u = Element::mk_u_vstack(Element::u_p);
 
       for (size_t i = 0 ; i < Element::ng_all ; i++){
-        double det, detJ;
-        Eigen::MatrixXd dnj, BT;
+        double detJ;
+        Eigen::MatrixXd BT;
         Eigen::VectorXd stress;
 
-        std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_list[i]);
-        BT = Element::mk_b_T(Element::dof, Element::nnode, dnj);
-        stress = Element::Hencky_stress(Element::De, dnj, u);
+        auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_list[i]);
+        BT = mk_b_T(Element::dof, Element::nnode, dnj);
+        stress = Hencky_stress(Element::De, dnj, u);
 
         detJ = det * Element::w_list[i];
         force += BT * stress * detJ;
@@ -410,7 +403,6 @@ Eigen::MatrixXd
 void
   Element::update_inputwave(const Eigen::VectorXd vel0) {
     Eigen::VectorXd v(Element::ndof), cv(Element::ndof);
-    // Eigen::VectorXd cv(Element::ndof);
 
     for (size_t inode = 0 ; inode < Element::nnode ; inode++){
       size_t i0 = inode*Element::dof;
@@ -448,12 +440,11 @@ void
 
       double V = 0.0;
       for (size_t i = 0 ; i < Element::ng_all ; i++){
-        double det, detJ;
-        Eigen::Matrix2d jacobi;
+        double detJ;
         Eigen::MatrixXd N;
 
-        std::tie(det, jacobi) = Element::mk_jacobi(Element::xnT, Element::dn_list[i]);
-        N = Element::mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        auto [det, jacobi] = mk_jacobi(Element::xnT, Element::dn_list[i]);
+        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
 
         detJ = det * Element::w_list[i];
 
@@ -469,21 +460,22 @@ void
 // ------------------------------------------------------------------- //
 void
   Element::calc_stress() {
-    double det;
     Eigen::VectorXd u;
-    Eigen::MatrixXd dnj, B;
+    Eigen::MatrixXd B;
 
-    std::tie(det, dnj) = Element::mk_dnj(Element::xnT, Element::dn_center);
-    B = Element::mk_b(Element::dof, Element::nnode, dnj);
+    auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_center);
+    B = mk_b(Element::dof, Element::nnode, dnj);
     u = Element::mk_u_hstack(Element::u_p);
 
     Element::strain = B * u;
     Element::stress = Element::De * Element::strain;
   }
 
+
+// ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 Eigen::MatrixXd
-  Element::mk_m(const Eigen::MatrixXd N) {
+  mk_m(const Eigen::MatrixXd N) {
     Eigen::MatrixXd M;
 
     M = N.transpose() * N;
@@ -491,7 +483,7 @@ Eigen::MatrixXd
   }
 
 Eigen::MatrixXd
-  Element::mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n) {
+  mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n) {
     Eigen::MatrixXd N = Eigen::MatrixXd::Zero(dof,dof*nnode);
 
     if (dof == 1) {
@@ -523,7 +515,7 @@ Eigen::MatrixXd
 
 // ------------------------------------------------------------------- //
 Eigen::MatrixXd
-  Element::mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp) {
+  mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp) {
     Eigen::MatrixXd nqn;
 
     nqn = N.transpose() * q.transpose() * imp * q * N;
@@ -531,7 +523,7 @@ Eigen::MatrixXd
   }
 
 std::tuple<double, Eigen::MatrixXd>
-  Element::mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
+  mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
     Eigen::MatrixXd q;
     Eigen::VectorXd n(2), t(2);
     double det;
@@ -556,12 +548,12 @@ std::tuple<double, Eigen::MatrixXd>
       q(2,2) = 1.0/det;
     }
 
-    return std::forward_as_tuple(det, q);
+    return {det, q};
   }
 
 // ------------------------------------------------------------------- //
 Eigen::MatrixXd
-  Element::mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D) {
+  mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D) {
     Eigen::MatrixXd K;
 
     K = B.transpose() * D * B;
@@ -569,7 +561,7 @@ Eigen::MatrixXd
   }
 
 Eigen::MatrixXd
-  Element::mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj) {
+  mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj) {
     Eigen::MatrixXd B;
 
     if (dof == 1) {
@@ -612,7 +604,7 @@ Eigen::MatrixXd
   }
 
 Eigen::MatrixXd
-  Element::mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj) {
+  mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj) {
     Eigen::MatrixXd B;
 
     if (dof == 1) {
@@ -656,60 +648,56 @@ Eigen::MatrixXd
 
 // ------------------------------------------------------------------- //
 Eigen::VectorXd
-  Element::Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    double J;
-    Eigen::Matrix2d strain;
+  Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
     Eigen::VectorXd strain_vector(3), stress;
 
-    std::tie(J, strain) = Euler_log_strain(dnj, u);
+    auto [J, strain] = Euler_log_strain(dnj, u);
     strain_vector << strain(0,0), strain(1,1), strain(0,1)+strain(1,0);
     stress = D * strain_vector / J;
     return stress;
   }
 
 std::tuple<double, Eigen::Matrix2d>
-  Element::Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    double J;
-    Eigen::Matrix2d FF, strain;
+  Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    Eigen::Matrix2d strain;
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> es;
     Eigen::Vector2d L, log_L;
     Eigen::Matrix2d P;
 
-    std::tie(J, FF) = Element::mk_FF(dnj, u);
+    auto [J, FF] = mk_FF(dnj, u);
     es.compute(FF);
     L = es.eigenvalues();
     log_L = L.array().log();
     P = es.eigenvectors();
 
     strain = 0.5 * P * log_L.asDiagonal() * P.transpose();
-    return std::forward_as_tuple(J, strain);
+    return {J, strain};
   }
 
 std::tuple<double, Eigen::Matrix2d>
-  Element::mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    double J;
-    Eigen::Matrix2d F, FF;
+  mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+    Eigen::Matrix2d FF;
 
-    std::tie(J, F) = Element::mk_F(dnj, u);
+    auto [J, F] = mk_F(dnj, u);
     FF = F * F.transpose();
     return std::forward_as_tuple(J, FF);
   }
 
 std::tuple<double, Eigen::Matrix2d>
-  Element::mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+  mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
     double det;
     Eigen::Matrix2d dnu, F;
 
-    dnu = Element::mk_dnu(dnj, u);
+    dnu = mk_dnu(dnj, u);
     det = (1.0-dnu(0,0))*(1.0-dnu(1,1)) - dnu(0,1)*dnu(1,0);
     F << 1.0-dnu(1,1),     dnu(0,1),
              dnu(1,0), 1.0-dnu(0,0);
     F /= det;
-    return std::forward_as_tuple(1.0/det, F);
+    return {1.0/det, F};
   }
 
 Eigen::Matrix2d
-  Element::mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+  mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
     Eigen::Matrix2d dnu;
 
     dnu = u.transpose() * dnj;
@@ -718,32 +706,31 @@ Eigen::Matrix2d
 
 // ------------------------------------------------------------------- //
 std::tuple<double, Eigen::MatrixXd>
-  Element::mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
-    double det;
-    Eigen::Matrix2d jacobi_inv;
+  mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
     Eigen::MatrixXd dnj;
 
-    std::tie(det, jacobi_inv) = Element::mk_inv_jacobi(xnT, dn);
+    auto [det, jacobi_inv] = mk_inv_jacobi(xnT, dn);
     dnj = dn * jacobi_inv;
-    return std::forward_as_tuple(det, dnj);
+    return {det, dnj};
   }
 
 std::tuple<double, Eigen::Matrix2d>
-  Element::mk_inv_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
-    double det;
-    Eigen::Matrix2d jacobi, jacobi_inv;
+  mk_inv_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
+    Eigen::Matrix2d jacobi_inv;
 
-    std::tie(det, jacobi) = Element::mk_jacobi(xnT, dn);
+    auto [det, jacobi] = mk_jacobi(xnT, dn);
     jacobi_inv <<  jacobi(1,1), -jacobi(0,1),
                   -jacobi(1,0),  jacobi(0,0);
     jacobi_inv /= det;
-    return std::forward_as_tuple(det, jacobi_inv);
+    return {det, jacobi_inv};
   }
 
+
 std::tuple<double, Eigen::Matrix2d>
-  Element::mk_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
+  mk_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
     Eigen::Matrix2d jacobi = xnT * dn;
 
     double det = jacobi(0,0)*jacobi(1,1) - jacobi(0,1)*jacobi(1,0);
-    return std::forward_as_tuple(det, jacobi);
+    return {det, jacobi};
+    // return std::forward_as_tuple(det, jacobi);
   }

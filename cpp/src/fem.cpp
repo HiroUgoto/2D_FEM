@@ -128,8 +128,7 @@ void
 // ------------------------------------------------------------------- //
 void
   Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs) {
-    std::vector<size_t> output_node_list, output_element_list;
-    std::tie(output_node_list, output_element_list) = outputs;
+    auto [output_node_list, output_element_list] = outputs;
 
     Fem::output_nnode = output_node_list.size();
     Fem::output_nodes = output_node_list;
