@@ -25,16 +25,14 @@ Fem::Fem (size_t dof, std::vector<Node> nodes,
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
-void
-  Fem::set_init() {
+void Fem::set_init() {
     this->_set_mesh();
     this->_set_initial_condition();
     this->_set_initial_matrix();
   }
 
 // ----------------------------- //
-void
-  Fem::_set_mesh() {
+void Fem::_set_mesh() {
     for (size_t ielem = 0 ; ielem < this->nelem ; ielem++ ){
       Element& element = this->elements[ielem];
 
@@ -81,8 +79,7 @@ void
   }
 
 // ----------------------------- //
-void
-  Fem::_set_initial_condition() {
+void Fem::_set_initial_condition() {
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
       Node& node = this->nodes[inode];
 
@@ -103,8 +100,7 @@ void
   }
 
 // ----------------------------- //
-void
-  Fem::_set_initial_matrix(){
+void Fem::_set_initial_matrix(){
     for (size_t ielem = 0 ; ielem < this->nelem ; ielem++ ){
       Element& element = this->elements[ielem];
 
@@ -128,8 +124,7 @@ void
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
-void
-  Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs) {
+void Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs) {
     auto [output_node_list, output_element_list] = outputs;
 
     this->output_nnode = output_node_list.size();
@@ -141,8 +136,7 @@ void
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
-void
-  Fem::self_gravity() {
+void Fem::self_gravity() {
     // Initial condition //
     double H = 0.0;
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
@@ -172,8 +166,7 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Fem::_self_gravity_cg(const bool full) {
+void Fem::_self_gravity_cg(const bool full) {
     size_t id;
     if (full) {
       id = 0;
@@ -220,14 +213,6 @@ void
       node._up = node._ur;
     }
 
-    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
-      Element& element = this->elements[ielem];
-
-      element._up_p.resize(element.nnode);
-      for (size_t inode = 0 ; inode < element.nnode ; inode++){
-        element._up_p[inode] = &element.nodes_p[inode]->_up;
-      }
-    }
 
     // --- CG iterations --- //
     for (size_t it=0 ; it < 10*this->nnode ; it++) {
@@ -240,7 +225,7 @@ void
       }
       for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
         Element& element = this->elements[ielem];
-        element.mk_ku_u(element._up_p);
+        element.mk_ku_up();
       }
       for (size_t inode = 0 ; inode < this->nnode ; inode++) {
         Node& node = this->nodes[inode];
@@ -317,8 +302,7 @@ void
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
-void
-  Fem::update_init(const double dt) {
+void Fem::update_init(const double dt) {
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
       Node& node = this->nodes[inode];
 
@@ -336,8 +320,7 @@ void
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
-void
-  Fem::update_time(const EV acc0, const EV vel0, const bool input_wave, const bool FD) {
+void Fem::update_time(const EV acc0, const EV vel0, const bool input_wave, const bool FD) {
     if (FD) {
       this->update_matrix();
 
@@ -417,8 +400,7 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Fem::update_matrix() {
+void Fem::update_matrix() {
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
       Node& node = this->nodes[inode];
 

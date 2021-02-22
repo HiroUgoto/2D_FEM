@@ -27,7 +27,7 @@ int main() {
   // ----- Define input wave ----- //
   size_t fsamp = 10000;
   double fp = 0.196;
-  double duration = 0.01/fp;
+  double duration = 0.02/fp;
   // double duration = 8.0/fp;
 
   EV wave_acc;
@@ -73,7 +73,7 @@ int main() {
       output_velz(it,i) = node.v(1);
     }
 
-    if (it%100 == 0) {
+    if (it%200 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_dispz(it,0) << "\n";
     }

@@ -22,12 +22,20 @@ class ElementStyle {
 
 // ----------------------------------------------------- //
 ElementStyle* set_element_style(const std::string style);
-void set_gauss_points (const size_t n, EV &xi, EV &w);
+void set_gauss_points (const size_t n, EV& xi, EV& w);
 
 // ----------------------------------------------------- //
 class Solid_2d_4Node: public ElementStyle {
   public:
     Solid_2d_4Node ();
+    EV shape_function_n (double xi, double zeta);
+    EM shape_function_dn (double xi, double zeta);
+};
+
+// ----------------------------------------------------- //
+class Solid_2d_8Node: public ElementStyle {
+  public:
+    Solid_2d_8Node ();
     EV shape_function_n (double xi, double zeta);
     EM shape_function_dn (double xi, double zeta);
 };

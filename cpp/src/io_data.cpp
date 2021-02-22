@@ -8,8 +8,7 @@
 #include "io_data.h"
 
 // ------------------------------------------------------------------- //
-Fem
-  io_data::input_mesh (const std::string mesh_file) {
+Fem io_data::input_mesh (const std::string mesh_file) {
     size_t nnode, nelem, nmaterial, dof;
     std::string line;
 

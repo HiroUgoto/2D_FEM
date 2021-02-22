@@ -123,6 +123,72 @@ EM Solid_2d_4Node::shape_function_dn (double xi, double zeta) {
 
 
 // ----------------------------------------------------- //
+Solid_2d_8Node::Solid_2d_8Node () {
+  this->dim = 2;
+  this->ng = 5;
+  set_gauss_points(this->ng, this->xi, this->w);
+
+  this->ng_all = this->ng * this->ng;
+  this->n_list.resize(this->ng_all);
+  this->dn_list.resize(this->ng_all);
+  this->w_list.resize(this->ng_all);
+
+  size_t id = 0;
+  for (size_t i=0 ; i<ng ; i++) {
+    for (size_t j=0 ; j<ng ; j++) {
+      n_list[id] = this->shape_function_n(this->xi[i],this->xi[j]);
+      dn_list[id] = this->shape_function_dn(this->xi[i],this->xi[j]);
+      w_list[id] = w[i]*w[j];
+      id++;
+    }
+  }
+
+  dn_center = this->shape_function_dn(0.0,0.0);
+}
+
+EV Solid_2d_8Node::shape_function_n (double xi, double zeta) {
+    EV n = EV::Zero(8);
+    n(0) = (1.0 - xi)*(1.0 - zeta)*(-1.0-xi-zeta) / 4.0;
+    n(1) = (1.0 + xi)*(1.0 - zeta)*(-1.0+xi-zeta) / 4.0;
+    n(2) = (1.0 + xi)*(1.0 + zeta)*(-1.0+xi+zeta) / 4.0;
+    n(3) = (1.0 - xi)*(1.0 + zeta)*(-1.0-xi+zeta) / 4.0;
+
+    n(4) = (1.0 - xi*xi)*(1.0 - zeta) / 2.0;
+    n(5) = (1.0 + xi)*(1.0 - zeta*zeta) / 2.0;
+    n(6) = (1.0 - xi*xi)*(1.0 + zeta) / 2.0;
+    n(7) = (1.0 - xi)*(1.0 - zeta*zeta) / 2.0;
+    return n;
+  }
+
+EM Solid_2d_8Node::shape_function_dn (double xi, double zeta) {
+    EM dn = EM::Zero(8,2);
+    dn(0,0) = (1.0 - zeta)*(2.0*xi+zeta) / 4.0;
+    dn(0,1) = (1.0 -   xi)*(xi+2.0*zeta) / 4.0;
+
+    dn(1,0) = (1.0 - zeta)*(2.0*xi-zeta) / 4.0;
+    dn(1,1) = -(1.0 +  xi)*(xi-2.0*zeta) / 4.0;
+
+    dn(2,0) = (1.0 + zeta)*(2.0*xi+zeta) / 4.0;
+    dn(2,1) = (1.0 +   xi)*(xi+2.0*zeta) / 4.0;
+
+    dn(3,0) = (1.0 + zeta)*(2.0*xi-zeta) / 4.0;
+    dn(3,1) = -(1.0 -  xi)*(xi-2.0*zeta) / 4.0;
+
+    dn(4,0) = -xi*(1.0 - zeta);
+    dn(4,1) = (xi*xi-1.0) / 2.0;
+
+    dn(5,0) = (1.0 - zeta*zeta) / 2.0;
+    dn(5,1) = -(1.0 + xi)*zeta;
+
+    dn(6,0) = -xi*(1.0 + zeta);
+    dn(6,1) = (1.0 - xi*xi) / 2.0;
+
+    dn(7,0) = -(1.0 - zeta*zeta) / 2.0;
+    dn(7,1) = -(1.0 - xi)*zeta;
+    return dn;
+  }
+
+// ----------------------------------------------------- //
 Solid_2d_9Node::Solid_2d_9Node () {
   this->dim = 2;
   this->ng = 5;

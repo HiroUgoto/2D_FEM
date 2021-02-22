@@ -29,8 +29,6 @@ class Element {
     EM De, Dv, imp;
     EV force;
     EV strain, stress;
-    std::vector<EV*> _up_p;
-
 
     Element (size_t id, std::string style, int material_id, std::vector<size_t> inode);
     void print();
@@ -50,15 +48,17 @@ class Element {
     void mk_local_update();
 
     void mk_ku();
-    void mk_ku_u(const std::vector<EV*> u_p);
+    void mk_ku_up();
     void mk_cv();
     void mk_ku_cv();
 
     void mk_B_stress();
 
   private:
-    EV mk_u_hstack(const std::vector<EV*> u_p);
-    EM mk_u_vstack(const std::vector<EV*> u_p);
+    EV mk_u_hstack();
+    EV mk_v_hstack();
+    EV mk_u_hstack_up();
+    EM mk_u_vstack();
 
   public:
     void update_bodyforce(const EV acc0);

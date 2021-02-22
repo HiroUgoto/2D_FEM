@@ -82,8 +82,9 @@ void Element::set_xn(){
     this->xnT = EM::Zero(2,this->nnode);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++ ) {
-      this->xnT(0,inode) = this->nodes_p[inode]->xyz[0] + (*this->u_p[inode])[0];
-      this->xnT(1,inode) = this->nodes_p[inode]->xyz[1] + (*this->u_p[inode])[1];
+      Node* node = this->nodes_p[inode];
+      this->xnT(0,inode) = node->xyz[0] + node->u[0];
+      this->xnT(1,inode) = node->xyz[1] + node->u[1];
     }
   }
 
@@ -273,7 +274,7 @@ void Element::mk_local_update() {
 void Element::mk_ku() {
     EV u, ku;
 
-    u = this->mk_u_hstack(this->u_p);
+    u = this->mk_u_hstack();
     ku = this->K * u;
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
@@ -284,10 +285,10 @@ void Element::mk_ku() {
     }
   }
 
-void Element::mk_ku_u(const std::vector<EV*> u_p) {
+void Element::mk_ku_up() {
     EV u, ku;
 
-    u = this->mk_u_hstack(u_p);
+    u = this->mk_u_hstack_up();
     ku = this->K * u;
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
@@ -302,7 +303,7 @@ void Element::mk_ku_u(const std::vector<EV*> u_p) {
 void Element::mk_cv() {
     EV v, cv;
 
-    v = this->mk_u_hstack(this->v_p);
+    v = this->mk_v_hstack();
     cv = this->C_off_diag * v;
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
@@ -317,8 +318,8 @@ void Element::mk_ku_cv() {
     EV u, ku;
     EV v, cv;
 
-    u = this->mk_u_hstack(this->u_p);
-    v = this->mk_u_hstack(this->v_p);
+    u = this->mk_u_hstack();
+    v = this->mk_v_hstack();
     ku = this->K * u;
     cv = this->C_off_diag * v;
 
@@ -337,7 +338,7 @@ void Element::mk_B_stress() {
 
     } else if (this->dim == 2) {
       EV force = EV::Zero(this->ndof);
-      EM u = this->mk_u_vstack(this->u_p);
+      EM u = this->mk_u_vstack();
 
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
@@ -364,24 +365,52 @@ void Element::mk_B_stress() {
 
 
 // ------------------------------------------------------------------- //
-EV Element::mk_u_hstack(const std::vector<EV*> u_p) {
+EV Element::mk_u_hstack() {
     EV u(this->ndof);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
       size_t i0 = inode*this->dof;
+      Node* node = this->nodes_p[inode];
       for (size_t i = 0 ; i < this->dof ; i++) {
-        u(i0+i) = (*u_p[inode])(i);
+        u(i0+i) = node->u[i];
       }
     }
     return u;
   }
 
-EM Element::mk_u_vstack(const std::vector<EV*> u_p) {
+EV Element::mk_v_hstack() {
+    EV v(this->ndof);
+
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      Node* node = this->nodes_p[inode];
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        v(i0+i) = node->v[i];
+      }
+    }
+    return v;
+  }
+
+EV Element::mk_u_hstack_up() {
+    EV up(this->ndof);
+
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      Node* node = this->nodes_p[inode];
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        up(i0+i) = node->_up[i];
+      }
+    }
+    return up;
+  }
+
+EM Element::mk_u_vstack() {
     EM u(this->nnode,this->dof);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      Node* node = this->nodes_p[inode];
       for (size_t i = 0 ; i < this->dof ; i++) {
-        u(inode,i) = (*u_p[inode])(i);
+        u(inode,i) = node->u[i];
       }
     }
     return u;
@@ -450,7 +479,7 @@ void Element::calc_stress() {
 
     auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
     B = mk_b(this->dof, this->nnode, dnj);
-    u = this->mk_u_hstack(this->u_p);
+    u = this->mk_u_hstack();
 
     this->strain = B * u;
     this->stress = this->De * this->strain;
