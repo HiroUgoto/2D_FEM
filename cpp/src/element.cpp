@@ -5,6 +5,9 @@
 #include "element_style.h"
 #include "element.h"
 
+using EV = Eigen::VectorXd ;
+using EM = Eigen::MatrixXd ;
+using EM2 = Eigen::Matrix2d ;
 
 // ------------------------------------------------------------------- //
 Element::Element (size_t id, std::string style, int material_id, std::vector<size_t> inode)
@@ -21,8 +24,7 @@ Element::Element (size_t id, std::string style, int material_id, std::vector<siz
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::print() {
+void Element::print() {
     std::cout << this->id << ": ";
     std::cout << this->style << ", ";
     std::cout << this->material_id << ", ";
@@ -33,8 +35,7 @@ void
     std::cout << "\n";
   }
 
-void
-  Element::set_style() {
+void Element::set_style() {
     ElementStyle* estyle_p = set_element_style(this->style);
 
     this->dim = estyle_p->dim;
@@ -50,13 +51,11 @@ void
     this->dn_center = estyle_p->dn_center;
   }
 
-void
-  Element::set_nodes(std::vector<Node*> nodes_p) {
+void Element::set_nodes(std::vector<Node*> nodes_p) {
     this->nodes_p = nodes_p;
   }
 
-void
-  Element::set_material(Material* material_p) {
+void Element::set_material(Material* material_p) {
     if (material_p == nullptr) {
       this->rho = 0.0;
     } else {
@@ -69,8 +68,7 @@ void
     }
   }
 
-void
-  Element::set_pointer_list(){
+void Element::set_pointer_list(){
     this->u_p.resize(this->nnode);
     this->v_p.resize(this->nnode);
 
@@ -80,9 +78,8 @@ void
     }
   }
 
-void
-  Element::set_xn(){
-    this->xnT = Eigen::MatrixXd::Zero(2,this->nnode);
+void Element::set_xn(){
+    this->xnT = EM::Zero(2,this->nnode);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++ ) {
       this->xnT(0,inode) = this->nodes_p[inode]->xyz[0] + (*this->u_p[inode])[0];
@@ -91,22 +88,21 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::mk_local_matrix_init(const size_t dof){
+void Element::mk_local_matrix_init(const size_t dof){
     this->dof = dof;
     this->ndof = dof*this->nnode;
 
-    this->M_diag = Eigen::VectorXd::Zero(this->ndof);
+    this->M_diag = EV::Zero(this->ndof);
 
-    this->K = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
-    this->K_diag = Eigen::VectorXd::Zero(this->ndof);
-    this->K_off_diag = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+    this->K = EM::Zero(this->ndof,this->ndof);
+    this->K_diag = EV::Zero(this->ndof);
+    this->K_off_diag = EM::Zero(this->ndof,this->ndof);
 
-    this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
-    this->C_diag = Eigen::VectorXd::Zero(this->ndof);
-    this->C_off_diag = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+    this->C = EM::Zero(this->ndof,this->ndof);
+    this->C_diag = EV::Zero(this->ndof);
+    this->C_off_diag = EM::Zero(this->ndof,this->ndof);
 
-    this->force = Eigen::VectorXd::Zero(this->ndof);
+    this->force = EV::Zero(this->ndof);
 
     if (this->dim == 2) {
       double V = 0.0;
@@ -122,20 +118,19 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::mk_local_matrix() {
+void Element::mk_local_matrix() {
     if (this->dim == 2) {
-      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+      EM M = EM::Zero(this->ndof,this->ndof);
 
-      this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
-      this->K = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+      this->C = EM::Zero(this->ndof,this->ndof);
+      this->K = EM::Zero(this->ndof,this->ndof);
 
       this->De = this->material.mk_d(this->dof);
       this->Dv = this->material.mk_visco(this->dof);
 
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
-        Eigen::MatrixXd N, Me, B, K, C;
+        EM N, Me, B, K, C;
 
         auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
 
@@ -166,11 +161,11 @@ void
 
     } else if (this->dim == 1) {
       if (this->style.find("input") != std::string::npos) {
-        this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+        this->C = EM::Zero(this->ndof,this->ndof);
 
         for (size_t i = 0 ; i < this->ng_all ; i++){
           double detJ;
-          Eigen::MatrixXd N, NqN;
+          EM N, NqN;
 
           auto [det, q] = mk_q(this->dof, this->xnT,  this->dn_list[i]);
 
@@ -189,15 +184,14 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::mk_local_vector() {
+void Element::mk_local_vector() {
     if (this->dim == 2) {
-      this->force = Eigen::VectorXd::Zero(this->ndof);
+      this->force = EV::Zero(this->ndof);
 
       double V = 0.0;
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
-        Eigen::MatrixXd N;
+        EM N;
 
         auto [det, jacobi] = mk_jacobi(this->xnT, this->dn_list[i]);
         N = mk_n(this->dof, this->nnode, this->n_list[i]);
@@ -213,18 +207,17 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::mk_local_update() {
+void Element::mk_local_update() {
     if (this->dim == 2) {
-      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
-      this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+      EM M = EM::Zero(this->ndof,this->ndof);
+      this->C = EM::Zero(this->ndof,this->ndof);
       this->Dv = this->material.mk_visco(this->dof);
-      this->force = Eigen::VectorXd::Zero(this->ndof);
+      this->force = EV::Zero(this->ndof);
 
       double V = 0.0;
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
-        Eigen::MatrixXd N, Me, B, K, C;
+        EM N, Me, B, K, C;
 
         auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
 
@@ -253,11 +246,11 @@ void
 
     } else if (this->dim == 1) {
       if (this->style.find("input") != std::string::npos) {
-        this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+        this->C = EM::Zero(this->ndof,this->ndof);
 
         for (size_t i = 0 ; i < this->ng_all ; i++){
           double detJ;
-          Eigen::MatrixXd N, NqN;
+          EM N, NqN;
 
           auto [det, q] = mk_q(this->dof, this->xnT,  this->dn_list[i]);
 
@@ -277,9 +270,8 @@ void
 
 
 // ------------------------------------------------------------------- //
-void
-  Element::mk_ku() {
-    Eigen::VectorXd u, ku;
+void Element::mk_ku() {
+    EV u, ku;
 
     u = this->mk_u_hstack(this->u_p);
     ku = this->K * u;
@@ -292,9 +284,8 @@ void
     }
   }
 
-void
-  Element::mk_ku_u(const std::vector<Eigen::VectorXd*> u_p) {
-    Eigen::VectorXd u, ku;
+void Element::mk_ku_u(const std::vector<EV*> u_p) {
+    EV u, ku;
 
     u = this->mk_u_hstack(u_p);
     ku = this->K * u;
@@ -308,9 +299,8 @@ void
 
   }
 
-void
-  Element::mk_cv() {
-    Eigen::VectorXd v, cv;
+void Element::mk_cv() {
+    EV v, cv;
 
     v = this->mk_u_hstack(this->v_p);
     cv = this->C_off_diag * v;
@@ -323,10 +313,9 @@ void
     }
   }
 
-void
-  Element::mk_ku_cv() {
-    Eigen::VectorXd u, ku;
-    Eigen::VectorXd v, cv;
+void Element::mk_ku_cv() {
+    EV u, ku;
+    EV v, cv;
 
     u = this->mk_u_hstack(this->u_p);
     v = this->mk_u_hstack(this->v_p);
@@ -342,19 +331,18 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::mk_B_stress() {
+void Element::mk_B_stress() {
     if (this->dim == 1) {
       this->mk_ku();
 
     } else if (this->dim == 2) {
-      Eigen::VectorXd force = Eigen::VectorXd::Zero(this->ndof);
-      Eigen::MatrixXd u = this->mk_u_vstack(this->u_p);
+      EV force = EV::Zero(this->ndof);
+      EM u = this->mk_u_vstack(this->u_p);
 
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
-        Eigen::MatrixXd BT;
-        Eigen::VectorXd stress;
+        EM BT;
+        EV stress;
 
         auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
         BT = mk_b_T(this->dof, this->nnode, dnj);
@@ -376,9 +364,8 @@ void
 
 
 // ------------------------------------------------------------------- //
-Eigen::VectorXd
-  Element::mk_u_hstack(const std::vector<Eigen::VectorXd*> u_p) {
-    Eigen::VectorXd u(this->ndof);
+EV Element::mk_u_hstack(const std::vector<EV*> u_p) {
+    EV u(this->ndof);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
       size_t i0 = inode*this->dof;
@@ -389,9 +376,8 @@ Eigen::VectorXd
     return u;
   }
 
-Eigen::MatrixXd
-  Element::mk_u_vstack(const std::vector<Eigen::VectorXd*> u_p) {
-    Eigen::MatrixXd u(this->nnode,this->dof);
+EM Element::mk_u_vstack(const std::vector<EV*> u_p) {
+    EM u(this->nnode,this->dof);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
       for (size_t i = 0 ; i < this->dof ; i++) {
@@ -403,9 +389,8 @@ Eigen::MatrixXd
 
 
 // ------------------------------------------------------------------- //
-void
-  Element::update_inputwave(const Eigen::VectorXd vel0) {
-    Eigen::VectorXd v(this->ndof), cv(this->ndof);
+void Element::update_inputwave(const EV vel0) {
+    EV v(this->ndof), cv(this->ndof);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
       size_t i0 = inode*this->dof;
@@ -424,8 +409,7 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::update_bodyforce(const Eigen::VectorXd acc0) {
+void Element::update_bodyforce(const EV acc0) {
     this->mk_bodyforce(acc0);
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
@@ -436,15 +420,14 @@ void
     }
   }
 
-void
-  Element::mk_bodyforce(const Eigen::VectorXd acc0) {
+void Element::mk_bodyforce(const EV acc0) {
     if (this->dim == 2) {
-      this->force = Eigen::VectorXd::Zero(this->ndof);
+      this->force = EV::Zero(this->ndof);
 
       double V = 0.0;
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
-        Eigen::MatrixXd N;
+        EM N;
 
         auto [det, jacobi] = mk_jacobi(this->xnT, this->dn_list[i]);
         N = mk_n(this->dof, this->nnode, this->n_list[i]);
@@ -461,10 +444,9 @@ void
   }
 
 // ------------------------------------------------------------------- //
-void
-  Element::calc_stress() {
-    Eigen::VectorXd u;
-    Eigen::MatrixXd B;
+void Element::calc_stress() {
+    EV u;
+    EM B;
 
     auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
     B = mk_b(this->dof, this->nnode, dnj);
@@ -477,17 +459,15 @@ void
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
-Eigen::MatrixXd
-  mk_m(const Eigen::MatrixXd N) {
-    Eigen::MatrixXd M;
+EM mk_m(const EM N) {
+    EM M;
 
     M = N.transpose() * N;
     return M;
   }
 
-Eigen::MatrixXd
-  mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n) {
-    Eigen::MatrixXd N = Eigen::MatrixXd::Zero(dof,dof*nnode);
+EM mk_n(const size_t dof, const size_t nnode, const EV n) {
+    EM N = EM::Zero(dof,dof*nnode);
 
     if (dof == 1) {
       for (size_t i = 0; i < nnode; i++){
@@ -517,18 +497,17 @@ Eigen::MatrixXd
   }
 
 // ------------------------------------------------------------------- //
-Eigen::MatrixXd
-  mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp) {
-    Eigen::MatrixXd nqn;
+EM mk_nqn(const EM N, const EM q, const EM imp) {
+    EM nqn;
 
     nqn = N.transpose() * q.transpose() * imp * q * N;
     return nqn;
   }
 
-std::tuple<double, Eigen::MatrixXd>
-  mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
-    Eigen::MatrixXd q;
-    Eigen::VectorXd n(2), t(2);
+std::tuple<double, EM>
+  mk_q(const size_t dof, const EM xnT, const EM dn) {
+    EM q;
+    EV n(2), t(2);
     double det;
 
     t = xnT * dn;
@@ -536,16 +515,16 @@ std::tuple<double, Eigen::MatrixXd>
     det = n.norm();
 
     if (dof == 1){
-      q = Eigen::MatrixXd::Zero(1,1);
+      q = EM::Zero(1,1);
       q(0,0) = 1.0;
 
     } else if (dof == 2){
-      q = Eigen::MatrixXd::Zero(2,2);
+      q = EM::Zero(2,2);
       q(0,0) = n(0)/det; q(0,1) = n(1)/det;
       q(1,0) = t(0)/det; q(1,1) = t(1)/det;
 
     } else if (dof == 3){
-      q = Eigen::MatrixXd::Zero(3,3);
+      q = EM::Zero(3,3);
       q(0,0) = n(0)/det; q(0,1) = n(1)/det;
       q(1,0) = t(0)/det; q(1,1) = t(1)/det;
       q(2,2) = 1.0/det;
@@ -555,27 +534,25 @@ std::tuple<double, Eigen::MatrixXd>
   }
 
 // ------------------------------------------------------------------- //
-Eigen::MatrixXd
-  mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D) {
-    Eigen::MatrixXd K;
+EM mk_k(const EM B, const EM D) {
+    EM K;
 
     K = B.transpose() * D * B;
     return K;
   }
 
-Eigen::MatrixXd
-  mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj) {
-    Eigen::MatrixXd B;
+EM mk_b(const size_t dof, const size_t nnode, const EM dnj) {
+    EM B;
 
     if (dof == 1) {
-      B = Eigen::MatrixXd::Zero(2,nnode);
+      B = EM::Zero(2,nnode);
       for (size_t i = 0; i < nnode; i++){
         B(0,i) = dnj(i,0);
         B(1,i) = dnj(i,1);
       }
 
     } else if (dof == 2) {
-      B = Eigen::MatrixXd::Zero(3,2*nnode);
+      B = EM::Zero(3,2*nnode);
       for (size_t i = 0; i < nnode; i++){
         size_t i0 = 2*i;
         size_t i1 = 2*i+1;
@@ -587,7 +564,7 @@ Eigen::MatrixXd
       }
 
     } else if (dof == 3) {
-      B = Eigen::MatrixXd::Zero(5,3*nnode);
+      B = EM::Zero(5,3*nnode);
       for (size_t i = 0; i < nnode; i++){
         size_t i0 = 3*i;
         size_t i1 = 3*i+1;
@@ -606,19 +583,18 @@ Eigen::MatrixXd
     return B;
   }
 
-Eigen::MatrixXd
-  mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj) {
-    Eigen::MatrixXd B;
+EM mk_b_T(const size_t dof, const size_t nnode, const EM dnj) {
+    EM B;
 
     if (dof == 1) {
-      B = Eigen::MatrixXd::Zero(nnode,2);
+      B = EM::Zero(nnode,2);
       for (size_t i = 0; i < nnode; i++){
         B(i,0) = dnj(i,0);
         B(i,1) = dnj(i,1);
       }
 
     } else if (dof == 2) {
-      B = Eigen::MatrixXd::Zero(2*nnode,3);
+      B = EM::Zero(2*nnode,3);
       for (size_t i = 0; i < nnode; i++){
         size_t i0 = 2*i;
         size_t i1 = 2*i+1;
@@ -630,7 +606,7 @@ Eigen::MatrixXd
       }
 
     } else if (dof == 3) {
-      B = Eigen::MatrixXd::Zero(3*nnode,5);
+      B = EM::Zero(3*nnode,5);
       for (size_t i = 0; i < nnode; i++){
         size_t i0 = 3*i;
         size_t i1 = 3*i+1;
@@ -650,9 +626,8 @@ Eigen::MatrixXd
   }
 
 // ------------------------------------------------------------------- //
-Eigen::VectorXd
-  Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    Eigen::VectorXd strain_vector(3), stress;
+EV Hencky_stress(const EM D, const EM dnj, const EM u) {
+    EV strain_vector(3), stress;
 
     auto [J, strain] = Euler_log_strain(dnj, u);
     strain_vector << strain(0,0), strain(1,1), strain(0,1)+strain(1,0);
@@ -660,12 +635,12 @@ Eigen::VectorXd
     return stress;
   }
 
-std::tuple<double, Eigen::Matrix2d>
-  Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    Eigen::Matrix2d strain;
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix2d> es;
+std::tuple<double, EM2>
+  Euler_log_strain(const EM dnj, const EM u) {
+    EM2 strain;
+    Eigen::SelfAdjointEigenSolver<EM2> es;
     Eigen::Vector2d L, log_L;
-    Eigen::Matrix2d P;
+    EM2 P;
 
     auto [J, FF] = mk_FF(dnj, u);
     es.compute(FF);
@@ -677,19 +652,19 @@ std::tuple<double, Eigen::Matrix2d>
     return {J, strain};
   }
 
-std::tuple<double, Eigen::Matrix2d>
-  mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    Eigen::Matrix2d FF;
+std::tuple<double, EM2>
+  mk_FF(const EM dnj, const EM u) {
+    EM2 FF;
 
     auto [J, F] = mk_F(dnj, u);
     FF = F * F.transpose();
     return std::forward_as_tuple(J, FF);
   }
 
-std::tuple<double, Eigen::Matrix2d>
-  mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
+std::tuple<double, EM2>
+  mk_F(const EM dnj, const EM u) {
     double det;
-    Eigen::Matrix2d dnu, F;
+    EM2 dnu, F;
 
     dnu = mk_dnu(dnj, u);
     det = (1.0-dnu(0,0))*(1.0-dnu(1,1)) - dnu(0,1)*dnu(1,0);
@@ -699,27 +674,26 @@ std::tuple<double, Eigen::Matrix2d>
     return {1.0/det, F};
   }
 
-Eigen::Matrix2d
-  mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u) {
-    Eigen::Matrix2d dnu;
+EM2 mk_dnu(const EM dnj, const EM u) {
+    EM2 dnu;
 
     dnu = u.transpose() * dnj;
     return dnu;
   }
 
 // ------------------------------------------------------------------- //
-std::tuple<double, Eigen::MatrixXd>
-  mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
-    Eigen::MatrixXd dnj;
+std::tuple<double, EM>
+  mk_dnj(const EM xnT, const EM dn) {
+    EM dnj;
 
     auto [det, jacobi_inv] = mk_inv_jacobi(xnT, dn);
     dnj = dn * jacobi_inv;
     return {det, dnj};
   }
 
-std::tuple<double, Eigen::Matrix2d>
-  mk_inv_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
-    Eigen::Matrix2d jacobi_inv;
+std::tuple<double, EM2>
+  mk_inv_jacobi(const EM xnT, const EM dn) {
+    EM2 jacobi_inv;
 
     auto [det, jacobi] = mk_jacobi(xnT, dn);
     jacobi_inv <<  jacobi(1,1), -jacobi(0,1),
@@ -729,11 +703,10 @@ std::tuple<double, Eigen::Matrix2d>
   }
 
 
-std::tuple<double, Eigen::Matrix2d>
-  mk_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn) {
-    Eigen::Matrix2d jacobi = xnT * dn;
+std::tuple<double, EM2>
+  mk_jacobi(const EM xnT, const EM dn) {
+    EM2 jacobi = xnT * dn;
 
     double det = jacobi(0,0)*jacobi(1,1) - jacobi(0,1)*jacobi(1,0);
     return {det, jacobi};
-    // return std::forward_as_tuple(det, jacobi);
   }

@@ -1,3 +1,7 @@
+using EV = Eigen::VectorXd ;
+using EM = Eigen::MatrixXd ;
+using EM2 = Eigen::Matrix2d ;
+
 class Element {
   public:
     size_t id;
@@ -7,121 +11,78 @@ class Element {
     double gravity;
 
     std::vector<Node*> nodes_p;
-    std::vector<Eigen::VectorXd*> u_p, v_p;
+    std::vector<EV*> u_p, v_p;
 
     Material material;
     double rho, mass;
 
     size_t nnode, dim, ng, ng_all, dof, ndof;
-    Eigen::VectorXd xi, w;
-    Eigen::MatrixXd xnT;
-    std::vector<Eigen::VectorXd> n_list;
-    std::vector<Eigen::MatrixXd> dn_list;
+    EV xi, w;
+    EM xnT;
+    std::vector<EV> n_list;
+    std::vector<EM> dn_list;
     std::vector<double> w_list;
-    Eigen::MatrixXd dn_center;
+    EM dn_center;
 
-    Eigen::VectorXd M_diag, K_diag, C_diag;
-    Eigen::MatrixXd K, K_off_diag, C, C_off_diag;
-    Eigen::MatrixXd De, Dv, imp;
-    Eigen::VectorXd force;
+    EV M_diag, K_diag, C_diag;
+    EM K, K_off_diag, C, C_off_diag;
+    EM De, Dv, imp;
+    EV force;
+    EV strain, stress;
+    std::vector<EV*> _up_p;
 
-    Eigen::VectorXd strain, stress;
-
-    std::vector<Eigen::VectorXd*> _up_p;
 
     Element (size_t id, std::string style, int material_id, std::vector<size_t> inode);
-
-    void
-      print() ;
+    void print();
 
   private:
-    void
-      set_style();
+    void set_style();
 
   public:
-    void
-      set_nodes(std::vector<Node*> nodes_p);
-    void
-      set_material(Material* material_p);
-    void
-      set_pointer_list();
-    void
-      set_xn();
+    void set_nodes(std::vector<Node*> nodes_p);
+    void set_material(Material* material_p);
+    void set_pointer_list();
+    void set_xn();
 
-    void
-      mk_local_matrix_init(const size_t dof);
-    void
-      mk_local_matrix();
-    void
-      mk_local_vector();
-    void
-      mk_local_update();
+    void mk_local_matrix_init(const size_t dof);
+    void mk_local_matrix();
+    void mk_local_vector();
+    void mk_local_update();
 
-    void
-      mk_ku();
-    void
-      mk_ku_u(const std::vector<Eigen::VectorXd*> u_p);
+    void mk_ku();
+    void mk_ku_u(const std::vector<EV*> u_p);
+    void mk_cv();
+    void mk_ku_cv();
 
-    void
-      mk_cv();
-    void
-      mk_ku_cv();
-
-    void
-      mk_B_stress();
-
+    void mk_B_stress();
 
   private:
-    Eigen::VectorXd
-      mk_u_hstack(const std::vector<Eigen::VectorXd*> u_p);
-    Eigen::MatrixXd
-      mk_u_vstack(const std::vector<Eigen::VectorXd*> u_p);
+    EV mk_u_hstack(const std::vector<EV*> u_p);
+    EM mk_u_vstack(const std::vector<EV*> u_p);
 
   public:
-    void
-      update_bodyforce(const Eigen::VectorXd acc0);
-    void
-      mk_bodyforce(const Eigen::VectorXd acc0);
-
-    void
-      update_inputwave(const Eigen::VectorXd vel0);
-
-
-    void
-      calc_stress();
+    void update_bodyforce(const EV acc0);
+    void mk_bodyforce(const EV acc0);
+    void update_inputwave(const EV vel0);
+    void calc_stress();
 };
 
-Eigen::MatrixXd
-  mk_m(const Eigen::MatrixXd N);
-Eigen::MatrixXd
-  mk_n(const size_t dof, const size_t nnode, const Eigen::VectorXd n);
+EM mk_m(const EM N);
+EM mk_n(const size_t dof, const size_t nnode, const EV n);
 
-Eigen::MatrixXd
-  mk_nqn(const Eigen::MatrixXd N, const Eigen::MatrixXd q, const Eigen::MatrixXd imp);
-std::tuple<double, Eigen::MatrixXd>
-  mk_q(const size_t dof, const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
+EM mk_nqn(const EM N, const EM q, const EM imp);
+std::tuple<double, EM> mk_q(const size_t dof, const EM xnT, const EM dn);
 
-Eigen::MatrixXd
-  mk_k(const Eigen::MatrixXd B, const Eigen::MatrixXd D);
-Eigen::MatrixXd
-  mk_b(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
-Eigen::MatrixXd
-  mk_b_T(const size_t dof, const size_t nnode, const Eigen::MatrixXd dnj);
+EM mk_k(const EM B, const EM D);
+EM mk_b(const size_t dof, const size_t nnode, const EM dnj);
+EM mk_b_T(const size_t dof, const size_t nnode, const EM dnj);
 
-Eigen::VectorXd
-  Hencky_stress(const Eigen::MatrixXd D, const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-std::tuple<double, Eigen::Matrix2d>
-  Euler_log_strain(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-std::tuple<double, Eigen::Matrix2d>
-  mk_FF(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-std::tuple<double, Eigen::Matrix2d>
-  mk_F(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
-Eigen::Matrix2d
-  mk_dnu(const Eigen::MatrixXd dnj, const Eigen::MatrixXd u);
+EV Hencky_stress(const EM D, const EM dnj, const EM u);
+std::tuple<double, EM2> Euler_log_strain(const EM dnj, const EM u);
+std::tuple<double, EM2> mk_FF(const EM dnj, const EM u);
+std::tuple<double, EM2> mk_F(const EM dnj, const EM u);
+EM2 mk_dnu(const EM dnj, const EM u);
 
-std::tuple<double, Eigen::MatrixXd>
-  mk_dnj(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
-std::tuple<double, Eigen::Matrix2d>
-  mk_inv_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
-std::tuple<double, Eigen::Matrix2d>
-  mk_jacobi(const Eigen::MatrixXd xnT, const Eigen::MatrixXd dn);
+std::tuple<double, EM>  mk_dnj(const EM xnT, const EM dn);
+std::tuple<double, EM2> mk_inv_jacobi(const EM xnT, const EM dn);
+std::tuple<double, EM2> mk_jacobi(const EM xnT, const EM dn);

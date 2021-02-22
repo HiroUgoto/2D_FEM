@@ -6,6 +6,8 @@
 #include "element.h"
 #include "fem.h"
 
+using EV = Eigen::VectorXd ;
+
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 Fem::Fem (size_t dof, std::vector<Node> nodes,
@@ -183,7 +185,7 @@ void
     // --- set initial variables --- //
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
       Node& node = this->nodes[inode];
-      node.force = Eigen::VectorXd::Zero(node.dof);
+      node.force = EV::Zero(node.dof);
     }
     for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
       Element& element = this->elements[ielem];
@@ -203,7 +205,7 @@ void
     for (size_t i = 0 ; i < this->connected_elements.size() ; i++) {
       size_t ielem = this->connected_elements[i];
       Element& element = this->elements[ielem];
-      Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
+      EV u = EV::Zero(element.dof);
 
       for (size_t inode = 0 ; inode < element.nnode ; inode++) {
         u += element.nodes_p[inode]->_ur;
@@ -234,7 +236,7 @@ void
       // y = Ap
       for (size_t inode = 0 ; inode < this->nnode ; inode++) {
         Node& node = this->nodes[inode];
-        node.force = Eigen::VectorXd::Zero(node.dof);
+        node.force = EV::Zero(node.dof);
       }
       for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
         Element& element = this->elements[ielem];
@@ -257,7 +259,7 @@ void
       for (size_t i = 0 ; i < this->connected_elements.size() ; i++) {
         size_t ielem = this->connected_elements[i];
         Element& element = this->elements[ielem];
-        Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
+        EV u = EV::Zero(element.dof);
 
         for (size_t inode = 0 ; inode < element.nnode ; inode++) {
           u += element.nodes_p[inode]->_uy;
@@ -335,7 +337,7 @@ void
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void
-  Fem::update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave, const bool FD) {
+  Fem::update_time(const EV acc0, const EV vel0, const bool input_wave, const bool FD) {
     if (FD) {
       this->update_matrix();
 
@@ -381,7 +383,7 @@ void
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
       Node& node = this->nodes[inode];
-      Eigen::VectorXd u = node.u;
+      EV u = node.u;
 
       for (size_t i = 0 ; i < node.dof ; i++) {
         if (node.freedom[i] == 0) {
@@ -397,7 +399,7 @@ void
     for (size_t i = 0 ; i < this->connected_elements.size() ; i++) {
       size_t ielem = this->connected_elements[i];
       Element& element = this->elements[ielem];
-      Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
+      EV u = EV::Zero(element.dof);
 
       for (size_t inode = 0 ; inode < element.nnode ; inode++) {
         u += element.nodes_p[inode]->u;
@@ -420,9 +422,9 @@ void
     for (size_t inode = 0 ; inode < this->nnode ; inode++) {
       Node& node = this->nodes[inode];
 
-      node.mass = Eigen::VectorXd::Zero(node.dof);
-      node.c    = Eigen::VectorXd::Zero(node.dof);
-      node.dynamic_force = Eigen::VectorXd::Zero(node.dof);
+      node.mass = EV::Zero(node.dof);
+      node.c    = EV::Zero(node.dof);
+      node.dynamic_force = EV::Zero(node.dof);
     }
 
     for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {

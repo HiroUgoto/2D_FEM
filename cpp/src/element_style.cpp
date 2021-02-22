@@ -2,6 +2,10 @@
 #include <Eigen/Core>
 #include "element_style.h"
 
+using EV = Eigen::VectorXd ;
+using EM = Eigen::MatrixXd ;
+
+
 // ------- Set element style ---------------------------- //
 ElementStyle* set_element_style(const std::string style) {
   ElementStyle* es_p = nullptr;
@@ -27,17 +31,17 @@ ElementStyle* set_element_style(const std::string style) {
 }
 
 // ------- Set gauss points ---------------------------- //
-void set_gauss_points (const size_t n, Eigen::VectorXd& xi, Eigen::VectorXd& w) {
+void set_gauss_points (const size_t n, EV& xi, EV& w) {
   if (n == 3){
-    xi = Eigen::VectorXd::Zero(3);
-    w  = Eigen::VectorXd::Zero(3);
+    xi = EV::Zero(3);
+    w  = EV::Zero(3);
 
     xi << 0.0, sqrt(15.0)/5.0, -sqrt(15.0)/5.0;
     w  << 8.0/9.0, 5.0/9.0, 5.0/9.0;
 
   } else if (n == 5) {
-    xi = Eigen::VectorXd::Zero(5);
-    w  = Eigen::VectorXd::Zero(5);
+    xi = EV::Zero(5);
+    w  = EV::Zero(5);
 
     xi << 0.0,
           sqrt(245.0 - 14.0*sqrt(70.0))/21.0,
@@ -57,13 +61,13 @@ void set_gauss_points (const size_t n, Eigen::VectorXd& xi, Eigen::VectorXd& w) 
 // ------- Virtual class (ElementStyle) ----------------- //
 ElementStyle::ElementStyle () {}
 
-Eigen::VectorXd ElementStyle::shape_function_n (double xi, double zeta) {
-  Eigen::VectorXd n;
+EV ElementStyle::shape_function_n (double xi, double zeta) {
+  EV n;
   return n;
 }
 
-Eigen::MatrixXd ElementStyle::shape_function_dn (double xi, double zeta) {
-  Eigen::MatrixXd nd;
+EM ElementStyle::shape_function_dn (double xi, double zeta) {
+  EM nd;
   return nd;
 }
 
@@ -92,9 +96,8 @@ Solid_2d_4Node::Solid_2d_4Node () {
   dn_center = this->shape_function_dn(0.0,0.0);
 }
 
-Eigen::VectorXd
-  Solid_2d_4Node::shape_function_n (double xi, double zeta) {
-    Eigen::VectorXd n = Eigen::VectorXd::Zero(4);
+EV Solid_2d_4Node::shape_function_n (double xi, double zeta) {
+    EV n = EV::Zero(4);
     n(0) = (1.0 - xi)*(1.0 - zeta) / 4.0;
     n(1) = (1.0 + xi)*(1.0 - zeta) / 4.0;
     n(2) = (1.0 + xi)*(1.0 + zeta) / 4.0;
@@ -102,9 +105,8 @@ Eigen::VectorXd
     return n;
   }
 
-Eigen::MatrixXd
-  Solid_2d_4Node::shape_function_dn (double xi, double zeta) {
-    Eigen::MatrixXd dn = Eigen::MatrixXd::Zero(4,2);
+EM Solid_2d_4Node::shape_function_dn (double xi, double zeta) {
+    EM dn = EM::Zero(4,2);
     dn(0,0) = -(1.0 - zeta) / 4.0;
     dn(0,1) = -(1.0 -   xi) / 4.0;
 
@@ -144,9 +146,8 @@ Solid_2d_9Node::Solid_2d_9Node () {
   dn_center = this->shape_function_dn(0.0,0.0);
 }
 
-Eigen::VectorXd
-  Solid_2d_9Node::shape_function_n (double xi, double zeta) {
-    Eigen::VectorXd n = Eigen::VectorXd::Zero(9);
+EV Solid_2d_9Node::shape_function_n (double xi, double zeta) {
+    EV n = EV::Zero(9);
     n(0) =  (1.0 - xi)*(1.0 - zeta)*xi*zeta / 4.0;
     n(1) = -(1.0 + xi)*(1.0 - zeta)*xi*zeta / 4.0;
     n(2) =  (1.0 + xi)*(1.0 + zeta)*xi*zeta / 4.0;
@@ -161,9 +162,8 @@ Eigen::VectorXd
     return n;
   }
 
-Eigen::MatrixXd
-  Solid_2d_9Node::shape_function_dn (double xi, double zeta) {
-    Eigen::MatrixXd dn = Eigen::MatrixXd::Zero(9,2);
+EM Solid_2d_9Node::shape_function_dn (double xi, double zeta) {
+    EM dn = EM::Zero(9,2);
     dn(0,0) =  (2.0*xi-1.0)*(zeta-1.0)*zeta / 4.0;
     dn(0,1) =  (xi-1.0)*xi*(2.0*zeta-1.0) / 4.0;
 
@@ -215,17 +215,15 @@ Line_1d_2Node::Line_1d_2Node () {
   dn_center = this->shape_function_dn(0.0);
 }
 
-Eigen::VectorXd
-  Line_1d_2Node::shape_function_n (double xi, double zeta) {
-    Eigen::VectorXd n = Eigen::VectorXd::Zero(2);
+EV Line_1d_2Node::shape_function_n (double xi, double zeta) {
+    EV n = EV::Zero(2);
     n(0) = (1.0 - xi) / 2.0;
     n(1) = (1.0 + xi) / 2.0;
     return n;
   }
 
-Eigen::MatrixXd
-  Line_1d_2Node::shape_function_dn (double xi, double zeta) {
-    Eigen::MatrixXd dn = Eigen::MatrixXd::Zero(2,1);
+EM Line_1d_2Node::shape_function_dn (double xi, double zeta) {
+    EM dn = EM::Zero(2,1);
     dn(0,0) = -0.5;
     dn(1,0) =  0.5;
     return dn;
@@ -253,18 +251,16 @@ Line_1d_3Node::Line_1d_3Node () {
   dn_center = this->shape_function_dn(0.0);
 }
 
-Eigen::VectorXd
-  Line_1d_3Node::shape_function_n (double xi, double zeta) {
-    Eigen::VectorXd n = Eigen::VectorXd::Zero(3);
+EV Line_1d_3Node::shape_function_n (double xi, double zeta) {
+    EV n = EV::Zero(3);
     n(0) = -xi*(1.0 - xi) / 2.0;
     n(1) =  xi*(1.0 + xi) / 2.0;
     n(2) = (1.0 - xi)*(1.0 + xi);
     return n;
   }
 
-Eigen::MatrixXd
-  Line_1d_3Node::shape_function_dn (double xi, double zeta) {
-    Eigen::MatrixXd dn = Eigen::MatrixXd::Zero(3,1);
+EM Line_1d_3Node::shape_function_dn (double xi, double zeta) {
+    EM dn = EM::Zero(3,1);
     dn(0,0) = xi - 0.5;
     dn(1,0) = xi + 0.5;
     dn(2,0) = -2.0*xi;
@@ -275,6 +271,6 @@ Eigen::MatrixXd
 Connect::Connect () {
   this->dim = 0;
   this->ng = 1;
-  this->xi = Eigen::VectorXd::Zero(1);
-  this->w  = Eigen::VectorXd::Zero(1);
+  this->xi = EV::Zero(1);
+  this->w  = EV::Zero(1);
 }

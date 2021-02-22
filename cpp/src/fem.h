@@ -1,3 +1,5 @@
+using EV = Eigen::VectorXd ;
+
 class Fem {
   public:
     size_t nnode, nelem, dof;
@@ -20,34 +22,25 @@ class Fem {
                   std::vector<Material> materials);
 
   public:
-    void
-      set_init();
+    void set_init();
 
   private:
-    void
-      _set_mesh();
-    void
-      _set_initial_condition();
-    void
-      _set_initial_matrix();
+    void _set_mesh();
+    void _set_initial_condition();
+    void _set_initial_matrix();
 
   public:
-    void
-      set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs);
+    void set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs);
 
-    void
-      self_gravity();
+  public:
+    void self_gravity();
 
   private:
-    void
-      _self_gravity_cg(const bool full=true);
+    void _self_gravity_cg(const bool full=true);
 
   public:
-    void
-      update_init(const double dt);
+    void update_init(const double dt);
 
-    void
-      update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave=false, const bool FD=false);
-    void
-      update_matrix();
+    void update_time(const EV acc0, const EV vel0, const bool input_wave=false, const bool FD=false);
+    void update_matrix();
 };

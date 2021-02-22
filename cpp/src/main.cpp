@@ -8,6 +8,9 @@
 #include "io_data.h"
 #include "input_wave.h"
 
+using EV = Eigen::VectorXd ;
+using EM = Eigen::MatrixXd ;
+
 int main() {
 
   clock_t start = clock();
@@ -27,7 +30,7 @@ int main() {
   double duration = 0.01/fp;
   // double duration = 8.0/fp;
 
-  Eigen::VectorXd wave_acc;
+  EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
   wave_acc = input_wave::simple_sin(tim,fp,0.01);
   size_t ntim = tim.size();
@@ -47,14 +50,14 @@ int main() {
   // ----- Prepare time solver ----- //
   fem.update_init(dt);
 
-  Eigen::MatrixXd output_dispx = Eigen::MatrixXd::Zero(ntim,fem.output_nnode);
-  Eigen::MatrixXd output_dispz = Eigen::MatrixXd::Zero(ntim,fem.output_nnode);
-  Eigen::MatrixXd output_velx = Eigen::MatrixXd::Zero(ntim,fem.output_nnode);
-  Eigen::MatrixXd output_velz = Eigen::MatrixXd::Zero(ntim,fem.output_nnode);
+  EM output_dispx = EM::Zero(ntim,fem.output_nnode);
+  EM output_dispz = EM::Zero(ntim,fem.output_nnode);
+  EM output_velx = EM::Zero(ntim,fem.output_nnode);
+  EM output_velz = EM::Zero(ntim,fem.output_nnode);
 
   // ----- time iteration ----- //
-  Eigen::VectorXd acc0 = Eigen::Vector2d::Zero(fem.dof);
-  Eigen::VectorXd vel0 = Eigen::Vector2d::Zero(fem.dof);
+  EV acc0 = Eigen::Vector2d::Zero(fem.dof);
+  EV vel0 = Eigen::Vector2d::Zero(fem.dof);
 
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
