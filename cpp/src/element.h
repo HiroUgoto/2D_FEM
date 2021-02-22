@@ -9,7 +9,7 @@ class Element {
     std::vector<Node*> nodes_p;
     std::vector<Eigen::VectorXd*> u_p, v_p;
 
-    Material* material_p;
+    Material material;
     double rho, mass;
 
     size_t nnode, dim, ng, ng_all, dof, ndof;

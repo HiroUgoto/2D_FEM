@@ -58,11 +58,14 @@ void
 void
   Element::set_material(Material* material_p) {
     if (material_p == nullptr) {
-      Element::material_p = nullptr;
       Element::rho = 0.0;
     } else {
-      Element::material_p = material_p;
-      Element::rho = material_p->rho;
+      size_t id = material_p->id;
+      std::string style = material_p->style;
+      std::vector<double> param = material_p->param;
+
+      Element::material.set_init(id,style,param);
+      Element::rho = Element::material.rho;
     }
   }
 
@@ -114,7 +117,7 @@ void
       Element::mass = Element::rho * V;
 
     } else if (Element::dim == 1) {
-      Element::imp = Element::material_p->mk_imp(Element::dof);
+      Element::imp = Element::material.mk_imp(Element::dof);
     }
   }
 
@@ -127,8 +130,8 @@ void
       Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
       Element::K = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
 
-      Element::De = Element::material_p->mk_d(Element::dof);
-      Element::Dv = Element::material_p->mk_visco(Element::dof);
+      Element::De = Element::material.mk_d(Element::dof);
+      Element::Dv = Element::material.mk_visco(Element::dof);
 
       for (size_t i = 0 ; i < Element::ng_all ; i++){
         double detJ;
@@ -215,7 +218,7 @@ void
     if (Element::dim == 2) {
       Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
       Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
-      Element::Dv = Element::material_p->mk_visco(Element::dof);
+      Element::Dv = Element::material.mk_visco(Element::dof);
       Element::force = Eigen::VectorXd::Zero(Element::ndof);
 
       double V = 0.0;

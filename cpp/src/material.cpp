@@ -2,12 +2,22 @@
 #include <Eigen/Core>
 #include "material.h"
 
-Material::Material (size_t id, std::string style, std::vector<double> param) {
-    Material::id = id;
-    Material::style = style;
-    Material::param = param;
+Material::Material () {}
 
-    Material::set_param();
+Material::Material (size_t id, std::string style, std::vector<double> param) {
+  Material::id = id;
+  Material::style = style;
+  Material::param = param;
+
+  Material::set_param();
+}
+
+void Material::set_init(size_t id, std::string style, std::vector<double> param) {
+  Material::id = id;
+  Material::style = style;
+  Material::param = param;
+
+  Material::set_param();
 }
 
 void Material::print() {
@@ -18,6 +28,7 @@ void Material::print() {
   }
   std::cout << "\n";
 }
+
 
 void Material::set_param() {
   if (Material::style == "vs_vp_rho") {
