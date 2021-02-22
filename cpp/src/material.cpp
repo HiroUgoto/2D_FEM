@@ -3,60 +3,58 @@
 #include "material.h"
 
 Material::Material () {}
-
 Material::Material (size_t id, std::string style, std::vector<double> param) {
-  Material::id = id;
-  Material::style = style;
-  Material::param = param;
+  this->id = id;
+  this->style = style;
+  this->param = param;
 
-  Material::set_param();
+  this->set_param();
 }
 
 void Material::set_init(size_t id, std::string style, std::vector<double> param) {
-  Material::id = id;
-  Material::style = style;
-  Material::param = param;
+  this->id = id;
+  this->style = style;
+  this->param = param;
 
-  Material::set_param();
+  this->set_param();
 }
 
 void Material::print() {
-  std::cout << Material::id << ": ";
-  std::cout << Material::style << ", ";
-  for (size_t i = 0 ; i < Material::param.size() ; i++) {
-    std::cout << Material::param.at(i) << " ";
+  std::cout << this->id << ": ";
+  std::cout << this->style << ", ";
+  for (size_t i = 0 ; i < this->param.size() ; i++) {
+    std::cout << this->param.at(i) << " ";
   }
   std::cout << "\n";
 }
 
-
 void Material::set_param() {
-  if (Material::style == "vs_vp_rho") {
-    double vs = Material::param.at(0);
-    double vp = Material::param.at(1);
-    double rho = Material::param.at(2);
+  if (this->style == "vs_vp_rho") {
+    double vs = this->param.at(0);
+    double vp = this->param.at(1);
+    double rho = this->param.at(2);
 
-    Material::rmu = rho*vs*vs;
-    Material::rlambda = rho*vp*vp - 2.0*Material::rmu;
-    Material::rho = rho;
+    this->rmu = rho*vs*vs;
+    this->rlambda = rho*vp*vp - 2.0*this->rmu;
+    this->rho = rho;
 
-  } else if (Material::style == "nu_vp_rho") {
-    double nu = Material::param.at(0);
-    double vp = Material::param.at(1);
-    double rho = Material::param.at(2);
+  } else if (this->style == "nu_vp_rho") {
+    double nu = this->param.at(0);
+    double vp = this->param.at(1);
+    double rho = this->param.at(2);
 
-    Material::rmu = rho/2.0*vp*vp*(1.0-2.0*nu)/(1.0-nu);
-    Material::rlambda = rho*nu*vp*vp/(1.0-nu);
-    Material::rho = rho;
+    this->rmu = rho/2.0*vp*vp*(1.0-2.0*nu)/(1.0-nu);
+    this->rlambda = rho*nu*vp*vp/(1.0-nu);
+    this->rho = rho;
 
-  } else if (Material::style == "nu_vs_rho") {
-    double nu = Material::param.at(0);
-    double vs = Material::param.at(1);
-    double rho = Material::param.at(2);
+  } else if (this->style == "nu_vs_rho") {
+    double nu = this->param.at(0);
+    double vs = this->param.at(1);
+    double rho = this->param.at(2);
 
-    Material::rmu = rho*vs*vs;
-    Material::rlambda = 2.0*nu/(1.0-2.0*nu) * Material::rmu;
-    Material::rho = rho;
+    this->rmu = rho*vs*vs;
+    this->rlambda = 2.0*nu/(1.0-2.0*nu) * this->rmu;
+    this->rho = rho;
 
   }
 }
@@ -68,26 +66,26 @@ Eigen::MatrixXd
 
     if (dof == 1) {
       D = Eigen::MatrixXd::Zero(2,2);
-      D(0,0) = Material::rmu;
-      D(1,1) = Material::rmu;
+      D(0,0) = this->rmu;
+      D(1,1) = this->rmu;
 
     } else if (dof == 2) {
       D = Eigen::MatrixXd::Zero(3,3);
-      D(0,0) = Material::rlambda + 2.0*Material::rmu;
-      D(0,1) = Material::rlambda;
-      D(1,0) = Material::rlambda;
-      D(1,1) = Material::rlambda + 2.0*Material::rmu;
-      D(2,2) = Material::rmu;
+      D(0,0) = this->rlambda + 2.0*this->rmu;
+      D(0,1) = this->rlambda;
+      D(1,0) = this->rlambda;
+      D(1,1) = this->rlambda + 2.0*this->rmu;
+      D(2,2) = this->rmu;
 
     } else if (dof == 2) {
       D = Eigen::MatrixXd::Zero(5,5);
-      D(0,0) = Material::rlambda + 2.0*Material::rmu;
-      D(0,1) = Material::rlambda;
-      D(1,0) = Material::rlambda;
-      D(1,1) = Material::rlambda + 2.0*Material::rmu;
-      D(2,2) = Material::rmu;
-      D(3,3) = Material::rmu;
-      D(4,4) = Material::rmu;
+      D(0,0) = this->rlambda + 2.0*this->rmu;
+      D(0,1) = this->rlambda;
+      D(1,0) = this->rlambda;
+      D(1,1) = this->rlambda + 2.0*this->rmu;
+      D(2,2) = this->rmu;
+      D(3,3) = this->rmu;
+      D(4,4) = this->rmu;
 
     }
 
@@ -124,23 +122,23 @@ Eigen::MatrixXd
 Eigen::MatrixXd
   Material::mk_imp(const size_t dof) {
     Eigen::MatrixXd imp;
-    double vs = sqrt(Material::rmu/Material::rho);
-    double vp = sqrt((Material::rlambda + 2.0*Material::rmu)/Material::rho);
+    double vs = sqrt(this->rmu/this->rho);
+    double vp = sqrt((this->rlambda + 2.0*this->rmu)/this->rho);
 
     if (dof == 1) {
       imp = Eigen::MatrixXd::Zero(1,1);
-      imp(0,0) = Material::rho * vs;
+      imp(0,0) = this->rho * vs;
 
     } else if (dof == 2) {
       imp = Eigen::MatrixXd::Zero(2,2);
-      imp(0,0) = Material::rho * vp;
-      imp(1,1) = Material::rho * vs;
+      imp(0,0) = this->rho * vp;
+      imp(1,1) = this->rho * vs;
 
     } else if (dof == 3) {
       imp = Eigen::MatrixXd::Zero(3,3);
-      imp(0,0) = Material::rho * vp;
-      imp(1,1) = Material::rho * vs;
-      imp(2,2) = Material::rho * vs;
+      imp(0,0) = this->rho * vp;
+      imp(1,1) = this->rho * vs;
+      imp(2,2) = this->rho * vs;
     }
 
     return imp;

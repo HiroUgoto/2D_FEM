@@ -12,40 +12,40 @@ Fem::Fem (size_t dof, std::vector<Node> nodes,
                 std::vector<Element> elements,
                 std::vector<Material> materials)
   {
-    Fem::nnode = nodes.size();
-    Fem::nelem = elements.size();
-    Fem::dof = dof;
+    this->nnode = nodes.size();
+    this->nelem = elements.size();
+    this->dof = dof;
 
-    Fem::nodes = nodes;
-    Fem::elements = elements;
-    Fem::materials = materials;
+    this->nodes = nodes;
+    this->elements = elements;
+    this->materials = materials;
   }
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void
   Fem::set_init() {
-    Fem::_set_mesh();
-    Fem::_set_initial_condition();
-    Fem::_set_initial_matrix();
+    this->_set_mesh();
+    this->_set_initial_condition();
+    this->_set_initial_matrix();
   }
 
 // ----------------------------- //
 void
   Fem::_set_mesh() {
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++ ){
-      Element& element = Fem::elements[ielem];
+    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++ ){
+      Element& element = this->elements[ielem];
 
       std::vector<Node*> nodes_p(element.nnode);
       for (size_t i = 0 ; i < element.nnode ; i++ ){
         size_t inode = element.inode[i];
 
-        if (Fem::nodes[inode].id == inode) {
-          nodes_p[i] = &Fem::nodes[inode];
+        if (this->nodes[inode].id == inode) {
+          nodes_p[i] = &this->nodes[inode];
         } else {
-          for (size_t i0 = 0 ; i0 < Fem::nnode ; i0++ ) {
-            if (Fem::nodes[i0].id == inode) {
-              nodes_p[i] = &Fem::nodes[i0];
+          for (size_t i0 = 0 ; i0 < this->nnode ; i0++ ) {
+            if (this->nodes[i0].id == inode) {
+              nodes_p[i] = &this->nodes[i0];
               break;
             }
           }
@@ -55,13 +55,13 @@ void
       element.set_nodes(nodes_p);
 
       Material* material_p = nullptr;
-      if (Fem::materials[element.material_id].id == element.material_id) {
-        material_p = &Fem::materials[element.material_id];
+      if (this->materials[element.material_id].id == element.material_id) {
+        material_p = &this->materials[element.material_id];
 
       } else {
-        for (size_t i0 = 0 ; i0 < Fem::materials.size() ; i0++) {
-          if (Fem::materials[i0].id == element.material_id) {
-            material_p = &Fem::materials[i0];
+        for (size_t i0 = 0 ; i0 < this->materials.size() ; i0++) {
+          if (this->materials[i0].id == element.material_id) {
+            material_p = &this->materials[i0];
             break;
           }
         }
@@ -70,10 +70,10 @@ void
       element.set_material(material_p);
 
       if (element.style.find("input") != std::string::npos) {
-        Fem::input_elements.push_back(ielem);
+        this->input_elements.push_back(ielem);
       }
       if (element.style.find("connect") != std::string::npos) {
-        Fem::connected_elements.push_back(ielem);
+        this->connected_elements.push_back(ielem);
       }
     }
   }
@@ -81,21 +81,21 @@ void
 // ----------------------------- //
 void
   Fem::_set_initial_condition() {
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
 
       node.set_initial_condition();
 
       size_t total_dof = std::accumulate(node.freedom.begin(),node.freedom.end(),0);
       if (total_dof == dof) {
-        Fem::free_nodes.push_back(inode);
+        this->free_nodes.push_back(inode);
       } else {
-        Fem::fixed_nodes.push_back(inode);
+        this->fixed_nodes.push_back(inode);
       }
     }
 
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++ ){
-      Element& element = Fem::elements[ielem];
+    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++ ){
+      Element& element = this->elements[ielem];
       element.set_pointer_list();
     }
   }
@@ -103,17 +103,17 @@ void
 // ----------------------------- //
 void
   Fem::_set_initial_matrix(){
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++ ){
-      Element& element = Fem::elements[ielem];
+    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++ ){
+      Element& element = this->elements[ielem];
 
       element.set_xn();
-      element.mk_local_matrix_init(Fem::dof);
+      element.mk_local_matrix_init(this->dof);
       element.mk_local_matrix();
       element.mk_local_vector();
 
       size_t id = 0;
       for (size_t inode = 0 ; inode < element.nnode ; inode++) {
-        for (size_t i = 0 ; i < Fem::dof ; i++) {
+        for (size_t i = 0 ; i < this->dof ; i++) {
           element.nodes_p[inode]->mass[i] += element.M_diag[id];
           element.nodes_p[inode]->c[i] += element.C_diag[id];
           element.nodes_p[inode]->k[i] += element.K_diag[id];
@@ -130,11 +130,11 @@ void
   Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs) {
     auto [output_node_list, output_element_list] = outputs;
 
-    Fem::output_nnode = output_node_list.size();
-    Fem::output_nodes = output_node_list;
+    this->output_nnode = output_node_list.size();
+    this->output_nodes = output_node_list;
 
-    Fem::output_nelem = output_element_list.size();
-    Fem::output_elements = output_element_list;
+    this->output_nelem = output_element_list.size();
+    this->output_elements = output_element_list;
   }
 
 // ------------------------------------------------------------------- //
@@ -143,27 +143,27 @@ void
   Fem::self_gravity() {
     // Initial condition //
     double H = 0.0;
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      if (Fem::nodes[inode].xyz[1] > H) {
-        H = Fem::nodes[inode].xyz[1];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      if (this->nodes[inode].xyz[1] > H) {
+        H = this->nodes[inode].xyz[1];
       }
     }
 
     double g = 9.8;
     double vp = 1500.0;
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
 
       node.u[0] = 0.0;
       node.u[1] = g/(2*vp*vp) * (H*H - node.xyz[1]*node.xyz[1]);
       node.um = node.u;
     }
 
-    Fem::_self_gravity_cg(false);
-    Fem::_self_gravity_cg(true);
+    this->_self_gravity_cg(false);
+    this->_self_gravity_cg(true);
 
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
       node.u0 = node.u;
     }
 
@@ -181,17 +181,17 @@ void
 
     // CG Method //
     // --- set initial variables --- //
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
       node.force = Eigen::VectorXd::Zero(node.dof);
     }
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-      Element& element = Fem::elements[ielem];
+    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+      Element& element = this->elements[ielem];
       element.mk_ku();
     }
 
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
       for (size_t i = id ; i < node.dof ; i++) {
         if (node.freedom[i] == 0) {
           node._ur[i] = 0.0;
@@ -200,9 +200,9 @@ void
         }
       }
     }
-    for (size_t i = 0 ; i < Fem::connected_elements.size() ; i++) {
-      size_t ielem = Fem::connected_elements[i];
-      Element& element = Fem::elements[ielem];
+    for (size_t i = 0 ; i < this->connected_elements.size() ; i++) {
+      size_t ielem = this->connected_elements[i];
+      Element& element = this->elements[ielem];
       Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
 
       for (size_t inode = 0 ; inode < element.nnode ; inode++) {
@@ -213,13 +213,13 @@ void
       }
     }
 
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
       node._up = node._ur;
     }
 
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-      Element& element = Fem::elements[ielem];
+    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+      Element& element = this->elements[ielem];
 
       element._up_p.resize(element.nnode);
       for (size_t inode = 0 ; inode < element.nnode ; inode++){
@@ -228,35 +228,35 @@ void
     }
 
     // --- CG iterations --- //
-    for (size_t it=0 ; it < 10*Fem::nnode ; it++) {
+    for (size_t it=0 ; it < 10*this->nnode ; it++) {
       double rr, rr1, py, alpha, beta;
 
       // y = Ap
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         node.force = Eigen::VectorXd::Zero(node.dof);
       }
-      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-        Element& element = Fem::elements[ielem];
+      for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+        Element& element = this->elements[ielem];
         element.mk_ku_u(element._up_p);
       }
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         node._uy = node.force;
       }
 
       // correction boundary condition
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         for (size_t i = id ; i < node.dof ; i++) {
           if (node.freedom[i] == 0) {
             node._uy[i] = 0.0;
           }
         }
       }
-      for (size_t i = 0 ; i < Fem::connected_elements.size() ; i++) {
-        size_t ielem = Fem::connected_elements[i];
-        Element& element = Fem::elements[ielem];
+      for (size_t i = 0 ; i < this->connected_elements.size() ; i++) {
+        size_t ielem = this->connected_elements[i];
+        Element& element = this->elements[ielem];
         Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
 
         for (size_t inode = 0 ; inode < element.nnode ; inode++) {
@@ -269,8 +269,8 @@ void
 
       // alpha = rr/py
       rr = 0.0; py = 0.0;
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         rr += node._ur.dot(node._ur);
         py += node._up.dot(node._uy);
       }
@@ -278,8 +278,8 @@ void
 
       // x = x + alpha*p
       rr1 = 0.0;
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         for (size_t i = id ; i < node.dof ; i++) {
           if (node.freedom[i] != 0) {
             node.u[i] += alpha * node._up[i];
@@ -295,8 +295,8 @@ void
 
       // p = r + beta*p
       beta = rr1/rr;
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         for (size_t i = id ; i < node.dof ; i++) {
           if (node.freedom[i] != 0) {
             node._up[i] = node._ur[i] + beta * node._up[i];
@@ -306,7 +306,7 @@ void
 
       if (it%100 == 0){
         std::cout << " (self gravity process .. ) " << it << " " ;
-        std::cout << Fem::nodes[0].u[1] << " ";
+        std::cout << this->nodes[0].u[1] << " ";
         std::cout << rr1 << "\n";
       }
     }
@@ -317,8 +317,8 @@ void
 // ------------------------------------------------------------------- //
 void
   Fem::update_init(const double dt) {
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
 
       for (size_t i = 0 ; i < node.dof ; i++) {
         node.inv_mc[i] = 1.0 / (node.mass[i] + 0.5*dt*node.c[i]);
@@ -328,8 +328,8 @@ void
       }
     }
 
-    Fem::dt = dt;
-    Fem::inv_dt2 = 1.0/(2.0*dt);
+    this->dt = dt;
+    this->inv_dt2 = 1.0/(2.0*dt);
   }
 
 // ------------------------------------------------------------------- //
@@ -337,50 +337,50 @@ void
 void
   Fem::update_time(const Eigen::VectorXd acc0, const Eigen::VectorXd vel0, const bool input_wave, const bool FD) {
     if (FD) {
-      Fem::update_matrix();
+      this->update_matrix();
 
     } else {
-      for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-        Node& node = Fem::nodes[inode];
+      for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+        Node& node = this->nodes[inode];
         node.dynamic_force = node.static_force;
       }
     }
 
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
       node.force = -node.dynamic_force;
     }
 
     if (input_wave) {
-      for (size_t i = 0 ; i < Fem::input_elements.size() ; i++) {
-        size_t ielem = Fem::input_elements[i];
-        Element& element = Fem::elements[ielem];
+      for (size_t i = 0 ; i < this->input_elements.size() ; i++) {
+        size_t ielem = this->input_elements[i];
+        Element& element = this->elements[ielem];
         element.update_inputwave(vel0);
       }
 
     } else {
-      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-        Element& element = Fem::elements[ielem];
+      for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+        Element& element = this->elements[ielem];
         element.update_bodyforce(acc0);
       }
     }
 
     if (FD) {
-      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-        Element& element = Fem::elements[ielem];
+      for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+        Element& element = this->elements[ielem];
         element.mk_B_stress();
         element.mk_cv();
       }
 
     } else {
-      for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-        Element& element = Fem::elements[ielem];
+      for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+        Element& element = this->elements[ielem];
         element.mk_ku_cv();
       }
     }
 
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
       Eigen::VectorXd u = node.u;
 
       for (size_t i = 0 ; i < node.dof ; i++) {
@@ -390,13 +390,13 @@ void
           node.u[i] = node.mass_inv_mc[i]*(2.0*u[i]-node.um[i]) + node.c_inv_mc[i]*node.um[i] - node.dtdt_inv_mc[i]*node.force[i];
         }
       }
-      node.v = (node.u - node.um) * Fem::inv_dt2;
+      node.v = (node.u - node.um) * this->inv_dt2;
       node.um = u;
     }
 
-    for (size_t i = 0 ; i < Fem::connected_elements.size() ; i++) {
-      size_t ielem = Fem::connected_elements[i];
-      Element& element = Fem::elements[ielem];
+    for (size_t i = 0 ; i < this->connected_elements.size() ; i++) {
+      size_t ielem = this->connected_elements[i];
+      Element& element = this->elements[ielem];
       Eigen::VectorXd u = Eigen::VectorXd::Zero(element.dof);
 
       for (size_t inode = 0 ; inode < element.nnode ; inode++) {
@@ -407,9 +407,9 @@ void
       }
     }
 
-    for (size_t i = 0 ; i < Fem::output_elements.size() ; i++) {
-      size_t ielem = Fem::output_elements[i];
-      Element& element = Fem::elements[ielem];
+    for (size_t i = 0 ; i < this->output_elements.size() ; i++) {
+      size_t ielem = this->output_elements[i];
+      Element& element = this->elements[ielem];
       element.calc_stress();
     }
   }
@@ -417,23 +417,23 @@ void
 // ------------------------------------------------------------------- //
 void
   Fem::update_matrix() {
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
 
       node.mass = Eigen::VectorXd::Zero(node.dof);
       node.c    = Eigen::VectorXd::Zero(node.dof);
       node.dynamic_force = Eigen::VectorXd::Zero(node.dof);
     }
 
-    for (size_t ielem = 0 ; ielem < Fem::nelem ; ielem++) {
-      Element& element = Fem::elements[ielem];
+    for (size_t ielem = 0 ; ielem < this->nelem ; ielem++) {
+      Element& element = this->elements[ielem];
 
       element.set_xn();
       element.mk_local_update();
 
       size_t id = 0;
       for (size_t inode = 0 ; inode < element.nnode ; inode++) {
-        for (size_t i = 0 ; i < Fem::dof ; i++) {
+        for (size_t i = 0 ; i < this->dof ; i++) {
           element.nodes_p[inode]->mass[i] += element.M_diag[id];
           element.nodes_p[inode]->c[i] += element.C_diag[id];
           element.nodes_p[inode]->dynamic_force[i] += element.force[id];
@@ -442,8 +442,8 @@ void
       }
     }
 
-    for (size_t inode = 0 ; inode < Fem::nnode ; inode++) {
-      Node& node = Fem::nodes[inode];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++) {
+      Node& node = this->nodes[inode];
 
       for (size_t i = 0 ; i < node.dof ; i++) {
         node.inv_mc[i] = 1.0 / (node.mass[i] + 0.5*dt*node.c[i]);

@@ -9,181 +9,181 @@
 // ------------------------------------------------------------------- //
 Element::Element (size_t id, std::string style, int material_id, std::vector<size_t> inode)
   {
-    Element::id = id;
-    Element::style = style;
-    Element::material_id = material_id;
-    Element::inode = inode;
+    this->id = id;
+    this->style = style;
+    this->material_id = material_id;
+    this->inode = inode;
 
-    Element::gravity = 9.8;
-    Element::nnode = inode.size();
+    this->gravity = 9.8;
+    this->nnode = inode.size();
 
-    Element::set_style();
+    this->set_style();
   }
 
 // ------------------------------------------------------------------- //
 void
   Element::print() {
-    std::cout << Element::id << ": ";
-    std::cout << Element::style << ", ";
-    std::cout << Element::material_id << ", ";
+    std::cout << this->id << ": ";
+    std::cout << this->style << ", ";
+    std::cout << this->material_id << ", ";
 
-    for (size_t i = 0 ; i < Element::inode.size() ; i++) {
-      std::cout << Element::inode.at(i) << " ";
+    for (size_t i = 0 ; i < this->inode.size() ; i++) {
+      std::cout << this->inode.at(i) << " ";
     }
     std::cout << "\n";
   }
 
 void
   Element::set_style() {
-    ElementStyle* estyle_p = set_element_style(Element::style);
+    ElementStyle* estyle_p = set_element_style(this->style);
 
-    Element::dim = estyle_p->dim;
-    Element::ng = estyle_p->ng;
-    Element::xi = estyle_p->xi;
-    Element::w  = estyle_p->w;
+    this->dim = estyle_p->dim;
+    this->ng = estyle_p->ng;
+    this->xi = estyle_p->xi;
+    this->w  = estyle_p->w;
 
-    Element::ng_all = estyle_p->ng_all;
-    Element::n_list  = estyle_p->n_list;
-    Element::dn_list = estyle_p->dn_list;
-    Element::w_list = estyle_p->w_list;
+    this->ng_all = estyle_p->ng_all;
+    this->n_list  = estyle_p->n_list;
+    this->dn_list = estyle_p->dn_list;
+    this->w_list = estyle_p->w_list;
 
-    Element::dn_center = estyle_p->dn_center;
+    this->dn_center = estyle_p->dn_center;
   }
 
 void
   Element::set_nodes(std::vector<Node*> nodes_p) {
-    Element::nodes_p = nodes_p;
+    this->nodes_p = nodes_p;
   }
 
 void
   Element::set_material(Material* material_p) {
     if (material_p == nullptr) {
-      Element::rho = 0.0;
+      this->rho = 0.0;
     } else {
       size_t id = material_p->id;
       std::string style = material_p->style;
       std::vector<double> param = material_p->param;
 
-      Element::material.set_init(id,style,param);
-      Element::rho = Element::material.rho;
+      this->material.set_init(id,style,param);
+      this->rho = this->material.rho;
     }
   }
 
 void
   Element::set_pointer_list(){
-    Element::u_p.resize(Element::nnode);
-    Element::v_p.resize(Element::nnode);
+    this->u_p.resize(this->nnode);
+    this->v_p.resize(this->nnode);
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      Element::u_p[inode] = &Element::nodes_p[inode]->u;
-      Element::v_p[inode] = &Element::nodes_p[inode]->v;
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      this->u_p[inode] = &this->nodes_p[inode]->u;
+      this->v_p[inode] = &this->nodes_p[inode]->v;
     }
   }
 
 void
   Element::set_xn(){
-    Element::xnT = Eigen::MatrixXd::Zero(2,Element::nnode);
+    this->xnT = Eigen::MatrixXd::Zero(2,this->nnode);
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++ ) {
-      Element::xnT(0,inode) = Element::nodes_p[inode]->xyz[0] + (*Element::u_p[inode])[0];
-      Element::xnT(1,inode) = Element::nodes_p[inode]->xyz[1] + (*Element::u_p[inode])[1];
+    for (size_t inode = 0 ; inode < this->nnode ; inode++ ) {
+      this->xnT(0,inode) = this->nodes_p[inode]->xyz[0] + (*this->u_p[inode])[0];
+      this->xnT(1,inode) = this->nodes_p[inode]->xyz[1] + (*this->u_p[inode])[1];
     }
   }
 
 // ------------------------------------------------------------------- //
 void
   Element::mk_local_matrix_init(const size_t dof){
-    Element::dof = dof;
-    Element::ndof = dof*Element::nnode;
+    this->dof = dof;
+    this->ndof = dof*this->nnode;
 
-    Element::M_diag = Eigen::VectorXd::Zero(Element::ndof);
+    this->M_diag = Eigen::VectorXd::Zero(this->ndof);
 
-    Element::K = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
-    Element::K_diag = Eigen::VectorXd::Zero(Element::ndof);
-    Element::K_off_diag = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+    this->K = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+    this->K_diag = Eigen::VectorXd::Zero(this->ndof);
+    this->K_off_diag = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
 
-    Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
-    Element::C_diag = Eigen::VectorXd::Zero(Element::ndof);
-    Element::C_off_diag = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+    this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+    this->C_diag = Eigen::VectorXd::Zero(this->ndof);
+    this->C_off_diag = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
 
-    Element::force = Eigen::VectorXd::Zero(Element::ndof);
+    this->force = Eigen::VectorXd::Zero(this->ndof);
 
-    if (Element::dim == 2) {
+    if (this->dim == 2) {
       double V = 0.0;
-      for (size_t i = 0 ; i < Element::ng_all ; i++){
-        auto [det, jacobi] = mk_jacobi(Element::xnT, Element::dn_list[i]);
-        V += det * Element::w_list[i];
+      for (size_t i = 0 ; i < this->ng_all ; i++){
+        auto [det, jacobi] = mk_jacobi(this->xnT, this->dn_list[i]);
+        V += det * this->w_list[i];
       }
-      Element::mass = Element::rho * V;
+      this->mass = this->rho * V;
 
-    } else if (Element::dim == 1) {
-      Element::imp = Element::material.mk_imp(Element::dof);
+    } else if (this->dim == 1) {
+      this->imp = this->material.mk_imp(this->dof);
     }
   }
 
 // ------------------------------------------------------------------- //
 void
   Element::mk_local_matrix() {
-    if (Element::dim == 2) {
-      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+    if (this->dim == 2) {
+      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
 
-      Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
-      Element::K = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+      this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+      this->K = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
 
-      Element::De = Element::material.mk_d(Element::dof);
-      Element::Dv = Element::material.mk_visco(Element::dof);
+      this->De = this->material.mk_d(this->dof);
+      this->Dv = this->material.mk_visco(this->dof);
 
-      for (size_t i = 0 ; i < Element::ng_all ; i++){
+      for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
         Eigen::MatrixXd N, Me, B, K, C;
 
-        auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_list[i]);
+        auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
 
-        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        N = mk_n(this->dof, this->nnode, this->n_list[i]);
         Me = mk_m(N);
 
-        B = mk_b(Element::dof, Element::nnode, dnj);
-        K = mk_k(B, Element::De);
-        C = mk_k(B, Element::Dv);
+        B = mk_b(this->dof, this->nnode, dnj);
+        K = mk_k(B, this->De);
+        C = mk_k(B, this->Dv);
 
-        detJ = det * Element::w_list[i];
+        detJ = det * this->w_list[i];
 
         M += Me * detJ;
-        Element::C += C * detJ;
-        Element::K += K * detJ;
+        this->C += C * detJ;
+        this->K += K * detJ;
       }
 
-      double tr_M = M.trace() / Element::dof;
-      Element::M_diag = M.diagonal() * Element::mass/tr_M;
+      double tr_M = M.trace() / this->dof;
+      this->M_diag = M.diagonal() * this->mass/tr_M;
 
-      Element::K_diag = Element::K.diagonal();
-      Element::K_off_diag = Element::K_diag.asDiagonal();
-      Element::K_off_diag = Element::K - Element::K_off_diag;
+      this->K_diag = this->K.diagonal();
+      this->K_off_diag = this->K_diag.asDiagonal();
+      this->K_off_diag = (this->K) - (this->K_off_diag);
 
-      Element::C_diag = Element::C.diagonal();
-      Element::C_off_diag = Element::C_diag.asDiagonal();
-      Element::C_off_diag = Element::C - Element::C_off_diag;
+      this->C_diag = this->C.diagonal();
+      this->C_off_diag = this->C_diag.asDiagonal();
+      this->C_off_diag = (this->C) - (this->C_off_diag);
 
-    } else if (Element::dim == 1) {
-      if (Element::style.find("input") != std::string::npos) {
-        Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+    } else if (this->dim == 1) {
+      if (this->style.find("input") != std::string::npos) {
+        this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
 
-        for (size_t i = 0 ; i < Element::ng_all ; i++){
+        for (size_t i = 0 ; i < this->ng_all ; i++){
           double detJ;
           Eigen::MatrixXd N, NqN;
 
-          auto [det, q] = mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
+          auto [det, q] = mk_q(this->dof, this->xnT,  this->dn_list[i]);
 
-          N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
-          NqN = mk_nqn(N, q, Element::imp);
+          N = mk_n(this->dof, this->nnode, this->n_list[i]);
+          NqN = mk_nqn(N, q, this->imp);
 
-          detJ = det * Element::w_list[i];
-          Element::C += NqN * detJ;
+          detJ = det * this->w_list[i];
+          this->C += NqN * detJ;
         }
 
-        Element::C_diag = Element::C.diagonal();
-        Element::C_off_diag = Element::C_diag.asDiagonal();
-        Element::C_off_diag = Element::C - Element::C_off_diag;
+        this->C_diag = this->C.diagonal();
+        this->C_off_diag = this->C_diag.asDiagonal();
+        this->C_off_diag = (this->C) - (this->C_off_diag);
       }
     }
   }
@@ -191,86 +191,86 @@ void
 // ------------------------------------------------------------------- //
 void
   Element::mk_local_vector() {
-    if (Element::dim == 2) {
-      Element::force = Eigen::VectorXd::Zero(Element::ndof);
+    if (this->dim == 2) {
+      this->force = Eigen::VectorXd::Zero(this->ndof);
 
       double V = 0.0;
-      for (size_t i = 0 ; i < Element::ng_all ; i++){
+      for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
         Eigen::MatrixXd N;
 
-        auto [det, jacobi] = mk_jacobi(Element::xnT, Element::dn_list[i]);
-        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        auto [det, jacobi] = mk_jacobi(this->xnT, this->dn_list[i]);
+        N = mk_n(this->dof, this->nnode, this->n_list[i]);
 
-        detJ = det * Element::w_list[i];
+        detJ = det * this->w_list[i];
 
         V += detJ;
-        Element::force += N.row(1)*detJ * Element::gravity;
+        this->force += N.row(1)*detJ * this->gravity;
       }
 
-      Element::force *= Element::mass / V;
+      this->force *= this->mass / V;
     }
   }
 
 // ------------------------------------------------------------------- //
 void
   Element::mk_local_update() {
-    if (Element::dim == 2) {
-      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
-      Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
-      Element::Dv = Element::material.mk_visco(Element::dof);
-      Element::force = Eigen::VectorXd::Zero(Element::ndof);
+    if (this->dim == 2) {
+      Eigen::MatrixXd M = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+      this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
+      this->Dv = this->material.mk_visco(this->dof);
+      this->force = Eigen::VectorXd::Zero(this->ndof);
 
       double V = 0.0;
-      for (size_t i = 0 ; i < Element::ng_all ; i++){
+      for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
         Eigen::MatrixXd N, Me, B, K, C;
 
-        auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_list[i]);
+        auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
 
-        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        N = mk_n(this->dof, this->nnode, this->n_list[i]);
         Me = mk_m(N);
 
-        B = mk_b(Element::dof, Element::nnode, dnj);
-        C = mk_k(B, Element::Dv);
+        B = mk_b(this->dof, this->nnode, dnj);
+        C = mk_k(B, this->Dv);
 
-        detJ = det * Element::w_list[i];
+        detJ = det * this->w_list[i];
         M += Me * detJ;
-        Element::C += C * detJ;
+        this->C += C * detJ;
 
         V += detJ;
-        Element::force += N.row(1)*detJ * Element::gravity;
+        this->force += N.row(1)*detJ * this->gravity;
       }
 
-      double tr_M = M.trace() / Element::dof;
-      Element::M_diag = M.diagonal() * Element::mass/tr_M;
+      double tr_M = M.trace() / this->dof;
+      this->M_diag = M.diagonal() * this->mass/tr_M;
 
-      Element::C_diag = Element::C.diagonal();
-      Element::C_off_diag = Element::C_diag.asDiagonal();
-      Element::C_off_diag = Element::C - Element::C_off_diag;
+      this->C_diag = this->C.diagonal();
+      this->C_off_diag = this->C_diag.asDiagonal();
+      this->C_off_diag = (this->C) - (this->C_off_diag);
 
-      Element::force *= Element::mass / V;
+      this->force *= this->mass / V;
 
-    } else if (Element::dim == 1) {
-      if (Element::style.find("input") != std::string::npos) {
-        Element::C = Eigen::MatrixXd::Zero(Element::ndof,Element::ndof);
+    } else if (this->dim == 1) {
+      if (this->style.find("input") != std::string::npos) {
+        this->C = Eigen::MatrixXd::Zero(this->ndof,this->ndof);
 
-        for (size_t i = 0 ; i < Element::ng_all ; i++){
+        for (size_t i = 0 ; i < this->ng_all ; i++){
           double detJ;
           Eigen::MatrixXd N, NqN;
 
-          auto [det, q] = mk_q(Element::dof, Element::xnT,  Element::dn_list[i]);
+          auto [det, q] = mk_q(this->dof, this->xnT,  this->dn_list[i]);
 
-          N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
-          NqN = mk_nqn(N, q, Element::imp);
+          N = mk_n(this->dof, this->nnode, this->n_list[i]);
+          NqN = mk_nqn(N, q, this->imp);
 
-          detJ = det * Element::w_list[i];
-          Element::C += NqN * detJ;
+          detJ = det * this->w_list[i];
+          this->C += NqN * detJ;
         }
 
-        Element::C_diag = Element::C.diagonal();
-        Element::C_off_diag = Element::C_diag.asDiagonal();
-        Element::C_off_diag = Element::C - Element::C_off_diag;
+        this->C_diag = this->C.diagonal();
+        this->C_off_diag = this->C_diag.asDiagonal();
+        this->C_off_diag = (this->C) - (this->C_off_diag);
       }
     }
   }
@@ -281,13 +281,13 @@ void
   Element::mk_ku() {
     Eigen::VectorXd u, ku;
 
-    u = Element::mk_u_hstack(Element::u_p);
-    ku = Element::K * u;
+    u = this->mk_u_hstack(this->u_p);
+    ku = this->K * u;
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
-        Element::nodes_p[inode]->force(i) += ku(i0+i);
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += ku(i0+i);
       }
     }
   }
@@ -296,13 +296,13 @@ void
   Element::mk_ku_u(const std::vector<Eigen::VectorXd*> u_p) {
     Eigen::VectorXd u, ku;
 
-    u = Element::mk_u_hstack(u_p);
-    ku = Element::K * u;
+    u = this->mk_u_hstack(u_p);
+    ku = this->K * u;
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
-        Element::nodes_p[inode]->force(i) += ku(i0+i);
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += ku(i0+i);
       }
     }
 
@@ -312,13 +312,13 @@ void
   Element::mk_cv() {
     Eigen::VectorXd v, cv;
 
-    v = Element::mk_u_hstack(Element::v_p);
-    cv = Element::C_off_diag * v;
+    v = this->mk_u_hstack(this->v_p);
+    cv = this->C_off_diag * v;
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
-        Element::nodes_p[inode]->force(i) += cv(i0+i);
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += cv(i0+i);
       }
     }
   }
@@ -328,15 +328,15 @@ void
     Eigen::VectorXd u, ku;
     Eigen::VectorXd v, cv;
 
-    u = Element::mk_u_hstack(Element::u_p);
-    v = Element::mk_u_hstack(Element::v_p);
-    ku = Element::K * u;
-    cv = Element::C_off_diag * v;
+    u = this->mk_u_hstack(this->u_p);
+    v = this->mk_u_hstack(this->v_p);
+    ku = this->K * u;
+    cv = this->C_off_diag * v;
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
-        Element::nodes_p[inode]->force(i) += ku(i0+i) + cv(i0+i);
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += ku(i0+i) + cv(i0+i);
       }
     }
   }
@@ -344,30 +344,30 @@ void
 // ------------------------------------------------------------------- //
 void
   Element::mk_B_stress() {
-    if (Element::dim == 1) {
-      Element::mk_ku();
+    if (this->dim == 1) {
+      this->mk_ku();
 
-    } else if (Element::dim == 2) {
-      Eigen::VectorXd force = Eigen::VectorXd::Zero(Element::ndof);
-      Eigen::MatrixXd u = Element::mk_u_vstack(Element::u_p);
+    } else if (this->dim == 2) {
+      Eigen::VectorXd force = Eigen::VectorXd::Zero(this->ndof);
+      Eigen::MatrixXd u = this->mk_u_vstack(this->u_p);
 
-      for (size_t i = 0 ; i < Element::ng_all ; i++){
+      for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
         Eigen::MatrixXd BT;
         Eigen::VectorXd stress;
 
-        auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_list[i]);
-        BT = mk_b_T(Element::dof, Element::nnode, dnj);
-        stress = Hencky_stress(Element::De, dnj, u);
+        auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
+        BT = mk_b_T(this->dof, this->nnode, dnj);
+        stress = Hencky_stress(this->De, dnj, u);
 
-        detJ = det * Element::w_list[i];
+        detJ = det * this->w_list[i];
         force += BT * stress * detJ;
       }
 
-      for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-        size_t i0 = inode*Element::dof;
-        for (size_t i = 0 ; i < Element::dof ; i++) {
-          Element::nodes_p[inode]->force(i) += force(i0+i);
+      for (size_t inode = 0 ; inode < this->nnode ; inode++){
+        size_t i0 = inode*this->dof;
+        for (size_t i = 0 ; i < this->dof ; i++) {
+          this->nodes_p[inode]->force(i) += force(i0+i);
         }
       }
     }
@@ -378,11 +378,11 @@ void
 // ------------------------------------------------------------------- //
 Eigen::VectorXd
   Element::mk_u_hstack(const std::vector<Eigen::VectorXd*> u_p) {
-    Eigen::VectorXd u(Element::ndof);
+    Eigen::VectorXd u(this->ndof);
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
         u(i0+i) = (*u_p[inode])(i);
       }
     }
@@ -391,10 +391,10 @@ Eigen::VectorXd
 
 Eigen::MatrixXd
   Element::mk_u_vstack(const std::vector<Eigen::VectorXd*> u_p) {
-    Eigen::MatrixXd u(Element::nnode,Element::dof);
+    Eigen::MatrixXd u(this->nnode,this->dof);
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      for (size_t i = 0 ; i < Element::dof ; i++) {
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      for (size_t i = 0 ; i < this->dof ; i++) {
         u(inode,i) = (*u_p[inode])(i);
       }
     }
@@ -405,20 +405,20 @@ Eigen::MatrixXd
 // ------------------------------------------------------------------- //
 void
   Element::update_inputwave(const Eigen::VectorXd vel0) {
-    Eigen::VectorXd v(Element::ndof), cv(Element::ndof);
+    Eigen::VectorXd v(this->ndof), cv(this->ndof);
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
         v(i0+i) = vel0(i);
       }
     }
-    cv = Element::C * v;
+    cv = this->C * v;
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
-        Element::nodes_p[inode]->force(i) -= 2.0*cv(i0+i);
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) -= 2.0*cv(i0+i);
       }
     }
   }
@@ -426,36 +426,36 @@ void
 // ------------------------------------------------------------------- //
 void
   Element::update_bodyforce(const Eigen::VectorXd acc0) {
-    Element::mk_bodyforce(acc0);
+    this->mk_bodyforce(acc0);
 
-    for (size_t inode = 0 ; inode < Element::nnode ; inode++){
-      size_t i0 = inode*Element::dof;
-      for (size_t i = 0 ; i < Element::dof ; i++) {
-        Element::nodes_p[inode]->force(i) -= Element::force(i0+i);
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) -= this->force(i0+i);
       }
     }
   }
 
 void
   Element::mk_bodyforce(const Eigen::VectorXd acc0) {
-    if (Element::dim == 2) {
-      Element::force = Eigen::VectorXd::Zero(Element::ndof);
+    if (this->dim == 2) {
+      this->force = Eigen::VectorXd::Zero(this->ndof);
 
       double V = 0.0;
-      for (size_t i = 0 ; i < Element::ng_all ; i++){
+      for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
         Eigen::MatrixXd N;
 
-        auto [det, jacobi] = mk_jacobi(Element::xnT, Element::dn_list[i]);
-        N = mk_n(Element::dof, Element::nnode, Element::n_list[i]);
+        auto [det, jacobi] = mk_jacobi(this->xnT, this->dn_list[i]);
+        N = mk_n(this->dof, this->nnode, this->n_list[i]);
 
-        detJ = det * Element::w_list[i];
+        detJ = det * this->w_list[i];
 
         V += detJ;
-        Element::force += (N.row(0)*acc0[0] + N.row(1)*acc0[1]) *detJ;
+        this->force += (N.row(0)*acc0[0] + N.row(1)*acc0[1]) *detJ;
       }
 
-      Element::force *= Element::mass / V;
+      this->force *= this->mass / V;
     }
 
   }
@@ -466,12 +466,12 @@ void
     Eigen::VectorXd u;
     Eigen::MatrixXd B;
 
-    auto [det, dnj] = mk_dnj(Element::xnT, Element::dn_center);
-    B = mk_b(Element::dof, Element::nnode, dnj);
-    u = Element::mk_u_hstack(Element::u_p);
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+    B = mk_b(this->dof, this->nnode, dnj);
+    u = this->mk_u_hstack(this->u_p);
 
-    Element::strain = B * u;
-    Element::stress = Element::De * Element::strain;
+    this->strain = B * u;
+    this->stress = this->De * this->strain;
   }
 
 

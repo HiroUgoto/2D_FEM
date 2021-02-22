@@ -54,7 +54,6 @@ void set_gauss_points (const size_t n, Eigen::VectorXd& xi, Eigen::VectorXd& w) 
 
 
 
-
 // ------- Virtual class (ElementStyle) ----------------- //
 ElementStyle::ElementStyle () {}
 
@@ -71,26 +70,26 @@ Eigen::MatrixXd ElementStyle::shape_function_dn (double xi, double zeta) {
 // ------- Actual element style class ------------------- //
 // ----------------------------------------------------- //
 Solid_2d_4Node::Solid_2d_4Node () {
-  dim = 2;
-  ng = 3;
-  set_gauss_points(ng, xi, w);
+  this->dim = 2;
+  this->ng = 3;
+  set_gauss_points(this->ng, this->xi, this->w);
 
-  ng_all = ng*ng;
-  n_list.resize(ng*ng);
-  dn_list.resize(ng*ng);
-  w_list.resize(ng*ng);
+  this->ng_all = this->ng * this->ng;
+  this->n_list.resize(this->ng_all);
+  this->dn_list.resize(this->ng_all);
+  this->w_list.resize(this->ng_all);
 
   size_t id = 0;
   for (size_t i=0 ; i<ng ; i++) {
     for (size_t j=0 ; j<ng ; j++) {
-      n_list[id] = Solid_2d_4Node::shape_function_n(xi[i],xi[j]);
-      dn_list[id] = Solid_2d_4Node::shape_function_dn(xi[i],xi[j]);
+      n_list[id] = this->shape_function_n(this->xi[i],this->xi[j]);
+      dn_list[id] = this->shape_function_dn(this->xi[i],this->xi[j]);
       w_list[id] = w[i]*w[j];
       id++;
     }
   }
 
-  dn_center = Solid_2d_4Node::shape_function_dn(0.0,0.0);
+  dn_center = this->shape_function_dn(0.0,0.0);
 }
 
 Eigen::VectorXd
@@ -123,26 +122,26 @@ Eigen::MatrixXd
 
 // ----------------------------------------------------- //
 Solid_2d_9Node::Solid_2d_9Node () {
-  dim = 2;
-  ng = 5;
-  set_gauss_points(ng, xi, w);
+  this->dim = 2;
+  this->ng = 5;
+  set_gauss_points(this->ng, this->xi, this->w);
 
-  ng_all = ng*ng;
-  n_list.resize(ng*ng);
-  dn_list.resize(ng*ng);
-  w_list.resize(ng*ng);
+  this->ng_all = this->ng * this->ng;
+  this->n_list.resize(this->ng_all);
+  this->dn_list.resize(this->ng_all);
+  this->w_list.resize(this->ng_all);
 
   size_t id = 0;
   for (size_t i=0 ; i<ng ; i++) {
     for (size_t j=0 ; j<ng ; j++) {
-      n_list[id] = Solid_2d_9Node::shape_function_n(xi[i],xi[j]);
-      dn_list[id] = Solid_2d_9Node::shape_function_dn(xi[i],xi[j]);
+      n_list[id] = this->shape_function_n(this->xi[i],this->xi[j]);
+      dn_list[id] = this->shape_function_dn(this->xi[i],this->xi[j]);
       w_list[id] = w[i]*w[j];
       id++;
     }
   }
 
-  dn_center = Solid_2d_9Node::shape_function_dn(0.0,0.0);
+  dn_center = this->shape_function_dn(0.0,0.0);
 }
 
 Eigen::VectorXd
@@ -196,24 +195,24 @@ Eigen::MatrixXd
 
 // ----------------------------------------------------- //
 Line_1d_2Node::Line_1d_2Node () {
-  dim = 1;
-  ng = 3;
-  set_gauss_points(ng, xi, w);
+  this->dim = 1;
+  this->ng = 3;
+  set_gauss_points(this->ng, this->xi, this->w);
 
-  ng_all = ng;
-  n_list.resize(ng);
-  dn_list.resize(ng);
-  w_list.resize(ng);
+  this->ng_all = this->ng;
+  this->n_list.resize(this->ng_all);
+  this->dn_list.resize(this->ng_all);
+  this->w_list.resize(this->ng_all);
 
   size_t id = 0;
   for (size_t i=0 ; i<ng ; i++) {
-    n_list[id] = Line_1d_2Node::shape_function_n(xi[i]);
-    dn_list[id] = Line_1d_2Node::shape_function_dn(xi[i]);
+    n_list[id] = this->shape_function_n(this->xi[i]);
+    dn_list[id] = this->shape_function_dn(this->xi[i]);
     w_list[id] = w[i];
     id++;
   }
 
-  dn_center = Line_1d_2Node::shape_function_dn(0.0);
+  dn_center = this->shape_function_dn(0.0);
 }
 
 Eigen::VectorXd
@@ -234,24 +233,24 @@ Eigen::MatrixXd
 
 // ----------------------------------------------------- //
 Line_1d_3Node::Line_1d_3Node () {
-  dim = 1;
-  ng = 5;
-  set_gauss_points(ng, xi, w);
+  this->dim = 1;
+  this->ng = 5;
+  set_gauss_points(this->ng, this->xi, this->w);
 
-  ng_all = ng;
-  n_list.resize(ng);
-  dn_list.resize(ng);
-  w_list.resize(ng);
+  this->ng_all = this->ng;
+  this->n_list.resize(this->ng_all);
+  this->dn_list.resize(this->ng_all);
+  this->w_list.resize(this->ng_all);
 
   size_t id = 0;
   for (size_t i=0 ; i<ng ; i++) {
-    n_list[id] = Line_1d_3Node::shape_function_n(xi[i]);
-    dn_list[id] = Line_1d_3Node::shape_function_dn(xi[i]);
+    n_list[id] = this->shape_function_n(this->xi[i]);
+    dn_list[id] = this->shape_function_dn(this->xi[i]);
     w_list[id] = w[i];
     id++;
   }
 
-  dn_center = Line_1d_3Node::shape_function_dn(0.0);
+  dn_center = this->shape_function_dn(0.0);
 }
 
 Eigen::VectorXd
@@ -274,8 +273,8 @@ Eigen::MatrixXd
 
 // ----------------------------------------------------- //
 Connect::Connect () {
-  dim = 0;
-  ng = 1;
-  xi = Eigen::VectorXd::Zero(1);
-  w  = Eigen::VectorXd::Zero(1);
+  this->dim = 0;
+  this->ng = 1;
+  this->xi = Eigen::VectorXd::Zero(1);
+  this->w  = Eigen::VectorXd::Zero(1);
 }
