@@ -62,8 +62,8 @@ int main() {
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
 
-    // fem.update_time(acc0,vel0,false,false);   // FD: false
-    fem.update_time(acc0,vel0,false,true);     // FD: true
+    // fem.update_time_MD(acc0);
+    fem.update_time_FD(acc0);
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node* node_p = fem.output_nodes_p[i];
@@ -73,7 +73,7 @@ int main() {
       output_velz(it,i) = node_p->v(1);
     }
 
-    if (it%200 == 0) {
+    if (it%500 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_dispz(it,0) << "\n";
     }

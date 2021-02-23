@@ -7,7 +7,7 @@ class Material {
     std::string style;
     std::vector<double> param;
     double rmu, rlambda, rho;
-
+ 
     Material();
     Material(size_t id, std::string style, std::vector<double> param);
 
