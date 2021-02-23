@@ -1,6 +1,6 @@
 TARGET_EXEC = FEM
 CXX = g++
-CPPFLAGS = -std=c++17 -Wall --pedantic-errors -O2
+CPPFLAGS = -std=c++17 -Wall --pedantic-errors -O2 -march=native
 LIBRARY = /usr/local/include/eigen3
 # LIBRARY = /usr/include/eigen3
 

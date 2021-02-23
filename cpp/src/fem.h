@@ -7,15 +7,16 @@ class Fem {
     std::vector<Element> elements;
     std::vector<Material> materials;
 
-    std::vector<size_t> free_nodes, fixed_nodes;
-    std::vector<size_t> input_elements;
-    std::vector<size_t> connected_elements;
+    std::vector<Node*> free_nodes_p, fixed_nodes_p;
+    std::vector<Element*> connected_elements_p;
+    std::vector<Element*> input_elements_p;
 
     size_t output_nnode, output_nelem;
-    std::vector<size_t> output_nodes, output_elements;
+    std::vector<Node*> output_nodes_p;
+    std::vector<Element*> output_elements_p;
 
     double dt, inv_dt2;
-
+    
 
     Fem (size_t dof, std::vector<Node> nodes,
                   std::vector<Element> elements,

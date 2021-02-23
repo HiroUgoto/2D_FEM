@@ -66,11 +66,11 @@ int main() {
     fem.update_time(acc0,vel0,false,true);     // FD: true
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
-      Node& node = fem.nodes[fem.output_nodes[i]];
-      output_dispx(it,i) = node.u(0) - node.u0(0);
-      output_dispz(it,i) = node.u(1) - node.u0(1);
-      output_velx(it,i) = node.v(0);
-      output_velz(it,i) = node.v(1);
+      Node* node_p = fem.output_nodes_p[i];
+      output_dispx(it,i) = node_p->u(0) - node_p->u0(0);
+      output_dispz(it,i) = node_p->u(1) - node_p->u0(1);
+      output_velx(it,i) = node_p->v(0);
+      output_velz(it,i) = node_p->v(1);
     }
 
     if (it%200 == 0) {

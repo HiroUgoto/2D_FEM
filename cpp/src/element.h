@@ -11,7 +11,6 @@ class Element {
     double gravity;
 
     std::vector<Node*> nodes_p;
-    std::vector<EV*> u_p, v_p;
 
     Material material;
     double rho, mass;

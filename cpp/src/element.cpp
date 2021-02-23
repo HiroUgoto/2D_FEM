@@ -68,16 +68,6 @@ void Element::set_material(Material* material_p) {
     }
   }
 
-void Element::set_pointer_list(){
-    this->u_p.resize(this->nnode);
-    this->v_p.resize(this->nnode);
-
-    for (size_t inode = 0 ; inode < this->nnode ; inode++){
-      this->u_p[inode] = &this->nodes_p[inode]->u;
-      this->v_p[inode] = &this->nodes_p[inode]->v;
-    }
-  }
-
 void Element::set_xn(){
     this->xnT = EM::Zero(2,this->nnode);
 

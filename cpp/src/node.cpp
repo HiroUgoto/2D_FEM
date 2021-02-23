@@ -6,7 +6,6 @@ using EV = Eigen::VectorXd ;
 
 Node::Node () {}
 Node::Node (size_t id, std::vector<double> xyz, std::vector<size_t> freedom)
-  : xyz(2)
   {
     this->id = id;
     this->xyz = xyz;
