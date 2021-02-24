@@ -7,7 +7,6 @@ class Fem {
     std::vector<Element> elements;
     std::vector<Material> materials;
 
-    double dt, inv_dt2;
 
     std::vector<Node*> free_nodes_p, fixed_nodes_p;
     std::vector<Element*> connected_elements_p;
@@ -17,8 +16,10 @@ class Fem {
     std::vector<Node*> output_nodes_p;
     std::vector<Element*> output_elements_p;
 
+  private:
+    double dt, inv_dt2;
 
-
+  public:
     Fem (size_t dof, std::vector<Node> nodes,
                   std::vector<Element> elements,
                   std::vector<Material> materials);
@@ -49,5 +50,9 @@ class Fem {
     void update_time_input_FD(const EV vel0);
     void update_time_input_MD(const EV vel0);
 
-    void update_matrix();
+  private:
+    void _update_time_set_free_nodes();
+    void _update_time_set_fixed_nodes();
+    void _update_time_set_connected_elements();
+    void _update_matrix();
 };
