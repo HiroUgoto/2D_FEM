@@ -27,8 +27,7 @@ int main() {
   // ----- Define input wave ----- //
   size_t fsamp = 10000;
   double fp = 0.196;
-  double duration = 0.02/fp;
-  // double duration = 8.0/fp;
+  double duration = 8.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
