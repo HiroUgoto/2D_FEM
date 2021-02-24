@@ -56,8 +56,8 @@ int main() {
   EM output_velz = EM::Zero(ntim,fem.output_nnode);
 
   // ----- time iteration ----- //
-  EV acc0 = Eigen::Vector2d::Zero(fem.dof);
-  EV vel0 = Eigen::Vector2d::Zero(fem.dof);
+  EV acc0 = EV::Zero(fem.dof);
+  EV vel0 = EV::Zero(fem.dof);
 
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
