@@ -49,47 +49,48 @@ int main() {
   // ----- Prepare time solver ----- //
   fem.update_init(dt);
 
-  EM output_dispx = EM::Zero(ntim,fem.output_nnode);
-  EM output_dispz = EM::Zero(ntim,fem.output_nnode);
-  EM output_velx = EM::Zero(ntim,fem.output_nnode);
-  EM output_velz = EM::Zero(ntim,fem.output_nnode);
+  EM output_dispx = EM::Zero(1,fem.output_nnode);
+  EM output_dispz = EM::Zero(1,fem.output_nnode);
+  EM output_velx = EM::Zero(1,fem.output_nnode);
+  EM output_velz = EM::Zero(1,fem.output_nnode);
 
   // ----- time iteration ----- //
   EV acc0 = EV::Zero(fem.dof);
   EV vel0 = EV::Zero(fem.dof);
+
+  std::ofstream f_dispx(output_dir + "x.disp");
+  std::ofstream f_dispz(output_dir + "z.disp");
 
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
 
     // fem.update_time_MD(acc0);
     fem.update_time_FD(acc0);
+    
+    f_dispx << tim(it) ;
+    f_dispz << tim(it) ;
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node* node_p = fem.output_nodes_p[i];
-      output_dispx(it,i) = node_p->u(0) - node_p->u0(0);
-      output_dispz(it,i) = node_p->u(1) - node_p->u0(1);
-      output_velx(it,i) = node_p->v(0);
-      output_velz(it,i) = node_p->v(1);
+      output_dispx(0,i) = node_p->u(0) - node_p->u0(0);
+      output_dispz(0,i) = node_p->u(1) - node_p->u0(1);
+      output_velx(0,i) = node_p->v(0);
+      output_velz(0,i) = node_p->v(1);
+
+      f_dispx << " " << output_dispx(0,i);
+      f_dispz << " " << output_dispz(0,i);
     }
+    f_dispx << "\n";
+    f_dispz << "\n";
 
     if (it%500 == 0) {
       std::cout << it << " t= " << it*dt << " ";
-      std::cout << output_dispz(it,0) << "\n";
+      std::cout << output_dispz(0,0) << "\n";
     }
   }
-
+  f_dispx.close();
+  f_dispz.close();
   clock_t end = clock();
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
-
-  // --- Write output file --- //
-  std::ofstream f(output_dir + "z0_vs10_test.disp");
-  for (size_t it = 0 ; it < ntim ; it++) {
-    f << tim(it) ;
-    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
-      f << " " << output_dispz(it,i);
-    }
-    f << "\n";
-  }
-  f.close();
 
 }
