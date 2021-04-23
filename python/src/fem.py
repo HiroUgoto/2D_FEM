@@ -130,6 +130,7 @@ class Fem():
 
         for node in self.node_set:
             node.u0 = np.copy(node.u)
+            node.um = np.copy(node.u)
 
     # ---------------------------------------
     def _self_gravity_cg(self,full=True):
@@ -155,6 +156,9 @@ class Fem():
                 u += node._ur
             for node in element.node_set:
                 node._ur = u/element.nnode
+        for element in self.input_elements:
+            for node in element.node_set:
+                node._ur = np.zeros(element.nodes[0].dof,dtype=np.float64)
         for node in self.node_set:
             node._up = np.copy(node._ur)
         for element in self.element_set:
@@ -182,6 +186,9 @@ class Fem():
                     u += node._uy
                 for node in element.node_set:
                     node._uy = u/element.nnode
+            for element in self.input_elements:
+                for node in element.node_set:
+                    node._uy = np.zeros(element.nodes[0].dof,dtype=np.float64)
 
             ## alpha = rr/py
             rr,py = 0.0,0.0
