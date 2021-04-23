@@ -119,12 +119,14 @@ void Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> output
 
     this->output_nnode = output_node_list.size();
     for (size_t inode = 0 ; inode < this->output_nnode ; inode++) {
-      this->output_nodes_p.push_back(&this->nodes[inode]);
+      size_t id = output_node_list[inode];
+      this->output_nodes_p.push_back(&this->nodes[id]);
     }
 
     this->output_nelem = output_element_list.size();
     for (size_t ielem = 0 ; ielem < this->output_nelem ; ielem++) {
-      this->output_elements_p.push_back(&this->elements[ielem]);
+      size_t id = output_element_list[ielem];
+      this->output_elements_p.push_back(&this->elements[id]);
     }
   }
 
@@ -152,6 +154,7 @@ void Fem::self_gravity() {
 
     for (auto& node : this->nodes) {
       node.u0 = node.u;
+      node.um = node.u;
     }
 
   }
@@ -191,6 +194,11 @@ void Fem::_self_gravity_cg(const bool full) {
         element_p->nodes_p[inode]->_ur = u/element_p->nnode;
       }
     }
+    for (auto& element_p : this->input_elements_p) {
+      for (size_t inode = 0 ; inode < element_p->nnode ; inode++) {
+        element_p->nodes_p[inode]->_ur = EV::Zero(element_p->dof);
+      }
+    }
     for (auto& node : this->nodes) {
       node._up = node._ur;
     }
@@ -228,6 +236,11 @@ void Fem::_self_gravity_cg(const bool full) {
           element_p->nodes_p[inode]->_uy = u/element_p->nnode;
         }
       }
+      for (auto& element_p : this->input_elements_p) {
+        for (size_t inode = 0 ; inode < element_p->nnode ; inode++) {
+          element_p->nodes_p[inode]->_uy = EV::Zero(element_p->dof);
+        }
+      }
 
       // alpha = rr/py
       rr = 0.0; py = 0.0;
@@ -250,6 +263,9 @@ void Fem::_self_gravity_cg(const bool full) {
       }
 
       if (rr1 < 1.e-10) {
+        std::cout << " (self gravity process .. ) " << it << " " ;
+        std::cout << this->nodes[0].u[1] << " ";
+        std::cout << rr1 << "\n";
         break;
       }
 
