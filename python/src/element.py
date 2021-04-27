@@ -165,6 +165,8 @@ class Element:
             self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
             self.Dv = self.material.mk_visco(self.dof)
 
+            gravity_force = np.array([0.0,self.gravity])
+
             self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0
 
@@ -173,12 +175,16 @@ class Element:
                 B = mk_b(self.dof,self.nnode,dnj)
                 C = mk_k(B,self.Dv)
 
+                J,F_inv = mk_F_inv(self.nnode,dnj,self.u)
+                IFT = np.eye(2) - F_inv.T / J
+                sf = IFT @ gravity_force
+
                 detJ = gp.w*det
                 M += gp.M*detJ
                 self.C += C*detJ
 
                 V += detJ
-                self.force += gp.N[1,:]*detJ * self.gravity
+                self.force += (gp.N.T @ sf) *detJ
 
             tr_M = np.trace(M)/self.dof
             self.M_diag = np.diag(M) * self.mass/tr_M
@@ -402,6 +408,13 @@ def mk_FF(nnode,dnj,u):
     J,F = mk_F(nnode,dnj,u)
     FF = np.matmul(F,F.T)
     return J,FF
+
+def mk_F_inv(nnode,dnj,u):
+    dnu = mk_dnu(nnode,dnj,u)
+    F_inv = np.array([ [1.0-dnu[0,0],     -dnu[0,1]],
+                     [     -dnu[1,0],  1.0-dnu[1,1]] ])
+    det = (1.0-dnu[0,0])*(1.0-dnu[1,1]) - dnu[0,1]*dnu[1,0]
+    return 1./det, F_inv
 
 def mk_F(nnode,dnj,u):
     dnu = mk_dnu(nnode,dnj,u)

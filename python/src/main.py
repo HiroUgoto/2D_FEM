@@ -23,7 +23,6 @@ fem.set_output(outputs)
 ## --- Define input wave --- ##
 fsamp = 5000
 fp = 0.2
-# duration = 4.0/fp
 duration = 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -34,13 +33,8 @@ ntim = len(tim)
 # plt.plot(tim,wave_acc)
 # plt.show()
 
-ax = plot_model.plot_mesh_update_init()
-
-## --- Static deformation --- ##
-fem.self_gravity()
-plot_model.plot_mesh_update(ax,fem,10.)
-
 ## --- Prepare time solver --- ##
+ax = plot_model.plot_mesh_update_init()
 fem.update_init(dt)
 
 ## Iteration ##
@@ -54,8 +48,8 @@ for it in range(len(tim)):
     fem.update_time(acc0,FD=True)
     # fem.update_time(acc0)
 
-    output_dispx[it,:] = [node.u[0]-node.u0[0] for node in fem.output_nodes]
-    output_dispz[it,:] = [node.u[1]-node.u0[1] for node in fem.output_nodes]
+    output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
+    output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
     if it%100 == 0:
         plot_model.plot_mesh_update(ax,fem,10.)
@@ -68,7 +62,7 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim,output_dispz[:,0]]).T
-np.savetxt(output_dir+"z0_vs00.disp",output_line)
+np.savetxt(output_dir+"z0_vs00_tmp.disp",output_line)
 
 ## Output result ##
 plt.figure()

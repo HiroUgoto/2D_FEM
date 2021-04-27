@@ -241,8 +241,6 @@ class Fem():
             self._update_matrix_node_init(node)
         for element in self.element_set:
             self._update_matrix_set_elements(element)
-        # for node in self.node_set:
-        #     self._update_matrix_set_nodes(node)
 
     # ---------------------------------------
     def _update_matrix_node_init(self,node):
@@ -253,7 +251,6 @@ class Fem():
     def _update_matrix_set_elements(self,element):
         element.set_xn()
         element.mk_local_update()
-        # element.mk_local_vector()
 
         id = 0
         for node in element.nodes:
