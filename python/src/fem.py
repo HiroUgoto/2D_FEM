@@ -272,7 +272,7 @@ class Fem():
             self.update_matrix()
         else:
             for node in self.node_set:
-                node.dynamic_force = np.copy(node.static_force)
+                node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
         for node in self.node_set:
             self._update_time_node_init(node)
