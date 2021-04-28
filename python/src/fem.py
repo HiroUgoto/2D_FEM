@@ -100,13 +100,13 @@ class Fem():
 
         self.output_nnode = len(output_node_list)
         self.output_nodes = [None] * self.output_nnode
-        for inode in output_node_list:
-            self.output_nodes[inode] = self.nodes[inode]
+        for id,inode in enumerate(output_node_list):
+            self.output_nodes[id] = self.nodes[inode]
 
         self.output_nelem = len(output_element_list)
         self.output_elements = [None] * self.output_nelem
-        for ielem in output_element_list:
-            self.output_elements[ielem] = self.elements[ielem]
+        for id,ielem in enumerate(output_element_list):
+            self.output_elements[id] = self.elements[ielem]
 
         self.output_node_set = set(self.output_nodes)
         self.output_element_set = set(self.output_elements)
