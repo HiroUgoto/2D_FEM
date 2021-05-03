@@ -203,12 +203,20 @@ void Element::mk_local_update() {
       EM M = EM::Zero(this->ndof,this->ndof);
       this->C = EM::Zero(this->ndof,this->ndof);
       this->Dv = this->material.mk_visco(this->dof);
-      this->force = EV::Zero(this->ndof);
 
+      EM eye2 = EM::Identity(2,2);
+      EV gravity_force = EV::Zero(2);
+      gravity_force(1) = this->gravity;
+
+      EM u = this->mk_u_vstack();
+
+      this->force = EV::Zero(this->ndof);
       double V = 0.0;
+
       for (size_t i = 0 ; i < this->ng_all ; i++){
         double detJ;
-        EM N, Me, B, K, C;
+        EM N, Me, B, K, C, IFT;
+        EV sf;
 
         auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
 
@@ -218,12 +226,16 @@ void Element::mk_local_update() {
         B = mk_b(this->dof, this->nnode, dnj);
         C = mk_k(B, this->Dv);
 
+        auto [J, F_inv] = mk_F_inv(dnj,u);
+        IFT = eye2 - F_inv.transpose() / J;
+        sf = IFT * gravity_force;
+
         detJ = det * this->w_list[i];
         M += Me * detJ;
         this->C += C * detJ;
 
         V += detJ;
-        this->force += N.row(1)*detJ * this->gravity;
+        this->force += N.transpose() * sf *detJ;
       }
 
       double tr_M = M.trace() / this->dof;
@@ -678,6 +690,18 @@ std::tuple<double, EM2>
     auto [J, F] = mk_F(dnj, u);
     FF = F * F.transpose();
     return std::forward_as_tuple(J, FF);
+  }
+
+std::tuple<double, EM2>
+  mk_F_inv(const EM dnj, const EM u) {
+    double det;
+    EM2 dnu, F_inv;
+
+    dnu = mk_dnu(dnj, u);
+    det = (1.0-dnu(0,0))*(1.0-dnu(1,1)) - dnu(0,1)*dnu(1,0);
+    F_inv << 1.0-dnu(0,0),    -dnu(0,1),
+                -dnu(1,0), 1.0-dnu(1,1);
+    return {1.0/det, F_inv};
   }
 
 std::tuple<double, EM2>

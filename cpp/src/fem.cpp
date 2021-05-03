@@ -109,6 +109,7 @@ void Fem::_set_initial_matrix(){
           id++;
         }
       }
+
     }
   }
 
@@ -379,7 +380,6 @@ void Fem::update_time_input_FD(const EV vel0) {
 // ------------------------------------------------------------------- //
 void Fem::update_time_MD(const EV acc0) {
     for (auto& node : this->nodes) {
-      node.dynamic_force = node.static_force;
       node.force = -node.dynamic_force;
     }
 
@@ -403,7 +403,6 @@ void Fem::update_time_MD(const EV acc0) {
 // ------------------------------------------------------------------- //
 void Fem::update_time_input_MD(const EV vel0) {
     for (auto& node : this->nodes) {
-      node.dynamic_force = node.static_force;
       node.force = -node.dynamic_force;
     }
 

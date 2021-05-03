@@ -79,6 +79,7 @@ EM mk_b_T(const size_t dof, const size_t nnode, const EM dnj);
 EV Hencky_stress(const EM D, const EM dnj, const EM u);
 std::tuple<double, EM2> Euler_log_strain(const EM dnj, const EM u);
 std::tuple<double, EM2> mk_FF(const EM dnj, const EM u);
+std::tuple<double, EM2> mk_F_inv(const EM dnj, const EM u);
 std::tuple<double, EM2> mk_F(const EM dnj, const EM u);
 EM2 mk_dnu(const EM dnj, const EM u);
 
