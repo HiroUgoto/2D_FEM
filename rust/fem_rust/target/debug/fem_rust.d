@@ -1,1 +1,0 @@
-/Users/goto/prog/2021/FEM/2D_FEM/rust/fem_rust/target/debug/fem_rust: /Users/goto/prog/2021/FEM/2D_FEM/rust/fem_rust/src/io_data.rs /Users/goto/prog/2021/FEM/2D_FEM/rust/fem_rust/src/lib.rs /Users/goto/prog/2021/FEM/2D_FEM/rust/fem_rust/src/main.rs /Users/goto/prog/2021/FEM/2D_FEM/rust/fem_rust/src/node.rs
