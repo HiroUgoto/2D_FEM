@@ -72,6 +72,7 @@ id style material_id node_id
 - 1d3line : 3-node line element (1D)
 - 1d2input : 2-node line input boundary element
 - 1d3input : 3-node line input boundary element  
+- connect : connecting two nodes with dimensionless rigid bar  
 
 **material_id** : Material ID defined in material block.  
 **node_id** : Node ID list in the order corresponding to the element style.
@@ -93,11 +94,13 @@ The element consists of node ID 0, 1, 3, 2 in the order.
 Input wave boundary is defined on the boundary consisting of node ID 0 and 1.
 
 ```
-1 periodic 1 100
+1 connect -1 0 10
 ```
 
-Periodic element is defined.
-The element consists of node ID 0, 100.
+Connection between node ID 0 and 10 is defined.
+This is useful to define periodic boundary condition.
+Material id must be -1 (undefined).
+
 
 ---
 ## Material block
@@ -123,3 +126,39 @@ id style param
 ```
 
 Linear elastic material is defined. The parameters are defined in the order of S-wave velocity (250m/s), P-wave velocity (1500m/s), and density (1750kg/m^3).
+
+
+---
+# Output File Format - output.in
+---
+Output file format `output.in` consists of simple three definition blocks, namely **header block**, **node block**, **element block**.
+
+---
+## Header block
+
+Header block defines a number of output nodes and elements. The header block must be writtern in a single line.
+
+```
+nnode nelem
+```
+
+## Node block
+
+Node block defines ID of output nodes.
+
+## Element block
+
+Element block defines ID of output elements.
+
+
+### Example
+
+```
+2 1
+0
+1
+0
+```
+
+Results of 2 nodes and 1 element are outputted.
+IDs of the output nodes are 0 and 1, and ID of the output element is 0.
