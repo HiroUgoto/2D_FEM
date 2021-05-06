@@ -100,13 +100,13 @@ class Fem():
 
         self.output_nnode = len(output_node_list)
         self.output_nodes = [None] * self.output_nnode
-        for inode in output_node_list:
-            self.output_nodes[inode] = self.nodes[inode]
+        for id,inode in enumerate(output_node_list):
+            self.output_nodes[id] = self.nodes[inode]
 
         self.output_nelem = len(output_element_list)
         self.output_elements = [None] * self.output_nelem
-        for ielem in output_element_list:
-            self.output_elements[ielem] = self.elements[ielem]
+        for id,ielem in enumerate(output_element_list):
+            self.output_elements[id] = self.elements[ielem]
 
         self.output_node_set = set(self.output_nodes)
         self.output_element_set = set(self.output_elements)
@@ -130,6 +130,7 @@ class Fem():
 
         for node in self.node_set:
             node.u0 = np.copy(node.u)
+            node.um = np.copy(node.u)
 
     # ---------------------------------------
     def _self_gravity_cg(self,full=True):
@@ -155,6 +156,9 @@ class Fem():
                 u += node._ur
             for node in element.node_set:
                 node._ur = u/element.nnode
+        for element in self.input_elements:
+            for node in element.node_set:
+                node._ur = np.zeros(element.nodes[0].dof,dtype=np.float64)
         for node in self.node_set:
             node._up = np.copy(node._ur)
         for element in self.element_set:
@@ -182,6 +186,9 @@ class Fem():
                     u += node._uy
                 for node in element.node_set:
                     node._uy = u/element.nnode
+            for element in self.input_elements:
+                for node in element.node_set:
+                    node._uy = np.zeros(element.nodes[0].dof,dtype=np.float64)
 
             ## alpha = rr/py
             rr,py = 0.0,0.0
@@ -234,8 +241,6 @@ class Fem():
             self._update_matrix_node_init(node)
         for element in self.element_set:
             self._update_matrix_set_elements(element)
-        # for node in self.node_set:
-        #     self._update_matrix_set_nodes(node)
 
     # ---------------------------------------
     def _update_matrix_node_init(self,node):
@@ -246,7 +251,6 @@ class Fem():
     def _update_matrix_set_elements(self,element):
         element.set_xn()
         element.mk_local_update()
-        # element.mk_local_vector()
 
         id = 0
         for node in element.nodes:
@@ -268,7 +272,7 @@ class Fem():
             self.update_matrix()
         else:
             for node in self.node_set:
-                node.dynamic_force = np.copy(node.static_force)
+                node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
         for node in self.node_set:
             self._update_time_node_init(node)
