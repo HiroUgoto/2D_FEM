@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 #--------------------------------------------------------#
 def plot_mesh(fem,amp=1.0):
-    pc = ["lightblue","gray","yellow","green","pink"]
+    pc = ["gray","yellow","green","pink","lightblue"]
 
     fig,ax = plt.subplots(figsize=(6,4))
 
@@ -42,7 +42,7 @@ def plot_mesh_update_init():
     return ax
 
 def plot_mesh_update(ax,fem,amp=1.0,fin=False):
-    pc = ["lightblue","gray","yellow","green","pink"]
+    pc = ["gray","yellow","green","pink","lightblue"]
 
     ax.cla()
     ax.grid()

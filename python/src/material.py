@@ -31,6 +31,12 @@ class Material:
             self.rlambda = 2*nu/(1-2*nu) * self.rmu
             self.rho = rho
 
+        elif self.style == "nu_E_rho":
+            nu,E,rho = param
+            self.rmu = E/2.0/(1+nu)
+            self.rlambda = 2*nu/(1-2*nu) * self.rmu
+            self.rho = rho
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:
