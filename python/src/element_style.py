@@ -18,6 +18,8 @@ def set_style(style):
         return Input_1d_3Node()
     elif style == "connect":
         return Connect()
+    elif style == "spring":
+        return Spring()
     elif style == "slider":
         return Slider()
 
@@ -226,10 +228,13 @@ class Connect:
         self.gauss = np.array([]),np.array([])
 
 # ---------------------------------------------------------------------- #
-class Slider:
+class Spring:
     def __init__(self):
         self.dim = 0
         self.gauss = np.array([]),np.array([])
+
+class Slider(Spring):
+    pass
 
 # ---------------------------------------------------------------------- #
 

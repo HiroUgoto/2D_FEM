@@ -16,6 +16,7 @@ class Fem():
         self.fixed_nodes = []
         self.connected_elements = []
         self.slider_elements = []
+        self.spring_elements = []
 
     # ======================================================================= #
     def set_init(self):
@@ -56,6 +57,8 @@ class Fem():
                 self.connected_elements += [element]
             if "slider" in element.style:
                 self.slider_elements += [element]
+            if "spring" in element.style:
+                self.spring_elements += [element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -303,7 +306,8 @@ class Fem():
 
         for element in self.connected_element_set:
             self._update_time_set_connected_elements_(element)
-
+        for element in self.spring_elements:
+            self._update_time_set_spring_elements_(element)
         for element in self.slider_element_set:
             self._update_time_set_slider_elements_(element)
 
@@ -349,7 +353,15 @@ class Fem():
         for node in element.node_set:
             node.u[:] = u[:]/element.nnode
 
+    def _update_time_set_spring_elements_(self,element):
+        u = element.R @ np.hstack(element.u)
+        element.f[0] = element.material.kv*(u[0]-u[2])
+        element.f[1] = element.material.kh*(u[1]-u[3])
+
     def _update_time_set_slider_elements_(self,element):
+        u0_m = element.nodes[0].u[:] - 2.*self.dt*element.nodes[0].v[:]
+        u1_m = element.nodes[1].u[:] - 2.*self.dt*element.nodes[1].v[:]
+
         u0 = element.R @ element.nodes[0].u[:]
         u1 = element.R @ element.nodes[1].u[:]
 
@@ -359,6 +371,14 @@ class Fem():
         element.nodes[0].u[:] = element.R.T @ u0
         element.nodes[1].u[:] = element.R.T @ u1
 
+        # element.nodes[0].f[:] = element.nodes[0].u[:] / element.nodes[0].dtdt_inv_mc  \
+        #                         - (2.*element.nodes[0].um[:] - u0_m) * element.nodes[0].mass[:] / (self.dt*self.dt)  \
+        #                         - u0_m * element.nodes[0].c[:] / (2.*self.dt) + element.nodes[0].force[:]
+        # element.nodes[1].f[:] = element.nodes[1].u[:] / element.nodes[0].dtdt_inv_mc  \
+        #                         - (2.*element.nodes[1].um[:] - u1_m) * element.nodes[1].mass[:] / (self.dt*self.dt)  \
+        #                         - u1_m * element.nodes[1].c[:] / (2.*self.dt) + element.nodes[1].force[:]
+        #
+        # element.f[:] = element.nodes[1].f[:] - element.nodes[0].f[:]
 
     # ======================================================================= #
     def print_all(self):

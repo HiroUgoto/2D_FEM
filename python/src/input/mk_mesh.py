@@ -94,8 +94,8 @@ for k in range(nz):
         ielem += 1
 
 ######
-for k in range(k1_box_node+1):          # 鉛直方向のスライダー
-    style = "slider"
+for k in range(k1_box_node+1):          # 側面
+    style = "spring"
     im = 3
 
     param_line = "{} {} {} ".format(ielem,style,im)
@@ -111,8 +111,8 @@ for k in range(k1_box_node+1):          # 鉛直方向のスライダー
     ielem += 1
 
 
-for i in range(i0_box_node,i1_box_node+1):         # 水平方向のスライダー
-    style = "slider"
+for i in range(i0_box_node,i1_box_node+1):         # 下面
+    style = "spring"
     im = 4
 
     param_line = "{} {} {} ".format(ielem,style,im)
@@ -155,8 +155,10 @@ material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,40.0e9,2500.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
 
-material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 鉛直スライダー（法線ベクトル：(1,0)）
-material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 水平スライダー（法線ベクトル：(0,1)）
+material_lines += ["{} {} {} {} {} {} \n".format(3,"spring_normal",1.0e10,1.0e-8,1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
+material_lines += ["{} {} {} {} {} {} \n".format(4,"spring_normal",1.0e10,1.0e-8,0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
+# material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
+# material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
 
 
 nmaterial = len(material_lines)

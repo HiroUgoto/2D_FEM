@@ -185,21 +185,21 @@
 27 2d9solid 1 110 112 138 136 111 125 137 123 124
 28 2d9solid 1 112 114 140 138 113 127 139 125 126
 29 2d9solid 1 114 116 142 140 115 129 141 127 128
-30 slider 3 4 143
-30 slider 3 8 144
-32 slider 3 17 145
-32 slider 3 21 146
-34 slider 3 30 147
-34 slider 3 34 148
-36 slider 3 43 149
-36 slider 3 47 150
-38 slider 3 56 151
-38 slider 3 60 152
-40 slider 4 56 151
-41 slider 4 57 153
-42 slider 4 58 154
-43 slider 4 59 155
-44 slider 4 60 152
+30 spring 3 4 143
+30 spring 3 8 144
+32 spring 3 17 145
+32 spring 3 21 146
+34 spring 3 30 147
+34 spring 3 34 148
+36 spring 3 43 149
+36 spring 3 47 150
+38 spring 3 56 151
+38 spring 3 60 152
+40 spring 4 56 151
+41 spring 4 57 153
+42 spring 4 58 154
+43 spring 4 59 155
+44 spring 4 60 152
 45 1d3input 2 130 132 131 
 46 1d3input 2 132 134 133 
 47 1d3input 2 134 136 135 
@@ -220,5 +220,5 @@
 0 nu_E_rho 0.2 40000000000.0 2500.0 
 1 nu_vs_rho 0.33 150.0 1700.0 
 2 nu_vs_rho 0.33 350.0 1800.0 
-3 slider_normal 1.0 0.0 
-4 slider_normal 0.0 1.0 
+3 spring_normal 10000000000.0 1e-08 1.0 0.0 
+4 spring_normal 10000000000.0 1e-08 0.0 1.0 

@@ -100,6 +100,7 @@ class Element:
 
         elif self.dim == 0 and "slider" in self.style:
             self.R = self.material.R
+            self.f = np.zeros(self.dof, dtype=np.float64)
 
     # ---------------------------------------------------------
     def mk_local_matrix(self):
@@ -146,10 +147,20 @@ class Element:
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
 
+        elif self.dim == 0 and "spring" in self.style:
+            self.f = np.zeros(self.dof, dtype=np.float64)
+
+            self.De = self.material.mk_d_spring()
+            self.R  = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+            self.R[0:2,0:2] = self.material.R[0:2,0:2]
+            self.R[2:4,2:4] = self.material.R[0:2,0:2]
+
+            self.K = self.R.T @ self.De @ self.R
+            self.K_diag = np.diag(self.K)
+            self.K_off_diag = self.K - np.diag(self.K_diag)
+
     # ---------------------------------------------------------
     def mk_local_vector(self):
-        # if self.dof == 1:
-        #     return
         if self.dim == 2:
             self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0

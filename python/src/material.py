@@ -37,6 +37,17 @@ class Material:
             self.rlambda = 2*nu/(1-2*nu) * self.rmu
             self.rho = rho
 
+        elif self.style == "spring_normal":
+            self.rho = 0.0
+            self.kv,self.kh,n0,n1 = param
+
+            norm = np.sqrt(n0*n0+n1*n1)
+            n0,n1 = n0/norm,n1/norm
+
+            self.R = np.zeros([2,2], dtype=np.float64)
+            self.R[0,0],self.R[0,1] =  n0, n1
+            self.R[1,0],self.R[1,1] = -n1, n0
+
         elif self.style == "slider_normal":
             self.rho = 0.0
             n0,n1 = param
@@ -68,6 +79,15 @@ class Material:
             D[2,2] = self.rmu
             D[3,3] = self.rmu
             D[4,4] = self.rmu
+
+        return D
+
+    def mk_d_spring(self):
+        D = np.zeros([4,4],dtype=np.float64)
+        D[0,0],D[2,0] =  self.kv, -self.kv
+        D[0,2],D[2,2] = -self.kv,  self.kv
+        D[1,1],D[3,1] =  self.kh, -self.kh
+        D[1,3],D[3,3] = -self.kh,  self.kh
 
         return D
 
