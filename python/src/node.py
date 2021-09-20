@@ -14,6 +14,7 @@ class Node:
         self.u  = np.zeros(self.dof,dtype=np.float64)
         self.um = np.zeros(self.dof,dtype=np.float64)
         self.v  = np.zeros(self.dof,dtype=np.float64)
+        self.f  = np.zeros(self.dof,dtype=np.float64)
 
         self.mass   = np.zeros(self.dof,dtype=np.float64)
         self.c      = np.zeros(self.dof,dtype=np.float64)

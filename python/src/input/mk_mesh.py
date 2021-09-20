@@ -5,15 +5,27 @@ area_x = 30.0
 area_z = 10.0
 
 nx = 6
-nz = 6
+nz = 5
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
 zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
+######
+nx_box = 2  # 躯体の要素数（水平）
+nz_box = 2  # 躯体の要素数（鉛直）
+
+i0_box = (nx-nx_box)//2     # 躯体左端の要素位置
+i1_box = (nx+nx_box)//2-1   # 躯体右端の要素位置
+k1_box = nz_box-1           # 躯体下端の要素位置
+
+i0_box_node = i0_box * 2         # 躯体左端のノード位置
+i1_box_node = (i1_box+1) * 2     # 躯体右端のノード位置
+k1_box_node = (k1_box+1) * 2     # 躯体下端のノード位置
+
 
 ### Set node ###
-node = np.empty([len(xg),len(zg)],dtype=np.int32)       #node_idを振った配列(転置)
+node = np.empty([len(xg),len(zg)],dtype=np.int32)
 node_lines = []
 
 inode = 0
@@ -27,6 +39,30 @@ for k in range(len(zg)):
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
         inode += 1
 
+# 躯体周辺にノードを追加 #
+node_double = np.empty([len(xg),len(zg)],dtype=np.int32)
+
+for k in range(k1_box_node+1):
+    dofx,dofz = 1,1
+
+    i = i0_box_node
+    node_double[i,k] = inode
+    node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
+    inode += 1
+
+    i = i1_box_node
+    node_double[i,k] = inode
+    node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
+    inode += 1
+
+for i in range(i0_box_node+1,i1_box_node):
+    dofx,dofz = 1,1
+
+    k = k1_box_node
+    node_double[i,k] = inode
+    node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
+    inode += 1
+
 
 ### Set element ###
 element_lines = []
@@ -34,21 +70,60 @@ element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        im = 1
-        if k <= 2:
-            if 2 <= i and i <= 3:
+        im = 1              # 地盤の材料パラメータ
+        if k <= k1_box:
+            if i0_box <= i and i <= i1_box:  # 躯体の材料パラメータ
                 im = 0
 
-        style = "2d9solid"
+        n0,n1,n2,n3 = node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2]
+        n4,n5,n6,n7 = node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1]
+        n8 = node[2*i+1,2*k+1]
 
+        if k <= k1_box and i == i0_box:                     # 躯体左端
+            n0,n3,n7 = node_double[2*i,2*k],node_double[2*i,2*k+2],node_double[2*i,2*k+1]
+        if k <= k1_box and i == i1_box:                     # 躯体右端
+            n1,n2,n5 = node_double[2*i+2,2*k],node_double[2*i+2,2*k+2],node_double[2*i+2,2*k+1]
+        if k == k1_box and i0_box <= i and i <= i1_box:     # 躯体下端
+            n2,n3,n6 = node_double[2*i+2,2*k+2],node_double[2*i,2*k+2],node_double[2*i+1,2*k+2]
+
+        style = "2d9solid"
         param_line = "{} {} {} ".format(ielem,style,im)
-        style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
-                                                         node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
-                                                         node[2*i+1,2*k+1])
+        style_line = "{} {} {} {} {} {} {} {} {}".format(n0,n1,n2,n3,n4,n5,n6,n7,n8)
 
         element_lines += [param_line + style_line + "\n"]
         ielem += 1
 
+######
+for k in range(k1_box_node+1):          # 鉛直方向のスライダー
+    style = "slider"
+    im = 3
+
+    param_line = "{} {} {} ".format(ielem,style,im)
+
+    i = i0_box_node
+    style_line = "{} {}".format(node[i,k],node_double[i,k])
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
+
+    i = i1_box_node
+    style_line = "{} {}".format(node[i,k],node_double[i,k])
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
+
+
+for i in range(i0_box_node,i1_box_node+1):         # 水平方向のスライダー
+    style = "slider"
+    im = 4
+
+    param_line = "{} {} {} ".format(ielem,style,im)
+
+    k = k1_box_node
+    style_line = "{} {}".format(node[i,k],node_double[i,k])
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
+
+
+######
 for i in range(nx):
     style = "1d3input"
     im = 2
@@ -59,7 +134,7 @@ for i in range(nx):
     element_lines += [param_line + style_line + "\n"]
     ielem += 1
 
-
+######
 for k in range(len(zg)):     #connected element
     style = "connect"
     im = -1
@@ -79,6 +154,10 @@ material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,40.0e9,2500.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
+
+material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 鉛直スライダー（法線ベクトル：(1,0)）
+material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 水平スライダー（法線ベクトル：(0,1)）
+
 
 nmaterial = len(material_lines)
 

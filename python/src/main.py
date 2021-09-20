@@ -32,9 +32,9 @@ wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,14.0/fp,3.0)
 # wave_acc = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
 ntim = len(tim)
 
-plt.figure()
-plt.plot(tim,wave_acc)
-plt.show()
+# plt.figure()
+# plt.plot(tim,wave_acc)
+# plt.show()
 
 ## --- Prepare time solver --- ##
 ax = plot_model.plot_mesh_update_init()
@@ -59,13 +59,14 @@ for it in range(len(tim)):
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
     if it%100 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.)
+        plot_model.plot_mesh_update(ax,fem,50.)
         print(it,"t=",it*dt,output_dispx[it,5])
+
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
-# plot_model.plot_mesh_update(ax,fem,10.,fin=True)
+# plot_model.plot_mesh_update(ax,fem,50.,fin=True)
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim,output_dispx[:,5]]).T

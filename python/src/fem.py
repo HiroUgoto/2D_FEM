@@ -15,6 +15,7 @@ class Fem():
         self.free_nodes = []
         self.fixed_nodes = []
         self.connected_elements = []
+        self.slider_elements = []
 
     # ======================================================================= #
     def set_init(self):
@@ -53,6 +54,8 @@ class Fem():
                 self.input_elements += [element]
             if "connect" in element.style:
                 self.connected_elements += [element]
+            if "slider" in element.style:
+                self.slider_elements += [element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -76,6 +79,7 @@ class Fem():
         self.element_set = set(self.elements)
         self.input_element_set = set(self.input_elements)
         self.connected_element_set = set(self.connected_elements)
+        self.slider_element_set = set(self.slider_elements)
 
     # ---------------------------------------
     def _set_initial_matrix(self):
@@ -300,6 +304,9 @@ class Fem():
         for element in self.connected_element_set:
             self._update_time_set_connected_elements_(element)
 
+        for element in self.slider_element_set:
+            self._update_time_set_slider_elements_(element)
+
         for element in self.output_element_set:
             element.calc_stress()
 
@@ -341,6 +348,17 @@ class Fem():
             u[:] += node.u[:]
         for node in element.node_set:
             node.u[:] = u[:]/element.nnode
+
+    def _update_time_set_slider_elements_(self,element):
+        u0 = element.R @ element.nodes[0].u[:]
+        u1 = element.R @ element.nodes[1].u[:]
+
+        uc = 0.5*(u0[0]+u1[0])
+        u0[0],u1[0] = uc,uc
+
+        element.nodes[0].u[:] = element.R.T @ u0
+        element.nodes[1].u[:] = element.R.T @ u1
+
 
     # ======================================================================= #
     def print_all(self):

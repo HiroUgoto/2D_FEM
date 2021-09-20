@@ -18,6 +18,9 @@ def set_style(style):
         return Input_1d_3Node()
     elif style == "connect":
         return Connect()
+    elif style == "slider":
+        return Slider()
+
 
 # =================== Element style classes ============================ #
 class Gauss_Points:
@@ -218,6 +221,12 @@ class Line_1d_3Node:
 
 # ---------------------------------------------------------------------- #
 class Connect:
+    def __init__(self):
+        self.dim = 0
+        self.gauss = np.array([]),np.array([])
+
+# ---------------------------------------------------------------------- #
+class Slider:
     def __init__(self):
         self.dim = 0
         self.gauss = np.array([]),np.array([])

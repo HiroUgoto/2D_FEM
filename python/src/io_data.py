@@ -12,18 +12,18 @@ def input_mesh(mesh_file):
         irec = 1
         nodes = [None] * nnode
         for inode in range(nnode):
-            items = lines[inode+irec].split()       #mesh.in2行以降
+            items = lines[inode+irec].split()
 
             id = int(items[0])
-            xyz = np.array([float(s) for s in items[1:3]])        #node座標list2成分
+            xyz = np.array([float(s) for s in items[1:3]])
             freedom = np.array([int(s) for s in items[3:]])
 
             nodes[inode] = node.Node(id,xyz,freedom)
 
-        irec += nnode       #irecを1+nnodeで再定義
+        irec += nnode
         elements = [None] * nelem
         for ielem in range(nelem):
-            items = lines[ielem+irec].split()       #mesh.in1+nnode行以降
+            items = lines[ielem+irec].split()
 
             id = int(items[0])
             style = items[1]
@@ -50,12 +50,12 @@ def input_outputs(output_file):
     with open(output_file) as f:
         lines = f.readlines()
 
-        nnode,nelem = [int(s) for s in lines[0].split()]    #output.inの1行目を分割し割当
+        nnode,nelem = [int(s) for s in lines[0].split()]
 
         irec = 1
         nodes = [None] * nnode
         for inode in range(nnode):
-            items = lines[inode+irec].split()       #output.inの2~nnode行まで
+            items = lines[inode+irec].split()
 
             id = int(items[0])
             nodes[inode] = id
@@ -63,7 +63,7 @@ def input_outputs(output_file):
         irec += nnode
         elements = [None] * nelem
         for ielem in range(nelem):
-            items = lines[ielem+irec].split()       #output.inのnnode+1~nelem+2行目まで
+            items = lines[ielem+irec].split()       
 
             id = int(items[0])
             elements[ielem] = id
