@@ -20,13 +20,14 @@ fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
+
 ## --- Define input wave --- ##
-fsamp = 10000
-fp = 1.0/0.264
+fsamp = 15000
+fp = 1.0/0.267
 duration = 14.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,14.0/fp,3.0)
+wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,14.0/fp,1.00)
 ntim = len(tim)
 
 # plt.figure()
@@ -38,10 +39,9 @@ ax = plot_model.plot_mesh_update_init()
 fem.update_init(dt)
 
 ## Iteration ##
-num_spring = len(fem.spring_elements)
-output_spring_forcev = np.zeros((ntim,num_spring))
-output_spring_forceh = np.zeros((ntim,num_spring))
+output_element_stress_xx = np.zeros((ntim,fem.output_nelem))
 
+output_accx = np.zeros((ntim,fem.output_nnode))
 output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
 
@@ -54,15 +54,15 @@ for it in range(ntim):
 
     fem.update_time(acc0,vel0,input_wave=True)
 
+    output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
-    output_spring_forcev[it,:] = [element.f[0] for element in fem.spring_elements]
-    output_spring_forceh[it,:] = [element.f[1] for element in fem.spring_elements]
+    output_element_stress_xx[it,:] = [element.stress[0] for element in fem.output_elements]
 
-    if it%500 == 0:
-        plot_model.plot_mesh_update(ax,fem,50.)
-        print(it,"t=",it*dt,output_dispx[it,5])
+    if it%200 == 0:
+        plot_model.plot_mesh_update(ax,fem,200.)
+        print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_xx[it,1])
 
 
 elapsed_time = time.time() - start
@@ -71,15 +71,21 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 # plot_model.plot_mesh_update(ax,fem,50.,fin=True)
 
 ## --- Write output file --- ##
-output_line = np.vstack([tim[:ntim],output_dispx[:,5]]).T
-np.savetxt(output_dir+"result_spring.disp",output_line)
-#
-#
-output_line = np.vstack([element.xnT[:,0] for element in fem.spring_elements])
-np.savetxt(output_dir+"spring_list.dat",output_line)
+output_line = np.vstack([tim[:ntim],output_dispx[:,0],output_dispx[:,int(fem.output_nnode//2)]]).T
+np.savetxt(output_dir+"result.disp",output_line)
 
-output_line = np.vstack([tim[:ntim],output_spring_forcev[:,:].T]).T
-np.savetxt(output_dir+"result_spring.forcev",output_line)
+output_line = np.vstack([tim[:ntim],output_accx[:,0]]).T
+np.savetxt(output_dir+"result.acc",output_line)
+
+#
+output_line = np.vstack([element.xnT[:,8] for element in fem.output_elements])
+np.savetxt(output_dir+"output_element_list.dat",output_line)
+
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_stress_xx[:,ielem]])
+np.savetxt(output_dir+"output_element.stress_xx",output_line.T)
+
 
 ## Output result ##
 # plt.figure()

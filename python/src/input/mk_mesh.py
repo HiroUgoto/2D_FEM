@@ -1,11 +1,11 @@
 import numpy as np
 import os
 
-area_x = 30.0
+area_x = 50.0
 area_z = 10.0
 
-nx = 6
-nz = 5
+nx = 10
+nz = 6
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -13,7 +13,7 @@ zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
 ######
 nx_box = 2  # 躯体の要素数（水平）
-nz_box = 2  # 躯体の要素数（鉛直）
+nz_box = 3  # 躯体の要素数（鉛直）
 
 i0_box = (nx-nx_box)//2     # 躯体左端の要素位置
 i1_box = (nx+nx_box)//2-1   # 躯体右端の要素位置
@@ -35,6 +35,10 @@ for k in range(len(zg)):
         if k == len(zg)-1:
             dofz = 0
 
+        if i0_box_node <= i <= i1_box_node:
+            if k == k1_box_node:
+                dofz = 0
+
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
         inode += 1
@@ -44,6 +48,8 @@ node_double = np.empty([len(xg),len(zg)],dtype=np.int32)
 
 for k in range(k1_box_node+1):
     dofx,dofz = 1,1
+    if k == k1_box_node:
+        dofz = 0
 
     i = i0_box_node
     node_double[i,k] = inode
@@ -56,7 +62,8 @@ for k in range(k1_box_node+1):
     inode += 1
 
 for i in range(i0_box_node+1,i1_box_node):
-    dofx,dofz = 1,1
+    # dofx,dofz = 1,1
+    dofx,dofz = 1,0
 
     k = k1_box_node
     node_double[i,k] = inode
@@ -95,7 +102,8 @@ for k in range(nz):
 
 ######
 for k in range(k1_box_node+1):          # 側面
-    style = "spring"
+    # style = "spring"
+    style = "slider"
     im = 3
 
     param_line = "{} {} {} ".format(ielem,style,im)
@@ -105,6 +113,8 @@ for k in range(k1_box_node+1):          # 側面
     element_lines += [param_line + style_line + "\n"]
     ielem += 1
 
+    param_line = "{} {} {} ".format(ielem,style,im)
+
     i = i1_box_node
     style_line = "{} {}".format(node[i,k],node_double[i,k])
     element_lines += [param_line + style_line + "\n"]
@@ -112,7 +122,8 @@ for k in range(k1_box_node+1):          # 側面
 
 
 for i in range(i0_box_node,i1_box_node+1):         # 下面
-    style = "spring"
+    # style = "spring"
+    style = "slider"
     im = 4
 
     param_line = "{} {} {} ".format(ielem,style,im)
@@ -151,14 +162,14 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,40.0e9,2500.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,100.0e9,1700.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
 
-material_lines += ["{} {} {} {} {} {} \n".format(3,"spring_normal",1.0e10,1.0e-8,1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
-material_lines += ["{} {} {} {} {} {} \n".format(4,"spring_normal",1.0e10,1.0e-8,0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
-# material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
-# material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
+# material_lines += ["{} {} {} {} {} {} \n".format(3,"spring_normal",1.0e10,1.0e-8,1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
+# material_lines += ["{} {} {} {} {} {} \n".format(4,"spring_normal",1.0e10,1.0e-8,0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
+material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
+material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
 
 
 nmaterial = len(material_lines)
@@ -169,6 +180,12 @@ for i in range(len(xg)):
     output_node_lines += ["{} \n".format(i)]        #define output nodes
 
 output_element_lines = []
+ielem = 0
+for k in range(nz):
+    for i in range(nx):
+        if i == i1_box+1:
+            output_element_lines += ["{} \n".format(ielem)]
+        ielem += 1
 # for i in range(0,nelem-nx-len(zg)):        #define output elements
 #     output_element_lines += ["{} \n".format(i)]
 
