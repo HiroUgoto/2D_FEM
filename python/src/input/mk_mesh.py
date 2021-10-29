@@ -1,10 +1,10 @@
 import numpy as np
-import os
+import os,sys
 
 area_x = 50.0
 area_z = 10.0
 
-nx = 10
+nx = 6
 nz = 6
 dof = 2
 
@@ -13,7 +13,7 @@ zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
 ######
 nx_box = 2  # 躯体の要素数（水平）
-nz_box = 3  # 躯体の要素数（鉛直）
+nz_box = 2  # 躯体の要素数（鉛直）
 
 i0_box = (nx-nx_box)//2     # 躯体左端の要素位置
 i1_box = (nx+nx_box)//2-1   # 躯体右端の要素位置
@@ -23,6 +23,21 @@ i0_box_node = i0_box * 2         # 躯体左端のノード位置
 i1_box_node = (i1_box+1) * 2     # 躯体右端のノード位置
 k1_box_node = (k1_box+1) * 2     # 躯体下端のノード位置
 
+#######  log2 で 要素幅を変える
+xc = area_x/2.0
+x0 = xg[i1_box_node] - xc
+x1 = area_x - xc
+
+x0_log2 = np.log(x0)/np.log(2)
+x1_log2 = np.log(x1)/np.log(2)
+num_log = 2*nx+1 - i1_box_node
+log_grid = np.logspace(x0_log2,x1_log2,num_log,base=2)
+
+xg_log = np.copy(xg)
+xg_log[i1_box_node:]    =  log_grid + xc
+xg_log[0:i0_box_node+1] = -log_grid[::-1] + xc
+
+xg = np.copy(xg_log)
 
 ### Set node ###
 node = np.empty([len(xg),len(zg)],dtype=np.int32)
@@ -162,7 +177,7 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,100.0e9,1700.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,100.0e9,850.0)]
 material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
 

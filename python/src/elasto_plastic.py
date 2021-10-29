@@ -15,8 +15,8 @@ class EP:
 
     # -------------------------------------------------------------------------------------- #
     def set_model(self,param):
-        if self.style == "Li":
-            self.e0,G0,nu,M,eg,d1 = param
+        if self.style == "ep_Li":
+            nu,G0,M,self.e0,eg,d1 = param
             self.model = Li.Li2002(G0=G0,nu=nu,M=M,eg=eg,d1=d1)
 
         deformation_vec = np.array([False,False,False,False,False,False],dtype=bool)
@@ -74,6 +74,30 @@ class EP:
 
         return FEMstrain
 
+    # -------------------------------------------------------------------------------------- #
+    # convert material modulus (3,3,3,3) to D matrix (ndof,ndof)
+    def modulus_to_Dmatrix(self,E):
+
+        if self.dof == 1:
+            D = np.zeros([2,2])
+            D[0,0],D[0,1] = E[0,1,0,1],E[0,1,1,2]
+            D[1,0],D[1,1] = E[1,2,0,1],E[1,2,1,2]
+
+        elif self.dof == 2:
+            D = np.zeros([3,3])
+            D[0,0],D[0,1],D[0,2] = E[0,0,0,0],E[0,0,2,2],E[0,0,2,0]
+            D[1,0],D[1,1],D[1,2] = E[2,2,0,0],E[2,2,2,2],E[2,2,2,0]
+            D[2,0],D[2,1],D[2,2] = E[2,0,0,0],E[2,0,2,2],E[2,0,2,0]
+
+        elif self.dof == 3:
+            D = np.zeros([5,5])
+            D[0,0],D[0,1],D[0,2],D[0,3],D[0,4] = E[0,0,0,0],E[0,0,2,2],E[0,0,2,0],E[0,0,0,1],E[0,0,1,2]
+            D[1,0],D[1,1],D[1,2],D[1,3],D[1,4] = E[2,2,0,0],E[2,2,2,2],E[2,2,2,0],E[2,2,0,1],E[2,2,1,2]
+            D[2,0],D[2,1],D[2,2],D[2,3],D[2,4] = E[2,0,0,0],E[2,0,2,2],E[2,0,2,0],E[2,0,0,1],E[2,0,1,2]
+            D[3,0],D[3,1],D[3,2],D[3,3],D[3,4] = E[0,1,0,0],E[0,1,2,2],E[0,1,2,0],E[0,1,0,1],E[0,1,1,2]
+            D[4,0],D[4,1],D[4,2],D[4,3],D[4,4] = E[1,2,0,0],E[1,2,2,2],E[1,2,2,0],E[1,2,0,1],E[1,2,1,2]
+
+        return D
 
     # -------------------------------------------------------------------------------------- #
     def vector_to_matrix(self,vec):
@@ -88,6 +112,17 @@ class EP:
 
     def clear_strain(self):
         self.strain = np.zeros((3,3))
+
+    # -------------------------------------------------------------------------------------- #
+    def elastic_modulus(self):
+        p,_ = self.model.set_stress_variable(self.stress)
+        G0,K0 = self.model.elastic_modulus(self.e,p)
+        return G0, K0 - G0*2/3
+
+    def elastic_modulus_ep(self,e,p):
+        G0,K0 = self.model.elastic_modulus(e,p)
+        return G0, K0 - G0*2/3
+
 
     # -------------------------------------------------------------------------------------- #
     def initial_state(self,init_stress):
@@ -135,10 +170,10 @@ class EP:
             self.e = self.e0 - ev*(1+self.e0)
             # print(p,R,gamma)
 
-        FEMstress = self.matrix_to_FEMstress(self.stress)
-        FEMstrain = self.matrix_to_FEMstrain(self.strain)
-        print("strain: ",FEMstrain)
-        print("stress: ",FEMstress)
+        # FEMstress = self.matrix_to_FEMstress(self.stress)
+        # FEMstrain = self.matrix_to_FEMstrain(self.strain)
+        # print("strain: ",FEMstrain)
+        # print("stress: ",FEMstress)
 
     # -------------------------------------------------------------------------------------- #
     def strain_to_stress(self,FEMdstrain):
@@ -159,9 +194,8 @@ class EP:
         self.strain += dstrain
         self.stress += dstress
 
-
-        p_stress,_ = np.linalg.eig(self.stress)
-        print(np.min(p_stress),np.max(p_stress))
+        # p_stress,_ = np.linalg.eig(self.stress)
+        # print(np.min(p_stress),np.max(p_stress))
         # print(gamma,R,ev,p)
 
         return self.matrix_to_FEMstress(self.stress)
@@ -169,8 +203,8 @@ class EP:
 # --------------------------------#
 if __name__ == "__main__":
     dof = 2
-    param = [0.6975,202,0.33,0.97,0.957,0.0] # e0,G0,nu,M,eg,d1
-    ep = EP(dof,"Li",param)
+    param = [0.33,202,0.97,0.6975,0.957,0.0] # nu, G0, M, e0, eg, d1
+    ep = EP(dof,"ep_Li",param)
 
 
     K0 = 0.5

@@ -262,6 +262,7 @@ class Li2002:
 
         if sp.elastic_flag1:
             sp.Kp1_b = 0.0
+            sp.D1 = 0.0
         else:
             h = scaling_factor(self.e,sp.rho1_ratio)
             sp.h = h
@@ -270,6 +271,7 @@ class Li2002:
 
         if sp.elastic_flag2 or sp.R == 0.0:
             sp.Kp2_b = 0.0
+            sp.D2 = 0.0
         else:
             sign = sp.dp/np.abs(sp.dp)
             Mg_R = self.M*sp.g/sp.R
@@ -463,6 +465,8 @@ class Li2002:
         dstress_vec = np.array([dcp,dcp,dcp,0,0,0])
         dstress = self.vector_to_matrix(dstress_vec)
 
+        self.stress = np.zeros((3,3))
+        self.strain = np.zeros((3,3))
         for i in range(0,nstep):
             p,_ = self.set_stress_variable(self.stress)
             E = self.isotropic_compression_stiffness(self.e,p)
@@ -615,10 +619,10 @@ if __name__ == "__main__":
     e0 = emax-Dr*(emax-emin)
     print(e0)
 
-    Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.0)
-    compression_stress = 40.e3
-    Li_model.cyclic_shear_test(e0,compression_stress,sr=0.3,cycle=20,print_result=True,plot=True)
-    sys.exit()
+    # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.0)
+    # compression_stress = 40.e3
+    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.3,cycle=20,print_result=True,plot=True)
+    # sys.exit()
 
     cs_list = [20.e3,40.e3,80.e3]
     sigma1_list, sigma3_list = [],[]

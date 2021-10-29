@@ -59,6 +59,10 @@ class Material:
             self.R[0,0],self.R[0,1] =  n0, n1
             self.R[1,0],self.R[1,1] = -n1, n0
 
+        elif self.style == "ep_Li":
+            self.rho = param[0]
+            self.param = param[1:]
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:

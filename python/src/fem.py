@@ -11,12 +11,16 @@ class Fem():
         self.elements = elements
         self.materials = materials
 
-        self.input_elements = []
         self.free_nodes = []
         self.fixed_nodes = []
+
+        self.input_elements = []
         self.connected_elements = []
         self.slider_elements = []
         self.spring_elements = []
+
+        self.e_elements = []
+        self.ep_elements = []
 
     # ======================================================================= #
     def set_init(self):
@@ -40,7 +44,7 @@ class Fem():
             element.set_nodes(nodes)
 
             if element.material_id < 0:
-                element.set_material(None)
+                element.set_material(self.dof,None)
             else:
                 if self.materials[element.material_id].id == element.material_id:
                     material = self.materials[element.material_id]
@@ -49,7 +53,11 @@ class Fem():
                         if m.id == element.material_id:
                             material = m
                             break
-                element.set_material(material)
+                element.set_material(self.dof,material)
+                if "ep_" in material.style:
+                    self.ep_elements += [element]
+                else:
+                    self.e_elements += [element]
 
             if "input" in element.style:
                 self.input_elements += [element]
@@ -84,6 +92,10 @@ class Fem():
         self.connected_element_set = set(self.connected_elements)
         self.slider_element_set = set(self.slider_elements)
 
+        self.e_element_set = set(self.e_elements)
+        self.ep_element_set = set(self.ep_elements)
+
+
     # ---------------------------------------
     def _set_initial_matrix(self):
         for element in self.element_set:
@@ -101,6 +113,9 @@ class Fem():
                     node.static_force[i] += element.force[id]
                     id += 1
 
+        for element in self.ep_elements:
+            element.ep_init_all()
+
     # ======================================================================= #
     def set_output(self,outputs):
         output_node_list,output_element_list = outputs
@@ -112,11 +127,18 @@ class Fem():
 
         self.output_nelem = len(output_element_list)
         self.output_elements = [None] * self.output_nelem
+        output_e_elements,output_ep_elements = [],[]
         for id,ielem in enumerate(output_element_list):
             self.output_elements[id] = self.elements[ielem]
+            if "ep_" in self.elements[ielem].material.style:
+                output_ep_elements += [self.elements[ielem]]
+            else:
+                output_e_elements += [self.elements[ielem]]
 
         self.output_node_set = set(self.output_nodes)
         self.output_element_set = set(self.output_elements)
+        self.output_e_element_set = set(output_e_elements)
+        self.output_ep_element_set = set(output_ep_elements)
 
     # ======================================================================= #
     def self_gravity(self):
@@ -216,6 +238,7 @@ class Fem():
                 rr1 += node._ur @ node._ur
 
             if rr1 < 1.e-10:
+                # print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
                 break
 
             ## p = r + beta*p
@@ -230,6 +253,37 @@ class Fem():
             if it%100 == 0:
                 print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
 
+    # ======================================================================= #
+    def set_ep_initial_state(self):
+        u0 = self.nodes[0].u[1]
+        for i in range(20):
+            self.self_gravity()
+            for element in self.ep_elements:
+                element.calc_stress()
+                element.ep.initial_state(element.stress)
+                element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
+                # print(np.sqrt(element.material.rmu/element.rho),element.stress)
+
+            self._set_ep_initial_state_node_clear()
+            self._set_initial_matrix()
+
+            if (u0 - self.nodes[0].u[1])**2 < 1.e-10:
+                break
+            else:
+                u0 = np.copy(self.nodes[0].u[1])
+
+        for element in self.ep_elements:
+            element.ep_init_calc_stress_all()
+
+    # ---------------------------------------
+    def _set_ep_initial_state_node_clear(self):
+        for node in self.node_set:
+            node.mass = np.zeros(self.dof,dtype=np.float64)
+            node.c    = np.zeros(self.dof,dtype=np.float64)
+            node.k      = np.zeros(self.dof,dtype=np.float64)
+            node.force = np.zeros(self.dof,dtype=np.float64)
+            node.static_force = np.zeros(self.dof,dtype=np.float64)
+            node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
     # ======================================================================= #
     def update_init(self,dt):
@@ -275,12 +329,16 @@ class Fem():
         node.dtdt_inv_mc = self.dt*self.dt*node.inv_mc[:]
 
     # ======================================================================= #
-    def update_time(self,acc0,vel0=None,input_wave=False,FD=False):
+    def update_time(self,acc0,vel0=None,input_wave=False,self_gravity=False,FD=False):
         if FD:
             self.update_matrix()
         else:
-            for node in self.node_set:
-                node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+            if self_gravity:
+                for node in self.node_set:
+                    node.dynamic_force = np.copy(node.static_force)
+            else:
+                for node in self.node_set:
+                    node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
         for node in self.node_set:
             self._update_time_node_init(node)
@@ -297,8 +355,10 @@ class Fem():
                 element.mk_B_stress()
                 element.mk_cv()
         else:
-            for element in self.element_set:
+            for element in self.e_element_set:
                 element.mk_ku_cv()
+            for element in self.ep_element_set:
+                element.mk_ep_B_stress()
 
         for node in self.free_node_set:
             self._update_time_set_free_nodes(node)
@@ -312,8 +372,10 @@ class Fem():
         for element in self.slider_element_set:
             self._update_time_set_slider_elements_(element)
 
-        for element in self.output_element_set:
+        for element in self.output_e_element_set:
             element.calc_stress()
+        for element in self.output_ep_element_set:
+            element.calc_ep_stress()
 
     # ---------------------------------------
     def _update_time_node_init(self,node):

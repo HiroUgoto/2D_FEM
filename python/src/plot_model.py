@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 #--------------------------------------------------------#
-def plot_mesh(fem,amp=1.0):
+def plot_mesh(fem,amp=1.0,margin=0.1,margin_bottom=0.1,margin_top=0.25):
     pc = ["gray","yellow","green","pink","lightblue"]
 
     fig,ax = plt.subplots(figsize=(6,4))
@@ -12,8 +12,8 @@ def plot_mesh(fem,amp=1.0):
     area_x = max(x)-min(x)
     area_z = max(z)-min(z)
 
-    ax.set_xlim([min(x)-0.1*area_x,max(x)+0.1*area_x])
-    ax.set_ylim([max(z)+0.1*area_z,min(z)-0.25*area_z])
+    ax.set_xlim([min(x)-margin*area_x,max(x)+margin*area_x])
+    ax.set_ylim([max(z)+margin_bottom*area_z,min(z)-margin_top*area_z])
     ax.set_aspect('equal')
 
     for element in fem.elements:
@@ -41,7 +41,7 @@ def plot_mesh_update_init():
     ax.set_axisbelow(True)
     return ax
 
-def plot_mesh_update(ax,fem,amp=1.0,fin=False):
+def plot_mesh_update(ax,fem,amp=1.0,margin=0.1,margin_bottom=0.1,margin_top=0.25,fin=False):
     pc = ["gray","yellow","green","pink","lightblue"]
 
     ax.cla()
@@ -53,8 +53,8 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
     area_x = max(x)-min(x)
     area_z = max(z)-min(z)
 
-    ax.set_xlim([min(x)-0.1*area_x,max(x)+0.1*area_x])
-    ax.set_ylim([max(z)+0.1*area_z,min(z)-0.25*area_z])
+    ax.set_xlim([min(x)-margin*area_x,max(x)+margin*area_x])
+    ax.set_ylim([max(z)+margin_bottom*area_z,min(z)-margin_top*area_z])
     ax.set_aspect('equal')
 
     for element in fem.elements:
