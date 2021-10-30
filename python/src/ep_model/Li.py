@@ -1,4 +1,5 @@
 import numpy as np
+import math
 import scipy.optimize
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -41,6 +42,20 @@ class Li2002:
         # Accumulated index
         self.L1 = 0.0
 
+        # identity
+        self.Z3 = np.zeros([3,3])
+        self.I3 = np.eye(3)
+        self.Dijkl = np.einsum('ij,kl->ijkl',self.I3,self.I3)
+        self.Dikjl = np.einsum('ij,kl->ikjl',self.I3,self.I3)
+
+        # parameters
+        self.sqrt2_3 = math.sqrt(2/3)
+        self.fn = 2*(1+self.nu)/(3*(1-2*self.nu))
+        self.rlambda_coeff = 2*self.nu/(1-2*self.nu)
+        self.G2_coeff = self.fn*self.h4 / (self.h4 + np.sqrt(2/3)*self.fn*self.d2) / self.fn
+        self.g0 = self.c*(1+self.c) / (1+self.c**2)
+        self.dg0 = (-self.c**2*(1-self.c)*(1+self.c)**2) / (1+self.c**2)**3
+
     # -------------------------------------------------------------------------------------- #
     class StateParameters:
         def __init__(self,strain,stress,dstrain,dstress,ef1=False,ef2=False):
@@ -57,14 +72,14 @@ class Li2002:
             self.elastic_flag2 = ef2
 
         def set_stress_variable(self):
-            self.p = (self.stress[0,0]+self.stress[1,1]+self.stress[2,2])/3.0
+            self.p = np.trace(self.stress)/3
             self.sij = self.stress - self.p*np.eye(3)
             self.rij = self.sij / max(self.p,self.pmin)
-            self.R = np.sqrt(1.5*np.power(self.rij,2).sum())
+            self.R = np.sqrt(1.5*np.square(self.rij).sum())
 
         def set_stress_increment(self):
             stress = self.stress + self.dstress
-            p = (stress[0,0]+stress[1,1]+stress[2,2])/3.0
+            p = np.trace(stress)/3
             self.dp = p - self.p
 
     # -------------------------------------------------------------------------------------- #
@@ -79,14 +94,18 @@ class Li2002:
         return vec
 
     def clear_strain(self):
-        self.strain = np.zeros((3,3))
+        self.strain = self.Z3.copy()
 
     # -------------------------------------------------------------------------------------- #
-    def set_strain_variable(self,strain_mat):
-        ev = strain_mat[0,0]+strain_mat[1,1]+strain_mat[2,2]
-        dev_strain = strain_mat - ev/3.0 * np.eye(3)
-        gamma = np.sqrt(2.0/3.0*np.power(dev_strain,2).sum())
+    def set_strain_variable(self,strain):
+        ev = np.trace(strain)
+        dev_strain = strain - ev/3.0 * self.I3
+        gamma = math.sqrt(2.0/3.0)*np.linalg.norm(dev_strain)
         return ev,gamma
+
+    def set_strain_variable_ev(self,strain):
+        ev = np.trace(strain)
+        return ev
 
     def set_strain_increment(self,dstrain_mat):
         strain_mat = self.strain_mat + dstrain_mat
@@ -96,49 +115,66 @@ class Li2002:
 
     # -------------------------------------------------------------------------------------- #
     def set_stress_variable(self,stress):
-        p = (stress[0,0]+stress[1,1]+stress[2,2])/3.0
-        dev_stress = stress - p*np.eye(3)
-        r_stress = dev_stress / max(p,self.pmin)
-        R = np.sqrt(1.5*np.power(r_stress,2).sum())
+        p = np.trace(stress)/3
+        r_stress = (stress - p*self.I3) / max(p,self.pmin)
+        R = math.sqrt(1.5)*np.linalg.norm(r_stress)
         return p,R
+
+    def set_stress_variable_p(self,stress):
+        p = np.trace(stress)/3
+        return p
 
     # -------------------------------------------------------------------------------------- #
     def Lode_angle(self,dev_stress):
-        J2 = 0.5*np.power(dev_stress,2).sum()
-        J3 = -np.linalg.det(dev_stress)
+        J2 = 0.5*np.square(dev_stress).sum()
         if J2 == 0.0:
-            s3 = 0.0
-        else:
-            s3 = J3/2 * (3/J2)**1.5
-            s3 = max(s3,-1.0)
-            s3 = min(s3,1.0)
-        theta = np.arcsin(s3)/3.0
-        return theta
+            return 0.0
+        J3 = -np.linalg.det(dev_stress)
+        s3 = J3/2 * (3/J2)**1.5
+        s3 = max(s3,-1.0)
+        s3 = min(s3,1.0)
+        theta3 = np.arcsin(s3)
+        return theta3
 
     def g_theta(self,dev_stress):            # Eq.(7)
-        theta = self.Lode_angle(dev_stress)
-        st = np.sin(3*theta)
-        if st == 0.0:
-            g1 = self.c*(1+self.c)
-            g2 = 1+self.c**2
-        else:
-            g1 = np.sqrt((1+self.c**2)**2 + 4*self.c*(1-self.c**2)*st) - (1+self.c**2)
-            g2 = 2*(1-self.c)*st
+        theta3 = self.Lode_angle(dev_stress)
+        if theta3 == 0.0:
+            return self.g0
+        st = np.sin(theta3)
+        g1 = np.sqrt((1+self.c**2)**2 + 4*self.c*(1-self.c**2)*st) - (1+self.c**2)
+        g2 = 2*(1-self.c)*st
         return g1/g2
 
-    def dg_theta(self,theta):                 # Eq.(45)
-        st = np.sin(3*theta)
+    def dg_theta(self,theta3):                 # Eq.(45)
+        st = np.sin(theta3)
         if st == 0.0:
-            g1 = -self.c**2*(1-self.c)*(1+self.c)**2
-            g2 = (1+self.c**2)**3
-            dg = g1/g2
-        else:
-            g11 = self.c*(1+self.c)
-            g12 = st*np.sqrt((1+self.c**2)**2+4*self.c*(1-self.c**2)*st)
-            g21 = np.sqrt((1+self.c**2)**2 + 4*self.c*(1-self.c**2)*st) - (1+self.c**2)
-            g22 = 2*(1-self.c)*st * st
-            dg = g11/g12 - g21/g22
+            return self.dg0
+        g11 = self.c*(1+self.c)
+        g12 = st*np.sqrt((1+self.c**2)**2+4*self.c*(1-self.c**2)*st)
+        g21 = np.sqrt((1+self.c**2)**2 + 4*self.c*(1-self.c**2)*st) - (1+self.c**2)
+        g22 = 2*(1-self.c)*st * st
+        dg = g11/g12 - g21/g22
         return dg
+
+    def Lode_angle_J2(self,dev_stress):
+        J2 = 0.5*np.square(dev_stress).sum()
+        if J2 == 0.0:
+            return 0.0,0.0
+        J3 = -np.linalg.det(dev_stress)
+        s3 = J3/2 * (3/J2)**1.5
+        s3 = max(s3,-1.0)
+        s3 = min(s3,1.0)
+        theta3 = np.arcsin(s3)
+        return theta3,J2
+
+    def g_theta_J2(self,dev_stress):            # Eq.(7)
+        theta3,J2 = self.Lode_angle_J2(dev_stress)
+        if theta3 == 0.0:
+            return self.g0,J2
+        st = np.sin(theta3)
+        g1 = np.sqrt((1+self.c**2)**2 + 4*self.c*(1-self.c**2)*st) - (1+self.c**2)
+        g2 = 2*(1-self.c)*st
+        return g1/g2,J2
 
     # -------------------------------------------------------------------------------------- #
     def state_parameter(self,e,p):
@@ -151,18 +187,18 @@ class Li2002:
         K = G*2*(1+self.nu)/(3*(1-2*self.nu))                           # Eq.(17)
         return G,K
 
+    def elastic_modulus_G(self,e,p):
+        G = self.G0*(2.97-e)**2 / (1+e) * np.sqrt(max(p,self.pmin)*self.pr)  # Eq.(16)
+        return G
+
     def elastic_stiffness(self,G):
-        mu,rlambda = G,2*G*self.nu/(1-2*self.nu)
-        Dijkl = np.einsum('ij,kl->ijkl',np.eye(3),np.eye(3))
-        Dikjl = np.einsum('ij,kl->ikjl',np.eye(3),np.eye(3))
-        Ee = rlambda*Dijkl + 2*mu*Dikjl
+        rlambda = G*self.rlambda_coeff
+        Ee = rlambda*self.Dijkl + 2*G*self.Dikjl
         return Ee
 
     def isotropic_compression_stiffness(self,e,p):
-        G,K = self.elastic_modulus(e,p)
-        fn = 2*(1+self.nu)/(3*(1-2*self.nu))
-        K2 = G*fn*self.h4 / (self.h4 + np.sqrt(2/3)*fn*self.d2)   #  Elastic + Eq.(29)
-        G2 = K2 / fn
+        G = self.elastic_modulus_G(e,p)
+        G2 = G*self.G2_coeff  #  Elastic + Eq.(29)
         E2 = self.elastic_stiffness(G2)
         return E2
 
@@ -170,14 +206,25 @@ class Li2002:
     def set_mapping_stress(self,sp):
         def mapping_r(t,rij,alpha):
             rij_bar = alpha + t*(rij-alpha)
-            g_bar = self.g_theta(rij_bar)
-            R_bar = np.sqrt(1.5*np.power(rij_bar,2).sum())
+            g_bar,J2 = self.g_theta_J2(rij_bar)
+            R_bar = math.sqrt(3.0*J2)
             return rij_bar,R_bar,g_bar
+
+        def mapping_r_Rg(t,rij,alpha):
+            rij_bar = alpha + t*(rij-alpha)
+            g_bar,J2 = self.g_theta_J2(rij_bar)
+            R_bar = math.sqrt(3.0*J2)
+            return R_bar,g_bar
 
         def F1_boundary_surface(t,*args):               # Eq.(6)
             rij,alpha = args
-            _,R_bar,g_bar = mapping_r(t,rij,alpha)
+            R_bar,g_bar = mapping_r_Rg(t,rij,alpha)
             return R_bar-self.H1*g_bar
+
+        def F1_boundary_surface_all(t,*args):               # Eq.(6)
+            rij,alpha = args
+            rij_bar,R_bar,g_bar = mapping_r(t,rij,alpha)
+            return R_bar-self.H1*g_bar,rij_bar,R_bar,g_bar
 
         if sp.elastic_flag1:
             self.alpha = np.copy(sp.rij)
@@ -187,8 +234,9 @@ class Li2002:
         if np.linalg.norm(sp.rij-self.alpha) < 1.e-6:  # Elastic behavior
             sp.elastic_flag1 = True
         else:
-            if F1_boundary_surface(1.0,sp.rij,self.alpha) > 0.0:
-                sp.rij_bar,sp.R_bar,sp.g_bar = mapping_r(1.0,sp.rij,self.alpha)
+            F1,rij_bar,R_bar,g_bar = F1_boundary_surface_all(1.0,sp.rij,self.alpha)
+            if F1 > 0.0:
+                sp.rij_bar,sp.R_bar,sp.g_bar = rij_bar,R_bar,g_bar
                 self.H1 = sp.R_bar/sp.g_bar
                 sp.rho1_ratio = 1.0
             else:
@@ -281,27 +329,27 @@ class Li2002:
 
     # -------------------------------------------------------------------------------------- #
     def set_parameter_nm(self,sp):
-        def dF1_r(r_bar,R_bar,theta_bar,g_bar,dg_bar):
+        def dF1_r(r_bar,R_bar,theta3_bar,g_bar,dg_bar):
             if np.abs(R_bar) < self.eps:
-                return np.zeros((3,3))
-            st_bar = np.sin(3*theta_bar)
+                return self.Z3
+            st_bar = np.sin(theta3_bar)
             a = R_bar*g_bar + 3*R_bar*st_bar*dg_bar
             b = 9*dg_bar
             c = 1.5/(R_bar*g_bar)**2
-            rr_bar = np.einsum('im,jm->ij',r_bar,r_bar)
+            rr_bar = r_bar @ r_bar.T
             return (a*r_bar + b*rr_bar)*c
 
         if not sp.elastic_flag1:
-            theta_bar = self.Lode_angle(sp.sij)
-            dg_bar = self.dg_theta(theta_bar)
-            dF1 = dF1_r(sp.rij_bar,sp.R_bar,theta_bar,sp.g_bar,dg_bar)
+            theta3_bar = self.Lode_angle(sp.sij)
+            dg_bar = self.dg_theta(theta3_bar)
+            dF1 = dF1_r(sp.rij_bar,sp.R_bar,theta3_bar,sp.g_bar,dg_bar)
             dF1_tr = np.trace(dF1)
-            nij = dF1 - np.eye(3,3)*dF1_tr/3.0
+            nij = dF1 - self.I3*dF1_tr/3.0
             sp.nij = nij / np.linalg.norm(nij)
 
-        r_abs = np.linalg.norm(sp.rij)
+        r_abs = math.sqrt(np.square(sp.rij).sum())
         if r_abs == 0.0:
-            sp.mij = np.zeros((3,3))
+            sp.mij = self.Z3.copy()
         else:
             sp.mij = sp.rij / r_abs         # mij = rij/|rij|
 
@@ -312,45 +360,45 @@ class Li2002:
         else:
             nm = np.einsum("ij,ij",sp.nij,sp.mij)
             nr = np.einsum("ij,ij",sp.nij,sp.rij)
-            Bu = 2*sp.Ge*nm - np.sqrt(2/3)*sp.Ke*sp.D2*nr
-            Bd = np.sqrt(2/3)*sp.Ke*sp.D2 + sp.Kp2
+            Bu = 2*sp.Ge*nm - self.sqrt2_3*sp.Ke*sp.D2*nr
+            Bd = self.sqrt2_3*sp.Ke*sp.D2 + sp.Kp2
             sp.B = Bu / Bd
 
         if sp.elastic_flag1:
-            sp.Tij = np.zeros((3,3))
+            sp.Tij = self.Z3.copy()
         else:
             nr = np.einsum("ij,ij",sp.nij,sp.rij)
-            Tu = 2*sp.Ge*sp.nij - sp.Ke*(nr+sp.B)*np.eye(3)
-            Td = 2*sp.Ge - np.sqrt(2/3)*sp.Ke*sp.D1*(nr+sp.B) + sp.Kp1
+            Tu = 2*sp.Ge*sp.nij - sp.Ke*(nr+sp.B)*self.I3
+            Td = 2*sp.Ge - self.sqrt2_3*sp.Ke*sp.D1*(nr+sp.B) + sp.Kp1
             sp.Tij = Tu / Td
 
         if sp.elastic_flag2:
-            sp.Zij = np.zeros((3,3))
+            sp.Zij = self.Z3.copy()
         else:
-            Zu = sp.Ke*np.eye(3) - np.sqrt(2/3)*sp.Ke*sp.D1*sp.Tij
+            Zu = sp.Ke*self.I3 - self.sqrt2_3*sp.Ke*sp.D1*sp.Tij
             if sp.R == 0.0:
                 Kp2_D2 = sp.Ge*self.h4/self.d2 * sp.rho2_ratio**self.a
-                Zd = np.sqrt(2/3)*sp.Ke + Kp2_D2
+                Zd = self.sqrt2_3*sp.Ke + Kp2_D2
             else:
-                Zd = np.sqrt(2/3)*sp.Ke*sp.D2 + sp.Kp2
+                Zd = self.sqrt2_3*sp.Ke*sp.D2 + sp.Kp2
             sp.Zij = Zu / Zd
 
     # -------------------------------------------------------------------------------------- #
     def set_tensor_Ep(self,sp):
-        Lm0 = np.einsum('pk,ql->pqkl',np.eye(3),np.eye(3))
+        Lm0 = np.einsum('pk,ql->pqkl',self.I3,self.I3)
         if sp.elastic_flag1:
-            Lm1 = np.einsum('pq,kl->pqkl',np.zeros((3,3)),np.zeros((3,3)))
+            Lm1 = np.zeros([3,3,3,3])
         else:
-            nD = sp.nij + np.sqrt(2/27)*sp.D1*np.eye(3)
+            nD = sp.nij + np.sqrt(2/27)*sp.D1*self.I3
             Lm1 = np.einsum("pq,kl->pqkl",nD,sp.Tij)
 
         if sp.elastic_flag2:
-            Lm2 = np.einsum('pq,kl->pqkl',np.zeros((3,3)),np.zeros((3,3)))
+            Lm2 = np.zeros([3,3,3,3])
         elif sp.R == 0:
-            mD = np.sqrt(2/27)*np.eye(3)
+            mD = np.sqrt(2/27)*self.I3
             Lm2 = np.einsum("pq,kl->pqkl",mD,sp.Zij)
         else:
-            mD = sp.mij + np.sqrt(2/27)*sp.D2*np.eye(3)
+            mD = sp.mij + np.sqrt(2/27)*sp.D2*self.I3
             Lm2 = np.einsum("pq,kl->pqkl",mD,sp.Zij)
 
         Lm = Lm0 - Lm1 - Lm2
@@ -375,7 +423,7 @@ class Li2002:
         if dL2 < 0.0:
             elastic_flag2 = True
             self.beta = np.copy(sp.p)
-            print(self.beta)
+            # print(self.beta)
         else:
             elastic_flag2 = False
 
@@ -468,13 +516,13 @@ class Li2002:
         self.stress = np.zeros((3,3))
         self.strain = np.zeros((3,3))
         for i in range(0,nstep):
-            p,_ = self.set_stress_variable(self.stress)
+            p = self.set_stress_variable_p(self.stress)
             E = self.isotropic_compression_stiffness(self.e,p)
             dstrain = self.solve_strain(dstress,E)
 
             self.stress += dstress
             self.strain += dstrain
-            ev,_ = self.set_strain_variable(self.strain)
+            ev = self.set_strain_variable_ev(self.strain)
             self.e = e0 - ev*(1+e0)
 
         self.clear_strain()
@@ -621,7 +669,7 @@ if __name__ == "__main__":
 
     # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.0)
     # compression_stress = 40.e3
-    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.3,cycle=20,print_result=True,plot=True)
+    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.3,cycle=10,print_result=True,plot=False)
     # sys.exit()
 
     cs_list = [20.e3,40.e3,80.e3]

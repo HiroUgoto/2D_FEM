@@ -7,6 +7,7 @@ import input_wave
 import plot_model
 import datetime
 
+import sys
 
 start = time.time()
 
@@ -27,10 +28,11 @@ fem.set_ep_initial_state()
 ## --- Define input wave --- ##
 fsamp = 1000
 fp = 1.0/0.267
-duration = 14.0/fp + 1.0/fp
+# duration = 14.0/fp + 1.0/fp
+duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,14.0/fp,1.00)
+wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,4.0/fp,1.00)
 ntim = len(tim)
 
 # plt.figure()
