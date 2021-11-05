@@ -20,14 +20,28 @@ fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
-
 ## --- Define input wave --- ##
+# Set amplitude #
+vs0,rho0 = 300.0,1700.0  # basement
+vs1,rho1 = 150.0,1700.0  # ground
+h = 10.0    # thickness
+fp = vs1/(4*h)
+
+R = (vs1*rho1)/(vs0*rho0)
+omega = 2*np.pi*fp
+c,s = np.cos(omega*h/vs1),np.sin(omega*h/vs1)
+H = 2/np.sqrt(c**2+R**2*s**2)
+
+amp = 0.3*9.8 / H
+print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
+
+# --------------- #
 fsamp = 15000
-fp = 1.0/0.267
+# fp = 1.0/0.267
 duration = 14.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,14.0/fp,1.00)
+wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,14.0/fp,amp)
 ntim = len(tim)
 
 # plt.figure()
@@ -40,6 +54,8 @@ fem.update_init(dt)
 
 ## Iteration ##
 output_element_stress_xx = np.zeros((ntim,fem.output_nelem))
+output_element_stress_zz = np.zeros((ntim,fem.output_nelem))
+output_element_stress_xz = np.zeros((ntim,fem.output_nelem))
 
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_dispx = np.zeros((ntim,fem.output_nnode))
@@ -59,6 +75,8 @@ for it in range(ntim):
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
     output_element_stress_xx[it,:] = [element.stress[0] for element in fem.output_elements]
+    output_element_stress_zz[it,:] = [element.stress[1] for element in fem.output_elements]
+    output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
 
     if it%200 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
@@ -86,6 +104,15 @@ for ielem in range(fem.output_nelem):
     output_line = np.vstack([output_line,output_element_stress_xx[:,ielem]])
 np.savetxt(output_dir+"output_element.stress_xx",output_line.T)
 
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_stress_zz[:,ielem]])
+np.savetxt(output_dir+"output_element.stress_zz",output_line.T)
+
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_stress_xz[:,ielem]])
+np.savetxt(output_dir+"output_element.stress_xz",output_line.T)
 
 ## Output result ##
 # plt.figure()
