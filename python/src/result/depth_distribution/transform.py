@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-nelem = 12
+nelem = 8
 nnode = nelem
 
 dz = 10.0/nelem
@@ -55,7 +55,7 @@ np.savetxt("earth_pressure_depth.dat",output_line)
 
 plt.figure()
 plt.ylim([10,0])
-plt.plot(F0,z,color='k')
-plt.plot(F_act,z,color='r')
-plt.plot(F_pas,z,color='b')
+plt.plot(F0,z,color='k',marker="o")
+plt.plot(F_act,z,color='r',marker="o")
+plt.plot(F_pas,z,color='b',marker="o")
 plt.show()

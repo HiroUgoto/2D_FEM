@@ -20,6 +20,7 @@ fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
+
 ## --- Define input wave --- ##
 # Set amplitude #
 vs0,rho0 = 300.0,1700.0  # basement
@@ -79,7 +80,7 @@ for it in range(ntim):
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
 
     if it%200 == 0:
-        plot_model.plot_mesh_update(ax,fem,200.)
+        plot_model.plot_mesh_update(ax,fem,400.)
         print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_xx[it,1])
 
 
