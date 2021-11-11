@@ -5,7 +5,7 @@ def plot_mesh(fem,amp=1.0):
     pc = ["gray","yellow","green","pink","lightblue"]
     lc = ["chocolate","darkgreen","darkmagenta","red","blue"]
 
-    fig,ax = plt.subplots(figsize=(6,4))
+    fig,ax = plt.subplots(figsize=(12,4))
 
     x = [node.xyz[0] for node in fem.nodes]
     z = [node.xyz[1] for node in fem.nodes]
@@ -40,7 +40,7 @@ def plot_mesh(fem,amp=1.0):
 
         elif element.dim == 0:
             if element.material_id == -1:
-                rc = 0.02*area_z
+                rc = 0.01*area_z
                 f0 = (element.nodes[0].xyz[0], element.nodes[0].xyz[1])
                 f1 = (element.nodes[1].xyz[0], element.nodes[1].xyz[1])
                 p0 = plt.Circle(f0,rc,ec="k",fc="white")
@@ -50,7 +50,7 @@ def plot_mesh(fem,amp=1.0):
 
             else:
                 ic = element.material_id % len(lc)
-                rc = 0.02*area_z
+                rc = 0.01*area_z
                 f0 = (element.nodes[0].xyz[0], element.nodes[0].xyz[1])
                 f1 = (element.nodes[1].xyz[0], element.nodes[1].xyz[1])
                 p0 = plt.Circle(f0,rc,color=lc[ic])
@@ -58,7 +58,7 @@ def plot_mesh(fem,amp=1.0):
                 ax.add_patch(p0)
                 ax.add_patch(p1)
 
-    rc = 0.01*area_z
+    rc = 0.005*area_z
     for node in fem.nodes:
         p = plt.Circle((node.xyz[0],node.xyz[1]),rc,color="k")
         ax.add_patch(p)
@@ -67,7 +67,7 @@ def plot_mesh(fem,amp=1.0):
 
 #--------------------------------------------------------#
 def plot_mesh_update_init():
-    _,ax = plt.subplots(figsize=(6,4))
+    _,ax = plt.subplots(figsize=(12,4))
     ax.set_axisbelow(True)
     return ax
 
@@ -111,7 +111,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
 
         elif element.dim == 0:
             if element.material_id == -1:
-                rc = 0.02*area_z
+                rc = 0.01*area_z
                 f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
                 f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
                 p0 = plt.Circle(f0,rc,ec="k",fc="white")
@@ -122,7 +122,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
             else:
                 ic = element.material_id % len(lc)
 
-                rc = 0.02*area_z
+                rc = 0.01*area_z
                 f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
                 f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
                 p0 = plt.Circle(f0,rc,color=lc[ic])
@@ -130,7 +130,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
                 ax.add_patch(p0)
                 ax.add_patch(p1)
 
-    rc = 0.01*area_z
+    rc = 0.005*area_z
     for node in fem.nodes:
         p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
         ax.add_patch(p)
