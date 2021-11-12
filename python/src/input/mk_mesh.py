@@ -4,8 +4,8 @@ import os
 area_x = 110.0
 area_z = 10.0
 
-nx = 60
-nz = 10
+nx = 20
+nz = 4
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -14,8 +14,8 @@ zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
 ######
 width_box = 10.0  # 躯体の幅(m)
-nx_box = 10  # 躯体の要素数（水平）
-nz_box = 5  # 躯体の要素数（鉛直）
+nx_box = 4  # 躯体の要素数（水平）
+nz_box = 2  # 躯体の要素数（鉛直）
 
 i0_box = (nx-nx_box)//2     # 躯体左端の要素位置
 i1_box = (nx+nx_box)//2-1   # 躯体右端の要素位置
