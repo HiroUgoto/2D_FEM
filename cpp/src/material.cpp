@@ -59,6 +59,28 @@ void Material::set_param() {
     this->rlambda = 2.0*nu/(1.0-2.0*nu) * this->rmu;
     this->rho = rho;
 
+  } else if (this->style == "nu_E_rho") {
+    double nu = this->param.at(0);
+    double E = this->param.at(1);
+    double rho = this->param.at(2);
+
+    this->rmu = E/2.0/(1.0+nu);
+    this->rlambda = 2.0*nu/(1.0-2.0*nu) * this->rmu;
+    this->rho = rho;
+
+  } else if (this->style == "spring_normal") {
+    this->kv = this->param.at(0);
+    this->kh = this->param.at(1);
+    double n0 = this->param.at(2);
+    double n1 = this->param.at(3);
+
+    double norm = sqrt(n0*n0+n1*n1);
+    n0 = n0/norm; n1 = n1/norm;
+
+    this->R = EM::Zero(2,2);
+    this->R(0,0) =  n0; this->R(0,1) = n1;
+    this->R(1,0) = -n1; this->R(1,1) = n0;
+    this->rho = 0.0;
   }
 }
 
@@ -90,6 +112,19 @@ EM Material::mk_d(const size_t dof) {
       D(4,4) = this->rmu;
 
     }
+
+    return D;
+  }
+
+// ------------------------------------------------------------------- //
+EM Material::mk_d_spring() {
+    EM D;
+
+    D = EM::Zero(4,4);
+    D(0,0) =  this->kv; D(2,0) = -this->kv;
+    D(0,2) = -this->kv; D(2,2) =  this->kv;
+    D(1,1) =  this->kh; D(3,1) = -this->kh;
+    D(1,3) = -this->kh; D(3,3) =  this->kh;
 
     return D;
   }

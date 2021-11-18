@@ -10,6 +10,7 @@ class Fem {
 
     std::vector<Node*> free_nodes_p, fixed_nodes_p;
     std::vector<Element*> connected_elements_p;
+    std::vector<Element*> spring_elements_p;
     std::vector<Element*> input_elements_p;
 
     size_t output_nnode, output_nelem;
@@ -17,7 +18,7 @@ class Fem {
     std::vector<Element*> output_elements_p;
 
   private:
-    double dt, inv_dt2;
+    double dt, inv_dt2, inv_dtdt;
 
   public:
     Fem (size_t dof, std::vector<Node> nodes,

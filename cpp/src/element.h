@@ -29,6 +29,9 @@ class Element {
     EV force;
     EV strain, stress;
 
+    EV f;
+    EM R;
+
     Element (size_t id, std::string style, int material_id, std::vector<size_t> inode);
     void print();
 

@@ -41,3 +41,23 @@ Eigen::VectorXd
 
     return wave;
   }
+
+// ------------------------------------------------------------------- //
+Eigen::VectorXd
+  input_wave::tapered_sin(const Eigen::VectorXd tim, const double fp, const double taper, const double duration, const double amp) {
+    size_t num = tim.size();
+    Eigen::VectorXd wave = input_wave::simple_sin(tim,fp,amp);
+    Eigen::VectorXd coeff = Eigen::VectorXd::Ones(num);
+
+    for (size_t i = 0 ; i < num ; i++ ){
+      if (tim(i) < taper) {
+        coeff(i) = tim(i) / taper;
+      } else if ((duration-taper < tim(i)) && (tim(i) <= duration)) {
+        coeff(i) = (duration-tim(i)) / taper;
+      } else if (duration < tim(i)) {
+        coeff(i) = 0.0;
+      }
+    }
+
+    return wave.array() * coeff.array();
+  }

@@ -26,9 +26,10 @@ void Node::print() {
 }
 
 void Node::set_initial_condition() {
-  this->u = EV::Zero(this->dof);
+  this->u  = EV::Zero(this->dof);
   this->um = EV::Zero(this->dof);
   this->v  = EV::Zero(this->dof);
+  this->a  = EV::Zero(this->dof);
 
   this->mass = EV::Zero(this->dof);
   this->c    = EV::Zero(this->dof);

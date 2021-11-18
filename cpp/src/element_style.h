@@ -73,3 +73,9 @@ class Connect: public Line_1d_2Node {
   public:
     Connect ();
 };
+
+// ----------------------------------------------------- //
+class Spring: public Line_1d_2Node {
+  public:
+    Spring ();
+};

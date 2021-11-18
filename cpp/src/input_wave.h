@@ -5,4 +5,6 @@ namespace input_wave {
     ricker(const Eigen::VectorXd tim, const double fp, const double tp, const double amp);
   Eigen::VectorXd
     simple_sin(const Eigen::VectorXd tim, const double fp, const double amp);
+  Eigen::VectorXd
+    tapered_sin(const Eigen::VectorXd tim, const double fp, const double taper, const double duration, const double amp);
 }
