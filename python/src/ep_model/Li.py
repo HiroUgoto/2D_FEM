@@ -7,7 +7,7 @@ import matplotlib.patches as patches
 import sys
 
 class Li2002:
-    # Defalt parameters are for Toyoura sand (Li2000)
+    # Defalt parameters are for Toyoura sand (Li2002)
     def __init__(self,G0=125,nu=0.25,M=1.25,c=0.75,eg=0.934,rlambdac=0.019,xi=0.7, \
                  d1=0.41,m=3.5,h1=3.15,h2=3.05,h3=2.2,n=1.1, \
                  d2=1,h4=3.5,a=1,b1=0.005,b2=2,b3=0.01):
@@ -684,7 +684,7 @@ if __name__ == "__main__":
 
     # -----------------
     phi = 30.0  # [deg]
-    c = 3.e3    # [kPa]
+    c = 3.e3    # [Pa]
 
     x = np.linspace(0,np.max(sigma1_list),100)
     y = c + x*np.tan(np.deg2rad(phi))
