@@ -74,6 +74,9 @@ void Fem::_set_mesh() {
       if (element.style.find("connect") != std::string::npos) {
         this->connected_elements_p.push_back(&element);
       }
+      if (element.style.find("spring") != std::string::npos) {
+        this->spring_elements_p.push_back(&element);
+      }
     }
   }
 
@@ -109,7 +112,6 @@ void Fem::_set_initial_matrix(){
           id++;
         }
       }
-
     }
   }
 
@@ -302,6 +304,7 @@ void Fem::update_init(const double dt) {
     }
     this->dt = dt;
     this->inv_dt2 = 1.0/(2.0*dt);
+    this->inv_dtdt = 1.0/(dt*dt);
   }
 
 // ------------------------------------------------------------------- //
@@ -433,6 +436,7 @@ void Fem::_update_time_set_free_nodes() {
                 + node_p->c_inv_mc[i]*node_p->um[i] - node_p->dtdt_inv_mc[i]*node_p->force[i];
       }
       node_p->v = (node_p->u - node_p->um) * this->inv_dt2;
+      node_p->a = (node_p->u - 2*u + node_p->um) * this->inv_dtdt;
       node_p->um = u;
     }
   }

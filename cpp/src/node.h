@@ -6,7 +6,7 @@ class Node {
     std::vector<double> xyz;
     std::vector<size_t> freedom;
 
-    EV u, um, v, u0;
+    EV u, um, v, a, u0;
     EV mass, c, k;
     EV force, static_force, dynamic_force;
 

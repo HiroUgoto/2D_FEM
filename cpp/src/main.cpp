@@ -25,23 +25,38 @@ int main() {
   fem.set_output(outputs);
 
   // ----- Define input wave ----- //
-  size_t fsamp = 5000;
-  double fp = 1.0;
-  double duration = 4.0/fp;
+  double vs0 = 300;
+  double rho0 = 1700;
+  double vs1 = 150;
+  double rho1 = 1700;
+  double h = 10;
+  
+  double fp = vs1/(4*h);
+  double R = (vs1*rho1)/(vs0*rho0);
+  double omega = 2*M_PI*fp;
+  double H = 2/sqrt(pow(cos(omega*h/vs1),2) + R*R*pow(sin(omega*h/vs1),2));
+  double amp = 0.3*9.8 / H;
+
+  std::cout << "Input frequency(Hz): " << fp << ", ";
+  std::cout << "Input amplitude(m/s2): " << amp << "\n";
+
+  // ----------------------------- //
+  size_t fsamp = 60000;
+  // double fp = 1.0;
+  double duration = 4.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
-  // wave_acc = input_wave::simple_sin(tim,fp,1.0);
-  wave_acc = input_wave::ricker(tim,fp,1.0/fp,1.0);
+  wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,4.0/fp,amp);
   size_t ntim = tim.size();
 
-  // std::ofstream f0(output_dir + "input.acc");
-  // for (size_t it = 0 ; it < ntim ; it++) {
-  //   f0 << tim(it) ;
-  //   f0 << " " << wave_acc(it) ;
-  //   f0 << "\n";
-  // }
-  // f0.close();
+  std::ofstream f0(output_dir + "input.acc");
+  for (size_t it = 0 ; it < ntim ; it++) {
+    f0 << tim(it) ;
+    f0 << " " << wave_acc(it) ;
+    f0 << "\n";
+  }
+  f0.close();
   // exit(1);
 
   // ----- Prepare time solver ----- //
@@ -49,8 +64,12 @@ int main() {
 
   EM output_dispx = EM::Zero(ntim,fem.output_nnode);
   EM output_dispz = EM::Zero(ntim,fem.output_nnode);
-  EM output_velx = EM::Zero(ntim,fem.output_nnode);
-  EM output_velz = EM::Zero(ntim,fem.output_nnode);
+  EM output_accx = EM::Zero(ntim,fem.output_nnode);
+  EM output_accz = EM::Zero(ntim,fem.output_nnode);
+
+  EM output_element_stress_xx = EM::Zero(ntim,fem.output_nelem);
+  EM output_element_stress_zz = EM::Zero(ntim,fem.output_nelem);
+  EM output_element_stress_xz = EM::Zero(ntim,fem.output_nelem);
 
   // ----- time iteration ----- //
   EV acc0 = EV::Zero(fem.dof);
@@ -60,21 +79,29 @@ int main() {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
 
-    // fem.update_time_input_MD(vel0);
-    fem.update_time_input_FD(vel0);
+    fem.update_time_input_MD(vel0);
+    // fem.update_time_input_FD(vel0);
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node* node_p = fem.output_nodes_p[i];
       output_dispx(it,i) = node_p->u(0);
       output_dispz(it,i) = node_p->u(1);
-      output_velx(it,i) = node_p->v(0);
-      output_velz(it,i) = node_p->v(1);
+      output_accx(it,i) = node_p->a(0) + acc0[0];
+      output_accz(it,i) = node_p->a(1);
     }
 
-    if (it%500 == 0) {
+    for (size_t i = 0 ; i < fem.output_nelem ; i++) {
+      Element* element_p = fem.output_elements_p[i];
+      output_element_stress_xx(it,i) = element_p->stress(0);
+      output_element_stress_zz(it,i) = element_p->stress(1);
+      output_element_stress_xz(it,i) = element_p->stress(2);
+    }
+
+    if (it%200 == 0) {
       std::cout << it << " t= " << it*dt << " ";
-      std::cout << output_dispx(it,5) << " ";
-      std::cout << output_dispz(it,3) << "\n";
+      std::cout << output_accx(it,0) << " ";
+      std::cout << output_element_stress_xx(it,0) << " ";
+      std::cout << output_element_stress_xx(it,1) << "\n";
     }
   }
 
@@ -82,16 +109,45 @@ int main() {
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
 
   // --- Write output file --- //
-  std::ofstream f(output_dir + "z0_vs00.disp");
+  std::ofstream fa(output_dir + "result.acc");
+  std::ofstream fd(output_dir + "result.disp");
   for (size_t it = 0 ; it < ntim ; it++) {
-    f << tim(it) ;
-    f << " " << output_dispx(it,5);
-    f << " " << output_dispz(it,3);
-    // for (size_t i = 0 ; i < fem.output_nnode ; i++) {
-    //   f << " " << output_dispz(it,i);
-    // }
-    f << "\n";
+    fa << tim(it) ;
+    fa << " " << output_accx(it,0);
+    fa << "\n";
+
+    fd << tim(it) ;
+    fd << " " << output_dispx(it,0);
+    fd << " " << output_dispx(it,int(fem.output_nnode/2));
+    fd << "\n";
+  }
+  fa.close();
+  fd.close();
+
+  std::ofstream f(output_dir + "output_element_list.dat");
+  for (size_t i = 0 ; i < fem.output_nelem ; i++) {
+    Element* element_p = fem.output_elements_p[i];
+    f << element_p->xnT(0,8) << " " << element_p->xnT(1,8) << "\n";
   }
   f.close();
 
+  std::ofstream fxx(output_dir + "output_element.stress_xx");
+  std::ofstream fzz(output_dir + "output_element.stress_zz");
+  std::ofstream fxz(output_dir + "output_element.stress_xz");
+  for (size_t it = 0 ; it < ntim ; it++) {
+    fxx << tim(it) ;
+    fzz << tim(it) ;
+    fxz << tim(it) ;
+    for (size_t i = 0 ; i < fem.output_nelem ; i++) {
+      fxx << " " << output_element_stress_xx(it,i);
+      fzz << " " << output_element_stress_zz(it,i);
+      fxz << " " << output_element_stress_xz(it,i);
+    }
+    fxx << "\n";
+    fzz << "\n";
+    fxz << "\n";
+  }
+  fxx.close();
+  fzz.close();
+  fxz.close();
 }

@@ -171,7 +171,26 @@ void Element::mk_local_matrix() {
         this->C_off_diag = this->C_diag.asDiagonal();
         this->C_off_diag = (this->C) - (this->C_off_diag);
       }
-    }
+
+    } else if (this->dim == 0) {
+      if (this->style.find("spring") != std::string::npos) {
+        this->f = EV::Zero(this->dof);
+
+        this->De = this->material.mk_d_spring();
+        this->R = EM::Zero(this->ndof,this->ndof);
+        for (size_t i = 0 ; i < 2 ; i++){
+          for (size_t j = 0 ; j < 2 ; j++){
+            this->R(i,j) = this->material.R(i,j);
+            this->R(i+2,j+2) = this->material.R(i,j);
+          }
+        }
+
+        this->K = this->R.transpose() * this->De * this->R;
+        this->K_diag = this->K.diagonal();
+        this->K_off_diag = this->K_diag.asDiagonal();
+        this->K_off_diag = (this->K) - (this->K_off_diag);
+      }
+    } 
   }
 
 // ------------------------------------------------------------------- //

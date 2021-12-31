@@ -1,5 +1,5 @@
 import numpy as np
-from concurrent import futures
+import concurrent.futures
 
 class Fem():
     def __init__(self,dof,nodes,elements,materials):
@@ -16,7 +16,6 @@ class Fem():
 
         self.input_elements = []
         self.connected_elements = []
-        self.slider_elements = []
         self.spring_elements = []
 
         self.e_elements = []
@@ -63,8 +62,6 @@ class Fem():
                 self.input_elements += [element]
             if "connect" in element.style:
                 self.connected_elements += [element]
-            if "slider" in element.style:
-                self.slider_elements += [element]
             if "spring" in element.style:
                 self.spring_elements += [element]
 
@@ -90,7 +87,6 @@ class Fem():
         self.element_set = set(self.elements)
         self.input_element_set = set(self.input_elements)
         self.connected_element_set = set(self.connected_elements)
-        self.slider_element_set = set(self.slider_elements)
 
         self.e_element_set = set(self.e_elements)
         self.ep_element_set = set(self.ep_elements)
@@ -360,17 +356,33 @@ class Fem():
             for element in self.ep_element_set:
                 element.mk_ep_B_stress()
 
-        for node in self.free_node_set:
-            self._update_time_set_free_nodes(node)
-        for node in self.fixed_node_set:
-            self._update_time_set_fixed_nodes(node)
+        # self._multi_update_time_set_nodes_all()
+        self._update_time_set_nodes_all()
 
         for element in self.connected_element_set:
             self._update_time_set_connected_elements_(element)
         for element in self.spring_elements:
             self._update_time_set_spring_elements_(element)
-        for element in self.slider_element_set:
-            self._update_time_set_slider_elements_(element)
+
+        for element in self.output_element_set:
+            element.calc_stress()
+
+    # ======================================================================= #
+    def update_time_input(self,vel0):
+        for node in self.node_set:
+            node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+            node.force = np.zeros(self.dof,dtype=np.float64)
+
+        for element in self.input_element_set:
+            self._update_time_input_wave(element,vel0)
+
+        self._update_mk_internal_force()
+        self._update_time_set_nodes_all()
+
+        for element in self.connected_element_set:
+            self._update_time_set_connected_elements_(element)
+        for element in self.spring_elements:
+            self._update_time_set_spring_elements_(element)
 
         for element in self.output_e_element_set:
             element.calc_stress()
@@ -392,6 +404,16 @@ class Fem():
         for i in range(element.nnode):
             i0 = self.dof*i
             element.nodes[i].force[:] -= element.force[i0:i0+self.dof]
+
+    def _update_mk_internal_force(self):
+        for element in self.elements:
+            element.mk_ku_cv()
+
+    def _update_time_set_nodes_all(self):
+        for node in self.free_nodes:
+            self._update_time_set_free_nodes(node)
+        for node in self.fixed_node_set:
+            self._update_time_set_fixed_nodes(node)
 
     def _update_time_set_free_nodes(self,node):
         u = np.copy(node.u)
@@ -426,18 +448,18 @@ class Fem():
         element.f[0] = element.material.kv*(u[0]-u[2])
         element.f[1] = element.material.kh*(u[1]-u[3])
 
-    def _update_time_set_slider_elements_(self,element):
-        u0_m = element.nodes[0].u[:] - 2.*self.dt*element.nodes[0].v[:]
-        u1_m = element.nodes[1].u[:] - 2.*self.dt*element.nodes[1].v[:]
+    # ---------------------------------------
+    def _multi_update_mk_internal_force(self):
+        def mk_ku_cv(element):
+            element.mk_ku_cv()
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            executor.map(mk_ku_cv,self.elements)
 
-        u0 = element.R @ element.nodes[0].u[:]
-        u1 = element.R @ element.nodes[1].u[:]
-
-        uc = 0.5*(u0[0]+u1[0])
-        u0[0],u1[0] = uc,uc
-
-        element.nodes[0].u[:] = element.R.T @ u0
-        element.nodes[1].u[:] = element.R.T @ u1
+    def _multi_update_time_set_nodes_all(self):
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            executor.map(self._update_time_set_free_nodes,self.free_nodes)
+        for node in self.fixed_node_set:
+            self._update_time_set_fixed_nodes(node)
 
     # ======================================================================= #
     def print_all(self):

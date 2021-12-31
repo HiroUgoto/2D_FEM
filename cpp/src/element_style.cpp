@@ -24,6 +24,8 @@ ElementStyle* set_element_style(const std::string style) {
     es_p = new Input_1d_3Node();
   } else if (style == "connect") {
     es_p = new Connect();
+  } else if (style == "spring") {
+    es_p = new Spring();
   } else {
     es_p = new ElementStyle();
   }
@@ -335,6 +337,14 @@ EM Line_1d_3Node::shape_function_dn (double xi, double zeta) {
 
 // ----------------------------------------------------- //
 Connect::Connect () {
+  this->dim = 0;
+  this->ng = 1;
+  this->xi = EV::Zero(1);
+  this->w  = EV::Zero(1);
+}
+
+// ----------------------------------------------------- //
+Spring::Spring () {
   this->dim = 0;
   this->ng = 1;
   this->xi = EV::Zero(1);

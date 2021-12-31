@@ -7,7 +7,9 @@ class Material {
     std::string style;
     std::vector<double> param;
     double rmu, rlambda, rho;
- 
+    double kv, kh;
+    EM R;
+
     Material();
     Material(size_t id, std::string style, std::vector<double> param);
 
@@ -19,6 +21,7 @@ class Material {
 
   public:
     EM mk_d(const size_t dof);
+    EM mk_d_spring();
     EM mk_visco(const size_t dof);
     EM mk_imp(const size_t dof);
 };
