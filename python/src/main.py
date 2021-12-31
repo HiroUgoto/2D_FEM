@@ -39,7 +39,7 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 fem.set_ep_initial_state()
 
 ## --- Define input wave --- ##
-fsamp = 15000
+fsamp = 40000
 # duration = 14.0/fp + 1.0/fp
 duration = 3.0/fp + 1.0/fp
 
@@ -82,7 +82,7 @@ for it in range(ntim):
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
 
     if it%10 == 0:
-        plot_model.plot_mesh_update(ax,fem,100.)
+        plot_model.plot_mesh_update(ax,fem,200.)
         print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0])
 
 elapsed_time = time.time() - start

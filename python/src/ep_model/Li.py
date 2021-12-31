@@ -240,7 +240,7 @@ class Li2002:
                 self.H1 = sp.R_bar/sp.g_bar
                 sp.rho1_ratio = 1.0
             else:
-                t = scipy.optimize.brentq(F1_boundary_surface,1.0,1.e6,args=(sp.rij,self.alpha))
+                t = scipy.optimize.brenth(F1_boundary_surface,1.0,1.e10,args=(sp.rij,self.alpha))
                 sp.rij_bar,sp.R_bar,sp.g_bar = mapping_r(t,sp.rij,self.alpha)
                 sp.rho1_ratio = np.copy(t)      # rho1_ratio = rho1_bar / rho1
 
