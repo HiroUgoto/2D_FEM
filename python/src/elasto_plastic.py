@@ -176,6 +176,31 @@ class EP:
         # print("stress: ",FEMstress)
 
     # -------------------------------------------------------------------------------------- #
+    def set_Dp_matrix(self,FEMdstrain):
+        dstrain = self.FEMstrain_to_matrix(FEMdstrain)
+
+        dstress_vec = np.zeros(6,dtype=np.float64)
+        dstress_input = self.vector_to_matrix(dstress_vec)
+
+        sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input)
+        ef1,ef2 = self.model.check_unload(sp0)
+
+        sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,ef1=ef1,ef2=ef2)
+        Ep = self.model.plastic_stiffness(sp)
+
+        dstrain,dstress = \
+            self.model.solve_strain_with_consttain(dstrain,dstress_input,Ep,self.deformation)
+
+        ev,gamma = self.model.set_strain_variable(self.strain)
+        self.e = self.e0 - ev*(1+self.e0)
+
+        self.strain += dstrain
+        self.stress += dstress
+
+        Dp = self.modulus_to_Dmatrix(Ep)
+        return Dp, self.matrix_to_FEMstress(self.stress)
+
+    # -------------------------------------------------------------------------------------- #
     def strain_to_stress(self,FEMdstrain):
         dstrain = self.FEMstrain_to_matrix(FEMdstrain)
 
@@ -196,7 +221,6 @@ class EP:
 
         # p_stress,_ = np.linalg.eig(self.stress)
         # print(np.min(p_stress),np.max(p_stress))
-        # print(gamma,R,ev,p)
 
         return self.matrix_to_FEMstress(self.stress)
 

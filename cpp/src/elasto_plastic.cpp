@@ -1,5 +1,6 @@
 #include "all.h"
 #include <Eigen/Core>
+#include <unsupported/Eigen/CXX11/Tensor>
 #include "elasto_plastic.h"
 #include "ep_model.h"
 
@@ -92,6 +93,22 @@ EV EP::matrix_to_FEMstress(EM stress) {
     FEMstress(3) = stress_vec(3); FEMstress(4) = stress_vec(4);
   }
   return FEMstress;
+}
+
+// ------------------------------------------------------------------- //
+EM EP::modulus_to_Dmatrix(Eigen::Tensor<double,4> E) {
+  EM D;
+  if (this->dof == 1) {
+    D = EM::Zero(2,2);
+    D(0,0) = E(0,1,0,1); D(0,1) = E(0,1,1,2);
+    D(1,0) = E(1,2,0,1); D(1,1) = E(1,2,1,2);
+  } else if (this->dof == 2) {
+    D = EM::Zero(3,3);
+    D(0,0) = E(0,0,0,0); D(0,1) = E(0,0,2,2); D(0,2) = E(0,0,2,0);
+    D(1,0) = E(2,2,0,0); D(1,1) = E(2,2,2,2); D(1,2) = E(2,2,2,0);
+    D(2,0) = E(2,0,0,0); D(2,1) = E(2,0,2,2); D(2,2) = E(2,0,2,0);
+  }
+  return D;
 }
 
 // ------------------------------------------------------------------- //

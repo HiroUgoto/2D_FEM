@@ -60,6 +60,7 @@ class Li2002: public EP {
     void clear_strain();
 
     void initial_state(EV init_stress);
+    std::tuple<EM, EV> set_Dp_matrix(EV FEMdstrain);
     EV strain_to_stress(EV FEMdstrain);
 
     void isotropic_compression(const double e, const double compression_stress);

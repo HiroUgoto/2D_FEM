@@ -1,3 +1,5 @@
+#include <unsupported/Eigen/CXX11/Tensor>
+
 using EV = Eigen::VectorXd ;
 using EM = Eigen::MatrixXd ;
 using EM2 = Eigen::Matrix2d ;
@@ -19,6 +21,7 @@ class EP {
     EM FEMstrain_to_matrix(EV FEMstrain);
 
     EV matrix_to_FEMstress(EM stress);
+    EM modulus_to_Dmatrix(Eigen::Tensor<double,4> E);
 
     EM vector_to_matrix(EV vec);
     EV matrix_to_vector(EM mat);
@@ -29,6 +32,7 @@ class EP {
     virtual std::tuple<double, double> elastic_modulus(const double e, const double p) = 0;
     virtual std::tuple<double, double> elastic_modulus_lame() = 0;
     virtual void initial_state(EV init_stress) = 0;
+    virtual std::tuple<EM, EV> set_Dp_matrix(EV FEMdstrain) = 0;
     virtual EV strain_to_stress(EV FEMdstrain) = 0;
 };
 

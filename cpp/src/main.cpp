@@ -46,13 +46,14 @@ int main() {
   fem.set_ep_initial_state();
 
   // ----------------------------- //
-  size_t fsamp = 10000;
-  // double duration = 14.0/fp + 1.0/fp;
-  double duration = 3.0/fp + 1.0/fp;
+  size_t fsamp = 5000;
+  double duration = 14.0/fp + 1.0/fp;
+  // double duration = 3.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
-  wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,4.0/fp,amp);
+  // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp);
+  wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
   size_t ntim = tim.size();
 
   std::ofstream f0(output_dir + "input.acc");

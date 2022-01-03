@@ -4,8 +4,8 @@ import os,sys
 area_x = 30.0
 area_z = 10.0
 
-nx = 3
-nz = 2
+nx = 6
+nz = 4
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -14,8 +14,8 @@ zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 
 ######
 width_box = 10.0  # 躯体の幅(m)
-nx_box = 1  # 躯体の要素数（水平）
-nz_box = 1  # 躯体の要素数（鉛直）
+nx_box = 2  # 躯体の要素数（水平）
+nz_box = 2  # 躯体の要素数（鉛直）
 
 i0_box = (nx-nx_box)//2     # 躯体左端の要素位置
 i1_box = (nx+nx_box)//2-1   # 躯体右端の要素位置
@@ -156,8 +156,8 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-# material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0*0.5)]
-material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0*0.5)]
+# material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0)]
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
 material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
                                                      # rho, nu, G0, M, e0, eg, d1

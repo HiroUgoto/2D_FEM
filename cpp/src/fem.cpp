@@ -120,9 +120,9 @@ void Fem::_set_initial_matrix(){
       }
     }
 
-    for (auto& element_p : this->ep_elements_p) {
-      element_p->ep_init_all();
-    }
+    // for (auto& element_p : this->ep_elements_p) {
+    //   element_p->ep_init_all();
+    // }
   }
 
 // ------------------------------------------------------------------- //

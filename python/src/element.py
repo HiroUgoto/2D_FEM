@@ -315,8 +315,7 @@ class Element:
 
     # ---------------------------------------------------------
     def ep_init_all(self):
-        for gp in self.gauss_points:
-            gp.ep = elasto_plastic.EP(self.dof,self.material.style,self.material.param)
+        pass
 
     def ep_init_calc_stress_all(self):
         for gp in self.gauss_points:
@@ -324,31 +323,34 @@ class Element:
             B = mk_b(self.dof,self.nnode,dnj)
             gp.strain = B @ np.hstack(self.u)
             gp.stress = self.De @ gp.strain
-            gp.ep.initial_state(gp.stress)
 
     def calc_ep_stress(self):
-        dn = self.estyle.shape_function_dn(0.0,0.0)
-        _,dnj = mk_dnj(self.xnT,dn)
-        B = mk_b(self.dof,self.nnode,dnj)
-        strain = B @ np.hstack(self.u)
-        dstrain = strain - self.strain
-        self.stress = self.ep.strain_to_stress(dstrain)
-        self.strain = np.copy(strain)
+        pass
 
     def mk_ep_B_stress(self):
         if self.dim == 2:
             force = np.zeros(self.ndof,dtype=np.float64)
+
+            dn = self.estyle.shape_function_dn(0.0,0.0)
+            _,dnj = mk_dnj(self.xnT,dn)
+            B = mk_b(self.dof,self.nnode,dnj)
+            strain = B @ np.hstack(self.u)
+            dstrain = strain - self.strain
+            Dp,self.stress = self.ep.set_Dp_matrix(dstrain)
+            self.strain = np.copy(strain)
 
             for gp in self.gauss_points:
                 det,dnj = mk_dnj(self.xnT,gp.dn)
                 B = mk_b(self.dof,self.nnode,dnj)
                 strain = B @ np.hstack(self.u)
                 dstrain = strain - gp.strain
-                gp.stress = gp.ep.strain_to_stress(dstrain)
+                dstress = Dp @ dstrain
+                gp.stress += dstress
                 gp.strain = np.copy(strain)
 
                 detJ = gp.w*det
                 force += B.T @ gp.stress * detJ
+                # print(gp.stress)
 
             for i in range(self.nnode):
                 i0 = self.dof*i

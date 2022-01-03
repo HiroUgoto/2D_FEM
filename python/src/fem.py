@@ -111,8 +111,8 @@ class Fem():
                     node.static_force[i] += element.force[id]
                     id += 1
 
-        for element in self.ep_elements:
-            element.ep_init_all()
+        # for element in self.ep_elements:
+        #     element.ep_init_all()
 
     # ======================================================================= #
     def set_output(self,outputs):
@@ -361,7 +361,7 @@ class Fem():
         else:
             for element in self.e_element_set:
                 element.mk_ku_cv()
-            for element in self.ep_element_set:
+            for element in self.ep_elements:
                 element.mk_ep_B_stress()
 
         # self._multi_update_time_set_nodes_all()

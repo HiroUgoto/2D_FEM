@@ -138,6 +138,31 @@ void Li2002::initial_state(EV init_stress) {
 }
 
 // ------------------------------------------------------------------- //
+std::tuple<EM, EV> Li2002::set_Dp_matrix(EV FEMdstrain) {
+  EM dstrain = this->FEMstrain_to_matrix(FEMdstrain);
+  EM dstress_input = EM::Zero(3,3);
+
+  StateParameters sp0(this->strain,this->stress,dstrain,dstress_input,false,false);
+  auto [ef1, ef2] = this->check_unload(sp0);
+
+  StateParameters sp(this->strain,this->stress,dstrain,dstress_input,ef1,ef2);
+  Eigen::Tensor<double,4> Ep = this->plastic_stiffness(sp);
+
+  EM dstress = this->solve_stress(dstrain,Ep);
+
+  auto [ev, gamma] = this->set_strain_variable(this->strain);
+  this->e = this->e0 - ev*(1.0+this->e0);
+
+  this->stress += dstress;
+  this->strain += dstrain;
+
+  EM Dp = this->modulus_to_Dmatrix(Ep);
+  EV FEMstress = this->matrix_to_FEMstress(this->stress);
+  return {Dp, FEMstress};
+
+}
+
+// ------------------------------------------------------------------- //
 EV Li2002::strain_to_stress(EV FEMdstrain) {
   EM dstrain = this->FEMstrain_to_matrix(FEMdstrain);
   EM dstress_input = EM::Zero(3,3);
