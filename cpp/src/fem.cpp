@@ -3,6 +3,8 @@
 #include "node.h"
 #include "material.h"
 #include "element_style.h"
+#include "elasto_plastic.h"
+#include "ep_model.h"
 #include "element.h"
 #include "fem.h"
 
@@ -34,7 +36,6 @@ void Fem::set_init() {
 // ----------------------------- //
 void Fem::_set_mesh() {
     for (auto& element : this->elements) {
-
       std::vector<Node*> nodes_p(element.nnode);
       for (size_t i = 0 ; i < element.nnode ; i++ ){
         size_t inode = element.inode[i];
@@ -49,9 +50,7 @@ void Fem::_set_mesh() {
             }
           }
         }
-
       }
-
       element.set_nodes(nodes_p);
 
       Material* material_p = nullptr;
@@ -65,8 +64,15 @@ void Fem::_set_mesh() {
           }
         }
       }
+      element.set_material(this->dof,material_p);
 
-      element.set_material(material_p);
+      if (material_p != nullptr) {
+        if (material_p->style.find("ep_") != std::string::npos) {
+          this->ep_elements_p.push_back(&element);
+        } else {
+          this->e_elements_p.push_back(&element);
+        }
+      }
 
       if (element.style.find("input") != std::string::npos) {
         this->input_elements_p.push_back(&element);
@@ -113,6 +119,10 @@ void Fem::_set_initial_matrix(){
         }
       }
     }
+
+    for (auto& element_p : this->ep_elements_p) {
+      element_p->ep_init_all();
+    }
   }
 
 // ------------------------------------------------------------------- //
@@ -130,6 +140,12 @@ void Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> output
     for (size_t ielem = 0 ; ielem < this->output_nelem ; ielem++) {
       size_t id = output_element_list[ielem];
       this->output_elements_p.push_back(&this->elements[id]);
+
+      if (this->elements[id].material.style.find("ep_") != std::string::npos) {
+        this->output_ep_elements_p.push_back(&this->elements[id]);
+      } else {
+        this->output_e_elements_p.push_back(&this->elements[id]);
+      }
     }
   }
 
@@ -206,7 +222,6 @@ void Fem::_self_gravity_cg(const bool full) {
       node._up = node._ur;
     }
 
-
     // --- CG iterations --- //
     for (size_t it=0 ; it < 10*this->nnode ; it++) {
       double rr, rr1, py, alpha, beta;
@@ -282,6 +297,11 @@ void Fem::_self_gravity_cg(const bool full) {
         }
       }
 
+      // std::cout << " (self gravity process .. ) " << it << " " ;
+      // std::cout << this->nodes[0].u[1] << " ";
+      // std::cout << rr1 << "\n";
+      // exit(1);
+
       if (it%100 == 0){
         std::cout << " (self gravity process .. ) " << it << " " ;
         std::cout << this->nodes[0].u[1] << " ";
@@ -290,6 +310,49 @@ void Fem::_self_gravity_cg(const bool full) {
     }
 
   }
+// ------------------------------------------------------------------- //
+// ------------------------------------------------------------------- //
+void Fem::set_ep_initial_state() {
+  double u0 = this->nodes[0].u[1];
+  for (size_t i = 0 ; i < 20 ; i++) {
+    this->self_gravity();
+    for (auto& element_p : this->ep_elements_p) {
+      element_p->calc_stress();
+      element_p->ep_p->initial_state(element_p->stress);
+      auto [rmu,rlambda] = element_p->ep_p->elastic_modulus_lame();
+      element_p->material.rmu = rmu;
+      element_p->material.rlambda = rlambda;
+      // std::cout << std::sqrt(element_p->material.rmu/element_p->rho) << " ";
+      // std::cout << element_p->stress << std::endl;
+    }
+
+    this->_set_ep_initial_state_node_clear();
+    this->_set_initial_matrix();
+    // std::cout << this->nodes[0].u[1] << std::endl;
+
+    if (std::pow(u0 - this->nodes[0].u[1],2) < 1.e-10) {
+      break;
+    } else {
+      u0 = this->nodes[0].u[1];
+    }
+  }
+
+  for (auto& element_p : this->ep_elements_p) {
+    element_p->ep_init_calc_stress_all();
+  }
+}
+
+// ------------------------------------------------------------------- //
+void Fem::_set_ep_initial_state_node_clear() {
+  for (auto& node : this->nodes) {
+    node.mass = EV::Zero(this->dof);
+    node.c    = EV::Zero(this->dof);
+    node.k    = EV::Zero(this->dof);
+    node.force = EV::Zero(this->dof);
+    node.static_force = EV::Zero(this->dof);
+    node.dynamic_force = EV::Zero(this->dof);
+  }
+}
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
@@ -427,6 +490,35 @@ void Fem::update_time_input_MD(const EV vel0) {
   }
 
 // ------------------------------------------------------------------- //
+void Fem::update_time_input_MD_gravity(const EV vel0) {
+    for (auto& node : this->nodes) {
+      node.force = -node.static_force;
+    }
+
+    for (auto& element_p : this->input_elements_p) {
+      element_p->update_inputwave(vel0);
+    }
+
+    for (auto& element_p : this->e_elements_p) {
+      element_p->mk_ku_cv();
+    }
+    for (auto& element_p : this->ep_elements_p) {
+      element_p->mk_ep_B_stress();
+    }
+
+    this->_update_time_set_free_nodes();
+    this->_update_time_set_fixed_nodes();
+    this->_update_time_set_connected_elements();
+
+    for (auto& element_p : this->output_e_elements_p) {
+      element_p->calc_stress();
+    }
+    for (auto& element_p : this->output_ep_elements_p) {
+      element_p->calc_ep_stress();
+    }
+  }
+
+// ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void Fem::_update_time_set_free_nodes() {
     for (auto& node_p : this->free_nodes_p) {
@@ -460,11 +552,14 @@ void Fem::_update_time_set_fixed_nodes() {
 void Fem::_update_time_set_connected_elements() {
     for (auto& element_p : this->connected_elements_p) {
       EV u = EV::Zero(element_p->dof);
+      EV a = EV::Zero(element_p->dof);
       for (size_t inode = 0 ; inode < element_p->nnode ; inode++) {
         u += element_p->nodes_p[inode]->u;
+        a += element_p->nodes_p[inode]->a;
       }
       for (size_t inode = 0 ; inode < element_p->nnode ; inode++) {
         element_p->nodes_p[inode]->u = u/element_p->nnode;
+        element_p->nodes_p[inode]->a = a/element_p->nnode;
       }
     }
   }

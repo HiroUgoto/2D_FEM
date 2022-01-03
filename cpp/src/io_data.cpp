@@ -3,6 +3,8 @@
 #include "node.h"
 #include "material.h"
 #include "element_style.h"
+#include "elasto_plastic.h"
+#include "ep_model.h"
 #include "element.h"
 #include "fem.h"
 #include "io_data.h"

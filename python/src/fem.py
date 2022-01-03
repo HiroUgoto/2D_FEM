@@ -1,5 +1,6 @@
 import numpy as np
 import concurrent.futures
+import sys
 
 class Fem():
     def __init__(self,dof,nodes,elements,materials):
@@ -94,7 +95,8 @@ class Fem():
 
     # ---------------------------------------
     def _set_initial_matrix(self):
-        for element in self.element_set:
+        # for element in self.element_set:
+        for element in self.elements:
             element.set_xn()
             element.mk_local_matrix_init(self.dof)
             element.mk_local_matrix()
@@ -215,6 +217,7 @@ class Fem():
                 for node in element.node_set:
                     node._uy = np.zeros(element.nodes[0].dof,dtype=np.float64)
 
+
             ## alpha = rr/py
             rr,py = 0.0,0.0
             for node in self.node_set:
@@ -234,7 +237,7 @@ class Fem():
                 rr1 += node._ur @ node._ur
 
             if rr1 < 1.e-10:
-                # print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
+                print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
                 break
 
             ## p = r + beta*p
@@ -246,6 +249,9 @@ class Fem():
                     else:
                         node._up[i] = node._ur[i] + beta*node._up[i]
 
+            # print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
+            # sys.exit()
+            #
             if it%100 == 0:
                 print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
 
@@ -254,6 +260,7 @@ class Fem():
         u0 = self.nodes[0].u[1]
         for i in range(20):
             self.self_gravity()
+
             for element in self.ep_elements:
                 element.calc_stress()
                 element.ep.initial_state(element.stress)
@@ -262,6 +269,7 @@ class Fem():
 
             self._set_ep_initial_state_node_clear()
             self._set_initial_matrix()
+            # print(self.nodes[0].u[1])
 
             if (u0 - self.nodes[0].u[1])**2 < 1.e-10:
                 break
@@ -364,8 +372,10 @@ class Fem():
         for element in self.spring_elements:
             self._update_time_set_spring_elements_(element)
 
-        for element in self.output_element_set:
+        for element in self.output_e_element_set:
             element.calc_stress()
+        for element in self.output_ep_element_set:
+            element.calc_ep_stress()
 
     # ======================================================================= #
     def update_time_input(self,vel0):

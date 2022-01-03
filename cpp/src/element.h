@@ -21,7 +21,10 @@ class Element {
     std::vector<EV> n_list;
     std::vector<EM> dn_list;
     std::vector<double> w_list;
+    std::vector<EP*> ep_list;
+    std::vector<EV> strain_list, stress_list;
     EM dn_center;
+    EP* ep_p;
 
     EV M_diag, K_diag, C_diag;
     EM K, K_off_diag, C, C_off_diag;
@@ -40,7 +43,7 @@ class Element {
 
   public:
     void set_nodes(std::vector<Node*> nodes_p);
-    void set_material(Material* material_p);
+    void set_material(double dof, Material* material_p);
     void set_pointer_list();
     void set_xn();
 
@@ -67,6 +70,11 @@ class Element {
     void mk_bodyforce(const EV acc0);
     void update_inputwave(const EV vel0);
     void calc_stress();
+
+    void ep_init_all();
+    void ep_init_calc_stress_all();
+    void calc_ep_stress();
+    void mk_ep_B_stress();
 };
 
 EM mk_m(const EM N);

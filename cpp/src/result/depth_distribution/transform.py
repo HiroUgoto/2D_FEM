@@ -1,7 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-nelem = 40
+# nelem = 40
+nelem = 2
 nnode = nelem
 
 dz = 10.0/nelem

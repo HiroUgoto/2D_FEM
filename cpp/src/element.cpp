@@ -3,6 +3,8 @@
 #include "node.h"
 #include "material.h"
 #include "element_style.h"
+#include "elasto_plastic.h"
+#include "ep_model.h"
 #include "element.h"
 
 using EV = Eigen::VectorXd ;
@@ -55,7 +57,7 @@ void Element::set_nodes(std::vector<Node*> nodes_p) {
     this->nodes_p = nodes_p;
   }
 
-void Element::set_material(Material* material_p) {
+void Element::set_material(double dof, Material* material_p) {
     if (material_p == nullptr) {
       this->rho = 0.0;
     } else {
@@ -65,6 +67,14 @@ void Element::set_material(Material* material_p) {
 
       this->material.set_init(id,style,param);
       this->rho = this->material.rho;
+
+      if (material_p->style.find("ep_") != std::string::npos) {
+        this->ep_p = set_ep_style(dof,this->material.style,this->material.param_ep);
+        double p = this->gravity * this->rho;
+        auto [G0,K0] = this->ep_p->elastic_modulus(this->ep_p->e0,p);
+        this->material.rmu = G0;
+        this->material.rlambda = K0-G0*2/3;
+      }
     }
   }
 
@@ -190,7 +200,7 @@ void Element::mk_local_matrix() {
         this->K_off_diag = this->K_diag.asDiagonal();
         this->K_off_diag = (this->K) - (this->K_off_diag);
       }
-    } 
+    }
   }
 
 // ------------------------------------------------------------------- //
@@ -294,7 +304,6 @@ void Element::mk_local_update() {
 // ------------------------------------------------------------------- //
 void Element::mk_ku() {
     EV u, ku;
-
     u = this->mk_u_hstack();
     ku = this->K * u;
 
@@ -506,6 +515,71 @@ void Element::calc_stress() {
     this->stress = this->De * this->strain;
   }
 
+// ------------------------------------------------------------------- //
+void Element::ep_init_all() {
+  for (size_t i = 0 ; i < this->ng_all ; i++){
+    EP* ep_p = set_ep_style(this->dof,this->material.style,this->material.param_ep);
+    this->ep_list.push_back(ep_p);
+  }
+}
+
+void Element::ep_init_calc_stress_all() {
+  EV u = this->mk_u_hstack();
+  for (size_t i = 0 ; i < this->ng_all ; i++){
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
+    EM B = mk_b(this->dof, this->nnode, dnj);
+    EV strain = B * u;
+    EV stress = this->De * strain;
+    this->ep_list[i]->initial_state(stress);
+    this->strain_list.push_back(strain);
+    this->stress_list.push_back(stress);
+  }
+  auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+  EM B = mk_b(this->dof, this->nnode, dnj);
+  EV strain = B * u;
+  EV stress = this->De * strain;
+  this->ep_p->initial_state(stress);
+  this->stress = stress;
+  this->strain = strain;
+}
+
+void Element::calc_ep_stress() {
+  auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+  EM B = mk_b(this->dof, this->nnode, dnj);
+  EV u = this->mk_u_hstack();
+  EV strain = B * u;
+  EV dstrain = strain - this->strain;
+  this->stress = this->ep_p->strain_to_stress(dstrain);
+  this->strain = strain;
+}
+
+void Element::mk_ep_B_stress() {
+  if (this->dim == 2) {
+    EV force = EV::Zero(this->ndof);
+    EM u = this->mk_u_hstack();
+
+    for (size_t i = 0 ; i < this->ng_all ; i++){
+      auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
+      EM B = mk_b(this->dof, this->nnode, dnj);
+      EV strain = B * u;
+      EV dstrain = strain - this->strain_list[i];
+      EV stress = this->ep_list[i]->strain_to_stress(dstrain);
+
+      this->strain_list[i] = strain;
+      this->stress_list[i] = stress;
+
+      double detJ = det * this->w_list[i];
+      force += B.transpose() * stress * detJ;
+    }
+
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += force(i0+i);
+      }
+    }
+  }
+}
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //

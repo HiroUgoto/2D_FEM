@@ -226,6 +226,26 @@ class Li2002:
             rij_bar,R_bar,g_bar = mapping_r(t,rij,alpha)
             return R_bar-self.H1*g_bar,rij_bar,R_bar,g_bar
 
+        def find_rho1_ratio(rij,alpha):
+            if np.abs(F1_boundary_surface(1.0,rij,alpha)) < 1.e-8:
+                return 1.0
+            t0,t1 = 0.99,1.e2
+            F1_t0 = F1_boundary_surface(t0,rij,alpha)
+            F1_t1 = F1_boundary_surface(t1,rij,alpha)
+            for itr in range(10):
+                if F1_t0*F1_t1 >= 0.0:
+                    t1 = 10*t1
+                    F1_t1 = F1_boundary_surface(t1,rij,alpha)
+                else:
+                    break
+            try:
+                t = scipy.optimize.brenth(F1_boundary_surface,t0,t1,args=(rij,alpha))
+            except ValueError:
+                print(t0,t1,F1_t0,F1_t1)
+                sys.exit()
+
+            return t
+
         if sp.elastic_flag1:
             self.alpha = np.copy(sp.rij)
         if sp.elastic_flag2:
@@ -240,7 +260,7 @@ class Li2002:
                 self.H1 = sp.R_bar/sp.g_bar
                 sp.rho1_ratio = 1.0
             else:
-                t = scipy.optimize.brenth(F1_boundary_surface,1.0,1.e10,args=(sp.rij,self.alpha))
+                t = find_rho1_ratio(sp.rij,self.alpha)
                 sp.rij_bar,sp.R_bar,sp.g_bar = mapping_r(t,sp.rij,self.alpha)
                 sp.rho1_ratio = np.copy(t)      # rho1_ratio = rho1_bar / rho1
 

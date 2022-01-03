@@ -81,6 +81,13 @@ void Material::set_param() {
     this->R(0,0) =  n0; this->R(0,1) = n1;
     this->R(1,0) = -n1; this->R(1,1) = n0;
     this->rho = 0.0;
+
+  } else if (this->style == "ep_Li") {
+    this->rho = param.at(0);
+    for (size_t i=1; i < this->param.size(); i++) {
+      this->param_ep.push_back(this->param.at(i));
+    }
+    
   }
 }
 

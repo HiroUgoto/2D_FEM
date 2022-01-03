@@ -13,9 +13,14 @@ class Fem {
     std::vector<Element*> spring_elements_p;
     std::vector<Element*> input_elements_p;
 
+    std::vector<Element*> ep_elements_p;
+    std::vector<Element*> e_elements_p;
+
     size_t output_nnode, output_nelem;
     std::vector<Node*> output_nodes_p;
     std::vector<Element*> output_elements_p;
+    std::vector<Element*> output_ep_elements_p, output_e_elements_p;
+
 
   private:
     double dt, inv_dt2, inv_dtdt;
@@ -43,6 +48,12 @@ class Fem {
     void _self_gravity_cg(const bool full=true);
 
   public:
+    void set_ep_initial_state();
+
+  private:
+    void _set_ep_initial_state_node_clear();
+
+  public:
     void update_init(const double dt);
 
     void update_time(const EV acc0, const EV vel0, const bool input_wave, const bool FD);
@@ -50,6 +61,7 @@ class Fem {
     void update_time_MD(const EV acc0);
     void update_time_input_FD(const EV vel0);
     void update_time_input_MD(const EV vel0);
+    void update_time_input_MD_gravity(const EV vel0);
 
   private:
     void _update_time_set_free_nodes();

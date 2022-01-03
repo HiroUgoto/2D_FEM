@@ -5,7 +5,7 @@ class Material {
   public:
     size_t id;
     std::string style;
-    std::vector<double> param;
+    std::vector<double> param, param_ep;
     double rmu, rlambda, rho;
     double kv, kh;
     EM R;

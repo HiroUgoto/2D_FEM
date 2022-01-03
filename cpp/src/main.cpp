@@ -3,6 +3,8 @@
 #include "node.h"
 #include "material.h"
 #include "element_style.h"
+#include "elasto_plastic.h"
+#include "ep_model.h"
 #include "element.h"
 #include "fem.h"
 #include "io_data.h"
@@ -30,7 +32,7 @@ int main() {
   double vs1 = 150;
   double rho1 = 1700;
   double h = 10;
-  
+
   double fp = vs1/(4*h);
   double R = (vs1*rho1)/(vs0*rho0);
   double omega = 2*M_PI*fp;
@@ -41,9 +43,12 @@ int main() {
   std::cout << "Input amplitude(m/s2): " << amp << "\n";
 
   // ----------------------------- //
-  size_t fsamp = 60000;
-  // double fp = 1.0;
-  double duration = 4.0/fp + 1.0/fp;
+  fem.set_ep_initial_state();
+
+  // ----------------------------- //
+  size_t fsamp = 10000;
+  // double duration = 14.0/fp + 1.0/fp;
+  double duration = 3.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
@@ -57,7 +62,6 @@ int main() {
     f0 << "\n";
   }
   f0.close();
-  // exit(1);
 
   // ----- Prepare time solver ----- //
   fem.update_init(dt);
@@ -79,8 +83,7 @@ int main() {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
 
-    fem.update_time_input_MD(vel0);
-    // fem.update_time_input_FD(vel0);
+    fem.update_time_input_MD_gravity(vel0);
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node* node_p = fem.output_nodes_p[i];
@@ -97,7 +100,7 @@ int main() {
       output_element_stress_xz(it,i) = element_p->stress(2);
     }
 
-    if (it%200 == 0) {
+    if (it%100 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_accx(it,0) << " ";
       std::cout << output_element_stress_xx(it,0) << " ";
