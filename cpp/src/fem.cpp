@@ -297,11 +297,6 @@ void Fem::_self_gravity_cg(const bool full) {
         }
       }
 
-      // std::cout << " (self gravity process .. ) " << it << " " ;
-      // std::cout << this->nodes[0].u[1] << " ";
-      // std::cout << rr1 << "\n";
-      // exit(1);
-
       if (it%100 == 0){
         std::cout << " (self gravity process .. ) " << it << " " ;
         std::cout << this->nodes[0].u[1] << " ";
@@ -315,14 +310,23 @@ void Fem::_self_gravity_cg(const bool full) {
 void Fem::set_ep_initial_state() {
   double u0 = this->nodes[0].u[1];
   for (size_t i = 0 ; i < 20 ; i++) {
-    this->self_gravity();
+    if (i == 0) {
+      this->self_gravity();
+    } else {
+      this->_self_gravity_cg(true);
+      for (auto& node : this->nodes) {
+        node.u0 = node.u;
+        node.um = node.u;
+      }
+    }
+
     for (auto& element_p : this->ep_elements_p) {
       element_p->calc_stress();
       element_p->ep_p->initial_state(element_p->stress);
       auto [rmu,rlambda] = element_p->ep_p->elastic_modulus_lame();
       element_p->material.rmu = rmu;
       element_p->material.rlambda = rlambda;
-      // std::cout << std::sqrt(element_p->material.rmu/element_p->rho) << " ";
+      // std::cout << std::sqrt(element_p->material.rmu/element_p->rho) << std::endl;
       // std::cout << element_p->stress << std::endl;
     }
 

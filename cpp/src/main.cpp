@@ -46,7 +46,7 @@ int main() {
   fem.set_ep_initial_state();
 
   // ----------------------------- //
-  size_t fsamp = 5000;
+  size_t fsamp = 25000;
   double duration = 14.0/fp + 1.0/fp;
   // double duration = 3.0/fp + 1.0/fp;
 

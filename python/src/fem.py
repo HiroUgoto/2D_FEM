@@ -249,17 +249,21 @@ class Fem():
                     else:
                         node._up[i] = node._ur[i] + beta*node._up[i]
 
-            # print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
-            # sys.exit()
-            #
             if it%100 == 0:
                 print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
 
     # ======================================================================= #
     def set_ep_initial_state(self):
         u0 = self.nodes[0].u[1]
+
         for i in range(20):
-            self.self_gravity()
+            if i == 0:
+                self.self_gravity()
+            else:
+                self._self_gravity_cg(full=True)
+                for node in self.node_set:
+                    node.u0 = np.copy(node.u)
+                    node.um = np.copy(node.u)
 
             for element in self.ep_elements:
                 element.calc_stress()

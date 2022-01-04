@@ -18,7 +18,7 @@ output_dir = "result/"
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-# plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
 # Set amplitude #
@@ -39,10 +39,9 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 fem.set_ep_initial_state()
 
 ## --- Define input wave --- ##
-fsamp = 5000
+fsamp = 15000
 # duration = 14.0/fp + 1.0/fp
 duration = 3.0/fp + 1.0/fp
-amp = amp*0.01
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,4.0/fp,amp)
