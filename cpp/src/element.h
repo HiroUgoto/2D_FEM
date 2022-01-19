@@ -27,7 +27,7 @@ class Element {
     EP* ep_p;
 
     EV M_diag, K_diag, C_diag;
-    EM K, K_off_diag, C, C_off_diag;
+    EM M, K, K_off_diag, C, C_off_diag;
     EM De, Dv, imp;
     EV force;
     EV strain, stress;
@@ -51,6 +51,8 @@ class Element {
     void mk_local_matrix();
     void mk_local_vector();
     void mk_local_update();
+
+    void mk_local_damping_matrix(const double alpha, const double beta);
 
     void mk_ku();
     void mk_ku_up();

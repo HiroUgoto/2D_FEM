@@ -123,5 +123,5 @@ class Li2002: public EP {
 
     Eigen::Tensor<double,4> set_Dijkl();
     Eigen::Tensor<double,4> set_Dikjl();
-
+    Eigen::Tensor<double,4> set_Diljk();
 };

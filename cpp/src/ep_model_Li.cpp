@@ -283,7 +283,10 @@ Eigen::Tensor<double,4> Li2002::elastic_stiffness(const double G) {
   double rlambda = G*this->rlambda_coeff;
   Eigen::Tensor<double,4> Dijkl = this->set_Dijkl();
   Eigen::Tensor<double,4> Dikjl = this->set_Dikjl();
-  Eigen::Tensor<double,4> Ee = rlambda*Dijkl + 2*G*Dikjl;
+  Eigen::Tensor<double,4> Diljk = this->set_Diljk();
+  Eigen::Tensor<double,4> Ee = rlambda*Dijkl + G*(Dikjl+Diljk);
+  // Eigen::Tensor<double,4> Ee = rlambda*Dijkl + 2*G*Dikjl;
+  // std::cout << G << std::endl;
   return Ee;
 }
 
@@ -294,7 +297,7 @@ double Li2002::elastic_modulus_G(const double e, const double p) {
 
 std::tuple<double, double>
   Li2002::elastic_modulus(const double e, const double p) {
-    double G = this->G0*std::pow(2.97-e,2) / (1+e) * std::sqrt(std::max(p,this->pmin)*this->pr);
+    double G = this->elastic_modulus_G(e,p);
     double K = G*2*(1+this->nu)/(3*(1-2*this->nu));
     return {G, K};
   }
@@ -322,7 +325,8 @@ EM Li2002::solve_strain(const EM stress_mat, const Eigen::Tensor<double,4> E) {
     }}
   }}
 
-  EV x = A.partialPivLu().solve(b);
+  // EV x = A.partialPivLu().solve(b);
+  EV x = A.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(b);
 
   EM strain_mat = EM::Zero(3,3);
   strain_mat(0,0) = x(0); strain_mat(0,1) = x(1); strain_mat(0,2) = x(2);
@@ -821,4 +825,16 @@ Eigen::Tensor<double,4> Li2002::set_Dikjl() {
       }
     }
     return Dikjl;
+  }
+
+Eigen::Tensor<double,4> Li2002::set_Diljk() {
+    Eigen::Tensor<double,4> Diljk(3,3,3,3);
+    Diljk.setZero();
+
+    for (int i=0;i<3;i++){
+      for (int k=0;k<3;k++){
+        Diljk(i,k,k,i) = 1.0;
+      }
+    }
+    return Diljk;
   }

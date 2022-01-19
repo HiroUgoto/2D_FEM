@@ -18,7 +18,7 @@ output_dir = "result/"
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-plot_model.plot_mesh(fem)
+# plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
 # Set amplitude #
@@ -37,6 +37,7 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
+fem.set_rayleigh_damping(fp,3*fp,0.0002)
 
 ## --- Define input wave --- ##
 fsamp = 15000

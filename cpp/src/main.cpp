@@ -44,15 +44,17 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
+  fem.set_rayleigh_damping(fp,3*fp,0.001);
 
   // ----------------------------- //
-  size_t fsamp = 25000;
+  size_t fsamp = 15000;
+  amp = 0.5;
   double duration = 14.0/fp + 1.0/fp;
   // double duration = 3.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
-  // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp);
+  // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration,amp);
   wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
   size_t ntim = tim.size();
 
@@ -84,6 +86,7 @@ int main() {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
 
+    // fem.update_time_input_MD(vel0);
     fem.update_time_input_MD_gravity(vel0);
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {

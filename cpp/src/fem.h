@@ -40,6 +40,7 @@ class Fem {
 
   public:
     void set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> outputs);
+    void set_rayleigh_damping(double f0, double f1, double h);
 
   public:
     void self_gravity();

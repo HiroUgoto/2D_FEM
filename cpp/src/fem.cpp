@@ -119,10 +119,6 @@ void Fem::_set_initial_matrix(){
         }
       }
     }
-
-    // for (auto& element_p : this->ep_elements_p) {
-    //   element_p->ep_init_all();
-    // }
   }
 
 // ------------------------------------------------------------------- //
@@ -148,6 +144,34 @@ void Fem::set_output(std::tuple<std::vector<size_t>, std::vector<size_t>> output
       }
     }
   }
+
+// ------------------------------------------------------------------- //
+// ------------------------------------------------------------------- //
+void Fem::set_rayleigh_damping(double f0, double f1, double h) {
+  double omega0 = 2*M_PI*f0;
+  double omega1 = 2*M_PI*f1;
+
+  double alpha = 2*h*omega0*omega1 / (omega0+omega1);
+  double beta = 2*h / (omega0+omega1);
+  // std::cout << alpha << ", " << beta << std::endl;
+
+  for (auto& node : this->nodes) {
+    node.c    = EV::Zero(this->dof);
+  }
+
+  for (auto& element : this->elements) {
+    element.mk_local_damping_matrix(alpha,beta);
+
+    size_t id = 0;
+    for (size_t inode = 0 ; inode < element.nnode ; inode++) {
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        element.nodes_p[inode]->c[i] += element.C_diag[id];
+        id++;
+      }
+    }
+  }
+
+}
 
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
@@ -332,7 +356,7 @@ void Fem::set_ep_initial_state() {
 
     this->_set_ep_initial_state_node_clear();
     this->_set_initial_matrix();
-    // std::cout << this->nodes[0].u[1] << std::endl;
+    std::cout << this->nodes[0].u[1] << std::endl;
 
     if (std::pow(u0 - this->nodes[0].u[1],2) < 1.e-10) {
       break;
@@ -549,6 +573,7 @@ void Fem::_update_time_set_fixed_nodes() {
         }
       }
       node_p->v = (node_p->u - node_p->um) * this->inv_dt2;
+      node_p->a = (node_p->u - 2*u + node_p->um) * this->inv_dtdt;
       node_p->um = u;
     }
   }

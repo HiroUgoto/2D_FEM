@@ -139,6 +139,26 @@ class Fem():
         self.output_ep_element_set = set(output_ep_elements)
 
     # ======================================================================= #
+    def set_rayleigh_damping(self,f0,f1,h):
+        omega0,omega1 = 2*np.pi*f0, 2*np.pi*f1
+        alpha = 2*h*omega0*omega1 / (omega0+omega1)
+        beta = 2*h / (omega0+omega1)
+        print(alpha,beta)
+
+        for node in self.node_set:
+            node.c    = np.zeros(self.dof,dtype=np.float64)
+
+        for element in self.elements:
+            element.mk_local_damping_matrix(alpha,beta)
+
+            id = 0
+            for node in element.nodes:
+                for i in range(self.dof):
+                    node.c[i] += element.C_diag[id]
+                    id += 1
+
+
+    # ======================================================================= #
     def self_gravity(self):
         ### Initial condition ###
         H = 0.0
@@ -273,7 +293,7 @@ class Fem():
 
             self._set_ep_initial_state_node_clear()
             self._set_initial_matrix()
-            # print(self.nodes[0].u[1])
+            print(self.nodes[0].u[1])
 
             if (u0 - self.nodes[0].u[1])**2 < 1.e-10:
                 break

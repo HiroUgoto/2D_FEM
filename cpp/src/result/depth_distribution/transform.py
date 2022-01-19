@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # nelem = 40
-nelem = 2
+nelem = 10
 nnode = nelem
 
 dz = 10.0/nelem
@@ -28,7 +28,7 @@ stress_node = np.zeros([ntim,nnode])
 stress = np.zeros(ntim)
 
 for i in range(ntim):
-    stress_node[i,:] = -stress_pack[i,1:] + F0[:]
+    stress_node[i,:] = -stress_pack[i,1:]
 
     for inode in range(int(nnode//2)):
         stress[i] += stress_node[i,inode]*area[inode]

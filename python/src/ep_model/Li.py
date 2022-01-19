@@ -47,6 +47,7 @@ class Li2002:
         self.I3 = np.eye(3)
         self.Dijkl = np.einsum('ij,kl->ijkl',self.I3,self.I3)
         self.Dikjl = np.einsum('ij,kl->ikjl',self.I3,self.I3)
+        self.Diljk = np.einsum('ij,kl->ilkj',self.I3,self.I3)
 
         # parameters
         self.sqrt2_3 = math.sqrt(2/3)
@@ -193,7 +194,8 @@ class Li2002:
 
     def elastic_stiffness(self,G):
         rlambda = G*self.rlambda_coeff
-        Ee = rlambda*self.Dijkl + 2*G*self.Dikjl
+        # Ee = rlambda*self.Dijkl + 2*G*self.Dikjl
+        Ee = rlambda*self.Dijkl + G*(self.Dikjl+self.Diljk)
         return Ee
 
     def isotropic_compression_stiffness(self,e,p):
@@ -481,7 +483,8 @@ class Li2002:
     def solve_strain(self,stress_mat,E):
         b = stress_mat.flatten()
         A = np.reshape(E,(9,9))
-        x = np.linalg.solve(A,b)
+        Ainv = np.linalg.pinv(A)
+        x = Ainv @ b
         strain_mat = np.reshape(x,(3,3))
         return strain_mat
 
@@ -497,7 +500,10 @@ class Li2002:
 
         stress_mask = stress[d]
         A_mask = A[d][:,d]
-        strain_mask = np.linalg.solve(A_mask,stress_mask)
+
+        Ainv = np.linalg.pinv(A_mask)
+        strain_mask = Ainv @ stress_mask
+        # strain_mask = np.linalg.solve(A_mask,stress_mask)
 
         strain[d] = strain_mask
         stress = np.dot(A,strain)
@@ -611,7 +617,7 @@ class Li2002:
             plt.plot(gamma_list,ev_list)
             plt.show()
 
-        return max_p_stress, min_p_stress
+        return max_p_stress, min_p_stress, gamma_list, ev_list
 
     # -------------------------------------------------------------------------------------- #
     def cyclic_shear_test(self,e0,compression_stress,sr=0.2,cycle=10,print_result=False,plot=False):
@@ -642,7 +648,7 @@ class Li2002:
         sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input)
 
         gamma_list,tau_list = [],[]
-        p_list = []
+        ev_list,p_list = [],[]
         step_list,ep_list = [],[]
         for ic in range(0,ncycle):
             print("N :",ic+1)
@@ -687,24 +693,27 @@ if __name__ == "__main__":
     e0 = emax-Dr*(emax-emin)
     print(e0)
 
-    # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.0)
-    # compression_stress = 40.e3
-    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.3,cycle=10,print_result=True,plot=False)
-    # sys.exit()
+    Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
+    compression_stress = 40.e3
+    Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
+    sys.exit()
 
     cs_list = [20.e3,40.e3,80.e3]
     sigma1_list, sigma3_list = [],[]
+    gamma_list, ev_list = [],[]
     for compression_stress in cs_list:
-        Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.0)
-        s1,s3 = Li_model.triaxial_compression(e0,compression_stress,print_result=True,plot=False)
+        Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
+        s1,s3,gamma,ev = Li_model.triaxial_compression(e0,compression_stress,print_result=True,plot=False)
 
         sigma1_list += [s1]
         sigma3_list += [s3]
-
+        gamma_list += [gamma]
+        ev_list += [ev]
 
     # -----------------
     phi = 30.0  # [deg]
     c = 3.e3    # [Pa]
+    beta = 2.5  # [deg]
 
     x = np.linspace(0,np.max(sigma1_list),100)
     y = c + x*np.tan(np.deg2rad(phi))
@@ -725,4 +734,15 @@ if __name__ == "__main__":
     plt.axis('scaled')
     ax.set_aspect('equal')
 
+    plt.show()
+
+    # -----------------
+    x = np.array(gamma_list[0])
+    y = -x*np.tan(np.deg2rad(beta))
+
+    plt.grid()
+    for gamma,ev in zip(gamma_list,ev_list):
+        plt.plot(gamma,ev,c="k")
+    plt.plot(x,y)
+    plt.axis('auto')
     plt.show()

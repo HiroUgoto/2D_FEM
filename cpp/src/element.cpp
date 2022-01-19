@@ -93,6 +93,7 @@ void Element::mk_local_matrix_init(const size_t dof){
     this->dof = dof;
     this->ndof = dof*this->nnode;
 
+    this->M = EM::Zero(this->ndof,this->ndof);
     this->M_diag = EV::Zero(this->ndof);
 
     this->K = EM::Zero(this->ndof,this->ndof);
@@ -121,8 +122,6 @@ void Element::mk_local_matrix_init(const size_t dof){
 // ------------------------------------------------------------------- //
 void Element::mk_local_matrix() {
     if (this->dim == 2) {
-      EM M = EM::Zero(this->ndof,this->ndof);
-
       this->C = EM::Zero(this->ndof,this->ndof);
       this->K = EM::Zero(this->ndof,this->ndof);
 
@@ -144,13 +143,13 @@ void Element::mk_local_matrix() {
 
         detJ = det * this->w_list[i];
 
-        M += Me * detJ;
+        this->M += Me * detJ;
         this->C += C * detJ;
         this->K += K * detJ;
       }
 
-      double tr_M = M.trace() / this->dof;
-      this->M_diag = M.diagonal() * this->mass/tr_M;
+      double tr_M = this->M.trace() / this->dof;
+      this->M_diag = this->M.diagonal() * this->mass/tr_M;
 
       this->K_diag = this->K.diagonal();
       this->K_off_diag = this->K_diag.asDiagonal();
@@ -300,6 +299,17 @@ void Element::mk_local_update() {
     }
   }
 
+
+// ------------------------------------------------------------------- //
+void Element::mk_local_damping_matrix(const double alpha, const double beta) {
+    if (this->dim == 2) {
+      // EM M = this->M_diag.asDiagonal();
+      this->C = alpha * this->M + beta * this->K;
+      this->C_diag = this->C.diagonal();
+      this->C_off_diag = this->C_diag.asDiagonal();
+      this->C_off_diag = (this->C) - (this->C_off_diag);
+    }
+  }
 
 // ------------------------------------------------------------------- //
 void Element::mk_ku() {
@@ -518,10 +528,6 @@ void Element::calc_stress() {
 // ------------------------------------------------------------------- //
 void Element::ep_init_all() {
   return;
-  // for (size_t i = 0 ; i < this->ng_all ; i++){
-  //   EP* ep_p = set_ep_style(this->dof,this->material.style,this->material.param_ep);
-  //   this->ep_list.push_back(ep_p);
-  // }
 }
 
 void Element::ep_init_calc_stress_all() {
@@ -531,7 +537,6 @@ void Element::ep_init_calc_stress_all() {
     EM B = mk_b(this->dof, this->nnode, dnj);
     EV strain = B * u;
     EV stress = this->De * strain;
-    // this->ep_list[i]->initial_state(stress);
     this->strain_list.push_back(strain);
     this->stress_list.push_back(stress);
   }
@@ -581,20 +586,6 @@ void Element::mk_ep_B_stress() {
       double detJ = det * this->w_list[i];
       force += B.transpose() * stress * detJ;
     }
-
-    // for (size_t i = 0 ; i < this->ng_all ; i++){
-    //   auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
-    //   EM B = mk_b(this->dof, this->nnode, dnj);
-    //   EV strain = B * u;
-    //   EV dstrain = strain - this->strain_list[i];
-    //   EV stress = this->ep_list[i]->strain_to_stress(dstrain);
-    //
-    //   this->strain_list[i] = strain;
-    //   this->stress_list[i] = stress;
-    //
-    //   double detJ = det * this->w_list[i];
-    //   force += B.transpose() * stress * detJ;
-    // }
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
       size_t i0 = inode*this->dof;

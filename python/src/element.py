@@ -111,7 +111,7 @@ class Element:
     # ---------------------------------------------------------
     def mk_local_matrix(self):
         if self.dim == 2:
-            M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            self.M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
             self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
             self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
@@ -126,12 +126,12 @@ class Element:
                 C = mk_k(B,self.Dv)
 
                 detJ = gp.w*det
-                M += gp.M*detJ
+                self.M += gp.M*detJ
                 self.K += K*detJ
                 self.C += C*detJ
 
-            tr_M = np.trace(M)/self.dof
-            self.M_diag = np.diag(M) * self.mass/tr_M
+            tr_M = np.trace(self.M)/self.dof
+            self.M_diag = np.diag(self.M) * self.mass/tr_M
 
             self.K_diag = np.diag(self.K)
             self.K_off_diag = self.K - np.diag(self.K_diag)
@@ -227,6 +227,13 @@ class Element:
 
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
+
+    # ---------------------------------------------------------
+    def mk_local_damping_matrix(self,alpha,beta):
+        if self.dim == 2:
+            self.C = alpha * self.M + beta * self.K
+            self.C_diag = np.diag(self.C)
+            self.C_off_diag = self.C - np.diag(self.C_diag)
 
 
     # ---------------------------------------------------------
