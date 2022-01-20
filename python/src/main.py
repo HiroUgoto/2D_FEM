@@ -12,6 +12,7 @@ start = time.time()
 
 ## --- Input FEM Mesh --- ##
 fem = io_data.input_mesh("input/mesh.in")
+# fem = io_data.input_mesh("input/mesh_elastic.in")
 outputs = io_data.input_outputs("input/output.in")
 output_dir = "result/"
 
@@ -37,7 +38,7 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-fem.set_rayleigh_damping(fp,3*fp,0.0002)
+fem.set_rayleigh_damping(fp,3*fp,0.001)
 
 ## --- Define input wave --- ##
 fsamp = 15000
@@ -45,7 +46,7 @@ fsamp = 15000
 duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,4.0/fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
 ntim = len(tim)
 
 # plt.figure()

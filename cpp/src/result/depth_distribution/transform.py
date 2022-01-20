@@ -10,6 +10,12 @@ dz = 10.0/nelem
 K0 = 0.5
 rho = 1700
 
+phi = 30.0
+c = 3000.0
+
+Ka = (np.tan(np.deg2rad(45-0.5*phi)))**2
+Kp = (1+np.sin(np.deg2rad(phi)))/(1-np.sin(np.deg2rad(phi)))
+
 stress_list_file = "../output_element_list.dat"
 stress_file = "../output_element.stress_xx"
 acc_file = "../result.acc"
@@ -21,6 +27,10 @@ acc = np.loadtxt(acc_file,usecols=(1,))
 z = stress_list[:,1]
 area = np.ones(nnode)*dz
 F0 = rho*9.8*z*K0
+
+Fa = rho*9.8*z*Ka - 2*c*np.sqrt(Ka)
+Fp = rho*9.8*z*Kp + 2*c*np.sqrt(Kp)
+Fp2 = rho*9.8*z*K0*Kp + 2*c*np.sqrt(Kp)
 
 tim = stress_pack[:,0]
 ntim = len(tim)
@@ -57,6 +67,9 @@ np.savetxt("earth_pressure_depth.dat",output_line)
 plt.figure()
 plt.ylim([10,0])
 plt.plot(F0,z,color='k',marker="o")
+plt.plot(Fa,z,color='r')
+plt.plot(Fp,z,color='b')
+plt.plot(Fp2,z,color='b')
 plt.plot(F_act,z,color='r',marker="o")
 plt.plot(F_pas,z,color='b',marker="o")
 plt.show()

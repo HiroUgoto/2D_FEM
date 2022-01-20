@@ -44,13 +44,14 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,3*fp,0.001);
+  fem.set_rayleigh_damping(fp,3*fp,0.003);
 
   // ----------------------------- //
-  size_t fsamp = 15000;
-  amp = 0.5;
-  double duration = 14.0/fp + 1.0/fp;
+  size_t fsamp = 20000;
+  // amp = 0.25;
+  // amp = amp*2.0;
   // double duration = 3.0/fp + 1.0/fp;
+  double duration = 14.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
@@ -77,6 +78,7 @@ int main() {
   EM output_element_stress_xx = EM::Zero(ntim,fem.output_nelem);
   EM output_element_stress_zz = EM::Zero(ntim,fem.output_nelem);
   EM output_element_stress_xz = EM::Zero(ntim,fem.output_nelem);
+  EM output_element_stress_yy = EM::Zero(ntim,fem.output_nelem);
 
   // ----- time iteration ----- //
   EV acc0 = EV::Zero(fem.dof);
@@ -102,13 +104,16 @@ int main() {
       output_element_stress_xx(it,i) = element_p->stress(0);
       output_element_stress_zz(it,i) = element_p->stress(1);
       output_element_stress_xz(it,i) = element_p->stress(2);
+      output_element_stress_yy(it,i) = element_p->stress_yy;
     }
 
     if (it%100 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_accx(it,0) << " ";
       std::cout << output_element_stress_xx(it,0) << " ";
-      std::cout << output_element_stress_xx(it,1) << "\n";
+      std::cout << output_element_stress_yy(it,0) << " ";
+      std::cout << output_element_stress_xx(it,1) << " ";
+      std::cout << output_element_stress_yy(it,1) << "\n";
     }
   }
 
@@ -141,20 +146,25 @@ int main() {
   std::ofstream fxx(output_dir + "output_element.stress_xx");
   std::ofstream fzz(output_dir + "output_element.stress_zz");
   std::ofstream fxz(output_dir + "output_element.stress_xz");
+  std::ofstream fyy(output_dir + "output_element.stress_yy");
   for (size_t it = 0 ; it < ntim ; it++) {
     fxx << tim(it) ;
     fzz << tim(it) ;
     fxz << tim(it) ;
+    fyy << tim(it) ;
     for (size_t i = 0 ; i < fem.output_nelem ; i++) {
       fxx << " " << output_element_stress_xx(it,i);
       fzz << " " << output_element_stress_zz(it,i);
       fxz << " " << output_element_stress_xz(it,i);
+      fyy << " " << output_element_stress_yy(it,i);
     }
     fxx << "\n";
     fzz << "\n";
     fxz << "\n";
+    fyy << "\n";
   }
   fxx.close();
   fzz.close();
   fxz.close();
+  fyy.close();
 }

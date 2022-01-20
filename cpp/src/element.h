@@ -31,6 +31,7 @@ class Element {
     EM De, Dv, imp;
     EV force;
     EV strain, stress;
+    double stress_yy;
 
     EV f;
     EM R;

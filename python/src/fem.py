@@ -446,7 +446,7 @@ class Fem():
     def _update_time_set_nodes_all(self):
         for node in self.free_nodes:
             self._update_time_set_free_nodes(node)
-        for node in self.fixed_node_set:
+        for node in self.fixed_nodes:
             self._update_time_set_fixed_nodes(node)
 
     def _update_time_set_free_nodes(self,node):

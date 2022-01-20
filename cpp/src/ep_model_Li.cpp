@@ -138,7 +138,7 @@ void Li2002::initial_state(EV init_stress) {
 }
 
 // ------------------------------------------------------------------- //
-std::tuple<EM, EV> Li2002::set_Dp_matrix(EV FEMdstrain) {
+std::tuple<EM, EV, double> Li2002::set_Dp_matrix(EV FEMdstrain) {
   EM dstrain = this->FEMstrain_to_matrix(FEMdstrain);
   EM dstress_input = EM::Zero(3,3);
 
@@ -150,6 +150,20 @@ std::tuple<EM, EV> Li2002::set_Dp_matrix(EV FEMdstrain) {
 
   EM dstress = this->solve_stress(dstrain,Ep);
 
+  // if (this->test_flag) {
+  //   std::cout << " " << std::endl;
+  //   std::cout << "ef1 " << ef1 << ", ef2 " << ef2 << std::endl;
+  //
+  //   std::cout << " " << std::endl;
+  //   std::cout << Ep << std::endl;
+  //   std::cout << " " << std::endl;
+  //   std::cout << dstrain << std::endl;
+  //   std::cout << " " << std::endl;
+  //   std::cout << dstress << std::endl;
+  //   std::cout << " " << std::endl;
+  //   exit(1);
+  // }
+
   auto [ev, gamma] = this->set_strain_variable(this->strain);
   this->e = this->e0 - ev*(1.0+this->e0);
 
@@ -158,7 +172,8 @@ std::tuple<EM, EV> Li2002::set_Dp_matrix(EV FEMdstrain) {
 
   EM Dp = this->modulus_to_Dmatrix(Ep);
   EV FEMstress = this->matrix_to_FEMstress(this->stress);
-  return {Dp, FEMstress};
+  double stress_yy = -this->stress(1,1);
+  return {Dp, FEMstress, stress_yy};
 
 }
 
@@ -285,8 +300,6 @@ Eigen::Tensor<double,4> Li2002::elastic_stiffness(const double G) {
   Eigen::Tensor<double,4> Dikjl = this->set_Dikjl();
   Eigen::Tensor<double,4> Diljk = this->set_Diljk();
   Eigen::Tensor<double,4> Ee = rlambda*Dijkl + G*(Dikjl+Diljk);
-  // Eigen::Tensor<double,4> Ee = rlambda*Dijkl + 2*G*Dikjl;
-  // std::cout << G << std::endl;
   return Ee;
 }
 
@@ -339,11 +352,20 @@ EM Li2002::solve_strain(const EM stress_mat, const Eigen::Tensor<double,4> E) {
 // ------------------------------------------------------------------- //
 EM Li2002::solve_stress(const EM strain_mat, const Eigen::Tensor<double,4> E) {
   EM stress_mat = EM::Zero(3,3);
-  for(int i=0;i<3;i++){ for(int j=0;j<3;j++) {
-    for(int k=0;k<3;k++){ for(int l=0;l<3;l++) {
-      stress_mat(i,j) = stress_mat(i,j) + E(i,j,k,l) * strain_mat(k,l);
-    }}
+
+  for(int i=0;i<3;i++){ for(int j=i;j<3;j++) {
+    stress_mat(i,j) += E(i,j,0,0)*strain_mat(0,0);
+    stress_mat(i,j) += E(i,j,1,1)*strain_mat(1,1);
+    stress_mat(i,j) += E(i,j,2,2)*strain_mat(2,2);
+
+    stress_mat(i,j) += (E(i,j,0,1)+E(i,j,1,0))*strain_mat(0,1);
+    stress_mat(i,j) += (E(i,j,1,2)+E(i,j,2,1))*strain_mat(1,2);
+    stress_mat(i,j) += (E(i,j,0,2)+E(i,j,2,0))*strain_mat(0,2);
   }}
+
+  stress_mat(1,0) = stress_mat(0,1);
+  stress_mat(2,0) = stress_mat(0,2);
+  stress_mat(2,1) = stress_mat(1,2);
 
   return stress_mat;
 }
@@ -407,7 +429,6 @@ void Li2002::update_parameters(StateParameters &sp) {
 
 // ------------------------------------------------------------------- //
 void Li2002::set_mapping_stress(StateParameters &sp) {
-
     if (sp.elastic_flag1) {
       this->alpha = sp.rij;
     }
@@ -415,7 +436,7 @@ void Li2002::set_mapping_stress(StateParameters &sp) {
       this->beta = sp.p;
     }
 
-    if ((sp.rij-this->alpha).norm() < 1.e-6) {
+    if ((sp.rij-this->alpha).norm() < 1.e-5) {
       sp.elastic_flag1 = true;
     } else {
       auto [F1,rij_bar,R_bar,g_bar] = this->_F1_boundary_surface_all(1.0,sp.rij,this->alpha);
@@ -487,13 +508,13 @@ std::tuple<double, double>
   }
 
 double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
-  int nstep = 100;
+  int nstep = 200;
   double xtol = 1.e-8;
   double rtol = 1.e-10;
   double gr = (std::sqrt(5.0) + 1.0)/2.0;
 
-  double t0 = 0.99;
-  double t1 = 1.e2;
+  double t0 = 0.9999;
+  double t1 = 2.0;
 
   double F1_t0 = this->_F1_boundary_surface(t0,rij,alpha);
   double F1_t1 = this->_F1_boundary_surface(t1,rij,alpha);
@@ -501,7 +522,7 @@ double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
   for (size_t i = 0 ; i < nstep ; i++ ){
     if (F1_t0 * F1_t1 >= 0.0) {
       // t0 = 0.1*t0;
-      t1 = 10.0*t1;
+      t1 = 2.0*t1;
       // F1_t0 = this->_F1_boundary_surface(t0,rij,alpha);
       F1_t1 = this->_F1_boundary_surface(t1,rij,alpha);
       // std::cout << t0 << ": "<< F1_t0 << std::endl;
@@ -510,6 +531,9 @@ double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
       break;
     }
   }
+
+  double t0_save = t0;
+  double t1_save = t1;
 
   double tl = t1 - (t1-t0)/gr;
   double tr = t0 + (t1-t0)/gr;
@@ -524,9 +548,17 @@ double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
       break;
     }
     if (std::abs(F1_tl) < std::abs(F1_tr)) {
-      t1 = tr;
+      if (F1_tr * F1_t1 >= 0.0) {
+        t1 = tr;
+      } else {
+        t0 = tl;
+      }
     } else {
-      t0 = tl;
+      if (F1_tl * F1_t0 >= 0.0) {
+        t0 = tl;
+      } else {
+        t1 = tr;
+      }
     }
     tl = t1 - (t1-t0)/gr;
     tr = t0 + (t1-t0)/gr;
@@ -536,6 +568,45 @@ double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
     // std::cout << tl << ": "<< F1_tl << std::endl;
     // std::cout << tr << ": "<< F1_tr << std::endl;
   }
+
+  // double tf = (tl+tr)/2.0;
+  // if ((this->_F1_boundary_surface(tf,rij,alpha) > 1.e-3) || (this->_F1_boundary_surface(tf,rij,alpha) < -1.e-3)){
+  //   std::cout << "# " << tf << " " << this->_F1_boundary_surface(tf,rij,alpha) << std::endl;
+  //   std::cout << rij << std::endl;
+  //   std::cout << alpha << std::endl;
+  //
+  //   EM rij_bar = alpha + tf*(rij-alpha);
+  //   std::cout << " " << std::endl;
+  //   std::cout << rij_bar << std::endl;
+  //
+  //   F1_tl = this->_F1_boundary_surface(tl,rij,alpha);
+  //   F1_tr = this->_F1_boundary_surface(tr,rij,alpha);
+  //
+  //   std::cout << " " << std::endl;
+  //   std::cout << tl << ": "<< F1_tl << std::endl;
+  //   std::cout << alpha + tl*(rij-alpha) << std::endl;
+  //
+  //   std::cout << " " << std::endl;
+  //   std::cout << tr << ": "<< F1_tr << std::endl;
+  //   std::cout << alpha + tr*(rij-alpha) << std::endl;
+  //
+  //   auto [g_bar, J2] = this->g_theta_J2(rij_bar);
+  //   double R_bar = std::sqrt(3.0*J2);
+  //   std::cout << " " << std::endl;
+  //   std::cout << R_bar << " " << g_bar << " " << this->H1 << std::endl;
+  //   std::cout << R_bar/this->H1 - g_bar << std::endl;
+  //
+  //   t0 = t0_save;
+  //   t1 = t1_save;
+  //   F1_t0 = this->_F1_boundary_surface(t0,rij,alpha);
+  //   F1_t1 = this->_F1_boundary_surface(t1,rij,alpha);
+  //   std::cout << t0 << ": "<< F1_t0 << std::endl;
+  //   std::cout << t1 << ": "<< F1_t1 << std::endl;
+  //
+  //   this->test_flag = true;
+  //   // exit(1);
+  // }
+
   return (tl+tr)/2.0;
 }
 
@@ -630,6 +701,11 @@ void Li2002::set_parameter_nm(StateParameters &sp) {
   } else {
     sp.mij = sp.rij / r_abs;
   }
+
+  // if (this->test_flag) {
+  //   std::cout << "nij " << sp.nij << std::endl;
+  //   std::cout << "mij " << sp.mij << std::endl;
+  // }
 }
 
 EM Li2002::_dF1_r(const EM rij_bar, const double R_bar, const double theta3_bar, const double g_bar, const double dg_bar) {
@@ -663,6 +739,15 @@ void Li2002::set_parameter_TZ(StateParameters &sp) {
     EM Tu = 2*sp.Ge*sp.nij - sp.Ke*(nr+sp.B)*this->I3;
     double Td = 2*sp.Ge - this->sqrt2_3*sp.Ke*sp.D1*(nr+sp.B) + sp.Kp1;
     sp.Tij = Tu / Td;
+
+    // if (this->test_flag) {
+    //   std::cout << " " << std::endl;
+    //   std::cout << "Tu" << std::endl;
+    //   std::cout << Tu << std::endl;
+    //   std::cout << " " << std::endl;
+    //   std::cout << "Td " << Td << std::endl;
+    //   std::cout << "nr " << nr << std::endl;
+    // }
   }
 
   if (sp.elastic_flag2) {
@@ -679,6 +764,16 @@ void Li2002::set_parameter_TZ(StateParameters &sp) {
     sp.Zij = Zu / Zd;
   }
 
+  // if (this->test_flag) {
+  //   std::cout << " " << std::endl;
+  //   std::cout << "Tij" << std::endl;
+  //   std::cout << sp.Tij << std::endl;
+  //   std::cout << sp.elastic_flag1 << std::endl;
+  //   std::cout << " " << std::endl;
+  //   std::cout << "Zij" << std::endl;
+  //   std::cout << sp.Zij << std::endl;
+  //   std::cout << sp.elastic_flag2 << std::endl;
+  // }
 }
 
 // ------------------------------------------------------------------- //
@@ -718,6 +813,22 @@ Eigen::Tensor<double,4>
 
     Eigen::Tensor<double,4> Lm = Lm0 - Lm1 - Lm2;
     Eigen::Tensor<double,4> Ee = this->elastic_stiffness(sp.Ge);
+
+    // if (this->test_flag) {
+    //   std::cout << " " << std::endl;
+    //   std::cout << "D1 " << sp.D1 << std::endl;
+    //
+    //   std::cout << " " << std::endl;
+    //   std::cout << "Lm0" << std::endl;
+    //   std::cout << Lm0 << std::endl;
+    //   std::cout << " " << std::endl;
+    //   std::cout << "Lm1" << std::endl;
+    //   std::cout << Lm1 << std::endl;
+    //   std::cout << " " << std::endl;
+    //   std::cout << "Lm2" << std::endl;
+    //   std::cout << Lm2 << std::endl;
+    // }
+
 
     Eigen::Tensor<double,4> Ep(3,3,3,3);
     Ep.setZero();

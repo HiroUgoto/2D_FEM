@@ -547,6 +547,7 @@ void Element::ep_init_calc_stress_all() {
   this->ep_p->initial_state(stress);
   this->stress = stress;
   this->strain = strain;
+  this->stress_yy = stress(0);
 }
 
 void Element::calc_ep_stress() {
@@ -568,9 +569,10 @@ void Element::mk_ep_B_stress() {
     EM B = mk_b(this->dof, this->nnode, dnj);
     EV strain = B * u;
     EV dstrain = strain - this->strain;
-    auto [Dp,stress] = this->ep_p->set_Dp_matrix(dstrain);
+    auto [Dp,stress,stress_yy] = this->ep_p->set_Dp_matrix(dstrain);
     this->stress = stress;
     this->strain = strain;
+    this->stress_yy = stress_yy;
 
     for (size_t i = 0 ; i < this->ng_all ; i++){
       auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);

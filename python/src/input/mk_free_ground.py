@@ -5,7 +5,7 @@ area_x = 1.0
 area_z = 10.0
 
 nx = 1
-nz = 10
+nz = 6
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
