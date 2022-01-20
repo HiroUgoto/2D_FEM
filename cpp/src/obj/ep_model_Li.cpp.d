@@ -171,6 +171,82 @@ obj/./ep_model_Li.cpp.o: ep_model_Li.cpp all.h \
   /opt/homebrew/include/eigen3/Eigen/src/Eigenvalues/GeneralizedEigenSolver.h \
   /opt/homebrew/include/eigen3/Eigen/src/Eigenvalues/./RealQZ.h \
   /opt/homebrew/include/eigen3/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h \
+  /opt/homebrew/include/eigen3/Eigen/Eigen \
+  /opt/homebrew/include/eigen3/Eigen/Sparse \
+  /opt/homebrew/include/eigen3/Eigen/SparseCore \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseUtil.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseMatrixBase.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/CommonCwiseUnaryOps.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/CommonCwiseBinaryOps.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/MatrixCwiseUnaryOps.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/MatrixCwiseBinaryOps.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/BlockMethods.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseAssign.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/CompressedStorage.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/AmbiVector.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseCompressedBase.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseMatrix.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseMap.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/MappedSparseMatrix.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseVector.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseRef.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseCwiseUnaryOp.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseCwiseBinaryOp.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseTranspose.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseBlock.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseDot.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseRedux.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseView.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseDiagonalProduct.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseSparseProductWithPruning.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseProduct.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseDenseProduct.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseSelfAdjointView.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseTriangularView.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/TriangularSolver.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparsePermutation.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseFuzzy.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseSolverBase.h \
+  /opt/homebrew/include/eigen3/Eigen/OrderingMethods \
+  /opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/Amd.h \
+  /opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/../Core/util/NonMPL2.h \
+  /opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/Ordering.h \
+  /opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/Eigen_Colamd.h \
+  /opt/homebrew/include/eigen3/Eigen/SparseCholesky \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCholesky/SimplicialCholesky.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCholesky/../Core/util/NonMPL2.h \
+  /opt/homebrew/include/eigen3/Eigen/SparseLU \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_gemm_kernel.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_Structs.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLUImpl.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseColEtree.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_Memory.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_relax_snode.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_pivotL.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_panel_dfs.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_kernel_bmod.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_panel_bmod.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_column_dfs.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_column_bmod.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_pruneL.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_Utils.h \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU.h \
+  /opt/homebrew/include/eigen3/Eigen/SparseQR \
+  /opt/homebrew/include/eigen3/Eigen/src/SparseQR/SparseQR.h \
+  /opt/homebrew/include/eigen3/Eigen/IterativeLinearSolvers \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/SolveWithGuess.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/IterativeSolverBase.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/BasicPreconditioners.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/ConjugateGradient.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/LeastSquareConjugateGradient.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/IncompleteLUT.h \
+  /opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/IncompleteCholesky.h \
   /opt/homebrew/include/eigen3/unsupported/Eigen/CXX11/Tensor \
   /opt/homebrew/include/eigen3/unsupported/Eigen/CXX11/../../../Eigen/Core \
   /opt/homebrew/include/eigen3/unsupported/Eigen/CXX11/../SpecialFunctions \
@@ -592,6 +668,158 @@ all.h:
 /opt/homebrew/include/eigen3/Eigen/src/Eigenvalues/./RealQZ.h:
 
 /opt/homebrew/include/eigen3/Eigen/src/Eigenvalues/MatrixBaseEigenvalues.h:
+
+/opt/homebrew/include/eigen3/Eigen/Eigen:
+
+/opt/homebrew/include/eigen3/Eigen/Sparse:
+
+/opt/homebrew/include/eigen3/Eigen/SparseCore:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseUtil.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseMatrixBase.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/CommonCwiseUnaryOps.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/CommonCwiseBinaryOps.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/MatrixCwiseUnaryOps.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/MatrixCwiseBinaryOps.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/../plugins/BlockMethods.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseAssign.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/CompressedStorage.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/AmbiVector.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseCompressedBase.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseMatrix.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseMap.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/MappedSparseMatrix.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseVector.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseRef.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseCwiseUnaryOp.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseCwiseBinaryOp.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseTranspose.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseBlock.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseDot.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseRedux.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseView.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseDiagonalProduct.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/ConservativeSparseSparseProduct.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseSparseProductWithPruning.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseProduct.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseDenseProduct.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseSelfAdjointView.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseTriangularView.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/TriangularSolver.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparsePermutation.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseFuzzy.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseSolverBase.h:
+
+/opt/homebrew/include/eigen3/Eigen/OrderingMethods:
+
+/opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/Amd.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/../Core/util/NonMPL2.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/Ordering.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/OrderingMethods/Eigen_Colamd.h:
+
+/opt/homebrew/include/eigen3/Eigen/SparseCholesky:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCholesky/SimplicialCholesky.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCholesky/SimplicialCholesky_impl.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCholesky/../Core/util/NonMPL2.h:
+
+/opt/homebrew/include/eigen3/Eigen/SparseLU:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_gemm_kernel.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_Structs.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_SupernodalMatrix.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLUImpl.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseCore/SparseColEtree.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_Memory.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_heap_relax_snode.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_relax_snode.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_pivotL.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_panel_dfs.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_kernel_bmod.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_panel_bmod.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_column_dfs.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_column_bmod.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_copy_to_ucol.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_pruneL.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU_Utils.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseLU/SparseLU.h:
+
+/opt/homebrew/include/eigen3/Eigen/SparseQR:
+
+/opt/homebrew/include/eigen3/Eigen/src/SparseQR/SparseQR.h:
+
+/opt/homebrew/include/eigen3/Eigen/IterativeLinearSolvers:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/SolveWithGuess.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/IterativeSolverBase.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/BasicPreconditioners.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/ConjugateGradient.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/LeastSquareConjugateGradient.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/BiCGSTAB.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/IncompleteLUT.h:
+
+/opt/homebrew/include/eigen3/Eigen/src/IterativeLinearSolvers/IncompleteCholesky.h:
 
 /opt/homebrew/include/eigen3/unsupported/Eigen/CXX11/Tensor:
 

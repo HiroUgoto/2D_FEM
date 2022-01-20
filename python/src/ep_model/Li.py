@@ -689,20 +689,21 @@ if __name__ == "__main__":
 
     emax = 0.957
     emin = 0.611
-    Dr = 0.75
+    Dr = 0.70
     e0 = emax-Dr*(emax-emin)
     print(e0)
 
-    Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
-    compression_stress = 40.e3
+    # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
+    Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.05)
+    compression_stress = 10.e3
     Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
     sys.exit()
 
-    cs_list = [20.e3,40.e3,80.e3]
+    cs_list = [10.e3,20.e3,40.e3,80.e3]
     sigma1_list, sigma3_list = [],[]
     gamma_list, ev_list = [],[]
     for compression_stress in cs_list:
-        Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
+        Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.05)
         s1,s3,gamma,ev = Li_model.triaxial_compression(e0,compression_stress,print_result=True,plot=False)
 
         sigma1_list += [s1]

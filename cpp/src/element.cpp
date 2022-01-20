@@ -544,6 +544,7 @@ void Element::ep_init_calc_stress_all() {
   EM B = mk_b(this->dof, this->nnode, dnj);
   EV strain = B * u;
   EV stress = this->De * strain;
+  // this->ep_p->initial_state_overload(stress,2.0);
   this->ep_p->initial_state(stress);
   this->stress = stress;
   this->strain = strain;

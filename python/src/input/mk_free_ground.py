@@ -5,7 +5,7 @@ area_x = 1.0
 area_z = 10.0
 
 nx = 1
-nz = 6
+nz = 10
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -76,7 +76,8 @@ nelem = ielem       #number of elements
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,100.0e9,850.0)]
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
-material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
+# material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
+material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.97,0.7148,0.957,0.0)]
                                                      # rho, nu, G0, M, e0, eg, d1
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
 

@@ -44,14 +44,15 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,3*fp,0.003);
+  fem.set_rayleigh_damping(fp,3*fp,0.0003);
 
   // ----------------------------- //
   size_t fsamp = 20000;
-  // amp = 0.25;
-  // amp = amp*2.0;
+  // fp = 3.75;
+  amp = amp*1.5;
   // double duration = 3.0/fp + 1.0/fp;
-  double duration = 14.0/fp + 1.0/fp;
+  double duration = 11.0/fp + 1.0/fp;
+  // double duration = 14.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));

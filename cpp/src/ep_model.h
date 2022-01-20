@@ -61,6 +61,8 @@ class Li2002: public EP {
     void clear_strain();
 
     void initial_state(EV init_stress);
+    void initial_state_overload(EV init_stress, double amp);
+
     std::tuple<EM, EV, double> set_Dp_matrix(EV FEMdstrain);
     EV strain_to_stress(EV FEMdstrain);
 

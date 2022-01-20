@@ -1,6 +1,7 @@
 #include "all.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/Eigen>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include "elasto_plastic.h"
 #include "ep_model.h"
@@ -135,6 +136,73 @@ void Li2002::initial_state(EV init_stress) {
     auto [ev, gamma] = this->set_strain_variable(this->strain);
     this->e = this->e0 - ev*(1.0+this->e0);
   }
+}
+
+// ------------------------------------------------------------------- //
+void Li2002::initial_state_overload(EV init_stress, double amp) {
+  EM init_stress_mat = this->FEMstress_to_matrix(init_stress);
+  EM over_stress_mat = init_stress_mat*amp;
+
+  // isotropic compression
+  double compression_stress = over_stress_mat(0,0);
+  this->isotropic_compression(this->e0,compression_stress);
+  this->e = this->e0;
+
+  // set initial parameters
+  double p = this->set_stress_variable_p(this->stress);
+  this->beta = p;
+  this->H2 = p;
+
+  size_t nstep = 50;
+  EV dstrain_vec = EV::Zero(6);
+  EV dstress_vec = EV::Zero(6);
+
+  dstress_vec(2) = (over_stress_mat(2,2)-over_stress_mat(0,0))/nstep;
+
+  EM dstrain_input = this->vector_to_matrix(dstrain_vec);
+  EM dstress_input = this->vector_to_matrix(dstress_vec);
+
+  StateParameters sp0(this->strain,this->stress,dstrain_input,dstress_input,false,false);
+
+  for (size_t i = 0 ; i < nstep ; i++ ) {
+    StateParameters sp(this->strain,this->stress,sp0.dstrain,dstress_input,false,false);
+
+    auto [p, R] = this->set_stress_variable(this->stress);
+    auto [dstrain,sp0] = this->plastic_deformation_strain(dstrain_input,dstress_input,sp);
+
+    this->stress += dstress_input;
+    this->strain += dstrain;
+
+    auto [ev, gamma] = this->set_strain_variable(this->strain);
+    this->e = this->e0 - ev*(1.0+this->e0);
+  }
+
+  dstress_input = (init_stress_mat - over_stress_mat)/nstep;
+  for (size_t i = 0 ; i < nstep ; i++ ) {
+    StateParameters sp(this->strain,this->stress,sp0.dstrain,dstress_input,false,false);
+
+    auto [p, R] = this->set_stress_variable(this->stress);
+    auto [dstrain,sp0] = this->plastic_deformation_strain(dstrain_input,dstress_input,sp);
+
+    this->stress += dstress_input;
+    this->strain += dstrain;
+
+    auto [ev, gamma] = this->set_strain_variable(this->strain);
+    this->e = this->e0 - ev*(1.0+this->e0);
+  }
+
+  // std::cout << "   " << std::endl;
+  // std::cout << this->strain << std::endl;
+  // std::cout << this->stress << std::endl;
+  //
+  // std::cout << "   " << std::endl;
+  // std::cout << init_stress << std::endl;
+
+  //// set initial parameters
+  // p = this->set_stress_variable_p(this->stress);
+  // std::cout << "   " << std::endl;
+  // std::cout << p << " " << this->beta << " " << this->H2 << std::endl;
+  // exit(1);
 }
 
 // ------------------------------------------------------------------- //
@@ -570,10 +638,15 @@ double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
   }
 
   // double tf = (tl+tr)/2.0;
-  // if ((this->_F1_boundary_surface(tf,rij,alpha) > 1.e-3) || (this->_F1_boundary_surface(tf,rij,alpha) < -1.e-3)){
+  // if ((this->_F1_boundary_surface(tf,rij,alpha) > 1.e-6) || (this->_F1_boundary_surface(tf,rij,alpha) < -1.e-6)){
   //   std::cout << "# " << tf << " " << this->_F1_boundary_surface(tf,rij,alpha) << std::endl;
   //   std::cout << rij << std::endl;
   //   std::cout << alpha << std::endl;
+  //
+  //   Eigen::SelfAdjointEigenSolver<EM> ES(rij);
+  //   std::cout << ES.eigenvalues() << std::endl;
+  //
+  //   exit(1);
   //
   //   EM rij_bar = alpha + tf*(rij-alpha);
   //   std::cout << " " << std::endl;
@@ -604,7 +677,7 @@ double Li2002::_find_rho1_ratio(const EM rij, const EM alpha) {
   //   std::cout << t1 << ": "<< F1_t1 << std::endl;
   //
   //   this->test_flag = true;
-  //   // exit(1);
+  //   exit(1);
   // }
 
   return (tl+tr)/2.0;
