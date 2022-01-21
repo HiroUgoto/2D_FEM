@@ -1,13 +1,13 @@
 import numpy as np
 import os,sys
 
-area_x = 230.0
-# area_x = 30.0
+#area_x = 230.0
+area_x = 30.0
 area_z = 10.0
 
 # nx = 240
 # nz = 40
-nx = 60
+nx = 30
 nz = 10
 dof = 2
 
@@ -47,8 +47,8 @@ xg_log[-num_log:]    =  log_grid + xc
 xg_log[num_log:nx+1] = -box_grid[::-1] + xc
 xg_log[0:num_log] = -log_grid[::-1] + xc
 
-xg = np.copy(xg_log)
-print(xg)
+# xg = np.copy(xg_log)
+# print(xg)
 
 ### Set node ###
 node = np.empty([len(xg),len(zg)],dtype=np.int32)

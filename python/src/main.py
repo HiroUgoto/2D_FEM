@@ -38,17 +38,19 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-fem.set_rayleigh_damping(fp,3*fp,0.0005)
+fem.set_rayleigh_damping(fp,40*fp,0.01)
 
 ## --- Define input wave --- ##
 fsamp = 10000
 # fp = 3.75
 amp = amp*1.5
+duration = 5.0/fp + 1.0/fp
+# duration = 8.0/fp + 1.0/fp
 # duration = 14.0/fp + 1.0/fp
-duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
+# wave_acc = input_wave.tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp)
 ntim = len(tim)
 
 # plt.figure()

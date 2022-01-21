@@ -504,7 +504,7 @@ void Li2002::set_mapping_stress(StateParameters &sp) {
       this->beta = sp.p;
     }
 
-    if ((sp.rij-this->alpha).norm() < 1.e-5) {
+    if ((sp.rij-this->alpha).norm() < 1.e-2) {
       sp.elastic_flag1 = true;
     } else {
       auto [F1,rij_bar,R_bar,g_bar] = this->_F1_boundary_surface_all(1.0,sp.rij,this->alpha);

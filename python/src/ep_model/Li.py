@@ -253,7 +253,7 @@ class Li2002:
         if sp.elastic_flag2:
             self.beta = np.copy(sp.p)
 
-        if np.linalg.norm(sp.rij-self.alpha) < 1.e-6:  # Elastic behavior
+        if np.linalg.norm(sp.rij-self.alpha) < 1.e-2:  # Elastic behavior
             sp.elastic_flag1 = True
         else:
             F1,rij_bar,R_bar,g_bar = F1_boundary_surface_all(1.0,sp.rij,self.alpha)
@@ -694,10 +694,10 @@ if __name__ == "__main__":
     print(e0)
 
     # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
-    Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.05)
-    compression_stress = 10.e3
-    Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
-    sys.exit()
+    # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.05)
+    # compression_stress = 10.e3
+    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
+    # sys.exit()
 
     cs_list = [10.e3,20.e3,40.e3,80.e3]
     sigma1_list, sigma3_list = [],[]
