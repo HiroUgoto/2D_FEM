@@ -131,7 +131,7 @@ class Li2002:
         if J2 == 0.0:
             return 0.0
         J3 = -np.linalg.det(dev_stress)
-        s3 = J3/2 * (3/J2)**1.5
+        s3 = J3/2.0 * (3.0/J2)**1.5
         s3 = max(s3,-1.0)
         s3 = min(s3,1.0)
         theta3 = np.arcsin(s3)

@@ -44,20 +44,20 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,40*fp,0.01);
+  fem.set_rayleigh_damping(fp,10*fp,0.01);
 
   // ----------------------------- //
   size_t fsamp = 20000;
   // fp = 3.75;
   amp = amp*1.5;
-  double duration = 5.0/fp + 1.0/fp;
-  // double duration = 8.0/fp + 1.0/fp;
+  // double duration = 5.0/fp + 1.0/fp;
+  double duration = 8.0/fp + 1.0/fp;
   // double duration = 14.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
-  wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration,amp);
-  // wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
+  // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration,amp);
+  wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
   // wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
   size_t ntim = tim.size();
 
