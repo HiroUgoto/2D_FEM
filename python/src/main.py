@@ -75,7 +75,6 @@ vel0 = np.array([0.0,0.0])
 
 
 for it in range(ntim):
-# for it in range(ntim//3):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
 
@@ -91,12 +90,11 @@ for it in range(ntim):
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
     output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
 
-    # sys.exit()
-
     print(fem.elements[0].stress,fem.elements[0].stress_yy)
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
         # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_xx[it,1])
+
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")

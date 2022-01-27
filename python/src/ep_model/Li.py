@@ -248,11 +248,6 @@ class Li2002:
 
             return t
 
-        # if sp.elastic_flag1:
-        #     self.alpha = np.copy(sp.rij)
-        # if sp.elastic_flag2:
-        #     self.beta = np.copy(sp.p)
-
         H1,H2 = self.H1,self.H2
 
         if np.linalg.norm(sp.rij-self.alpha) < 1.e-6:  # Elastic behavior
@@ -282,24 +277,6 @@ class Li2002:
             rho2 = np.abs(sp.p-self.beta)
             rho2_b = np.abs(sp.p_bar-self.beta)
             sp.rho2_ratio = max(rho2_b/rho2,1.0)
-
-            # if sp.dp > 0.0:
-            #     if sp.p <= self.beta:
-            #         sp.elastic_flag2 = True
-            #     else:
-            #         sp.p_bar = np.copy(self.H2)
-            # elif sp.dp < 0.0:
-            #     if self.beta <= sp.p:
-            #         sp.elastic_flag2 = True
-            #     else:
-            #         sp.p_bar = self.pmin
-            # else:
-            #     sp.elastic_flag2 = True
-            #
-            # if not sp.elastic_flag2:
-            #     rho2 = np.abs(sp.p-self.beta)
-            #     rho2_b = np.abs(sp.p_bar-self.beta)
-            #     sp.rho2_ratio = rho2_b / rho2
 
         return H1, H2
 
@@ -358,7 +335,6 @@ class Li2002:
             sp.Kp2_b = 0.0
             sp.D2 = 0.0
         else:
-            # sign = sp.dp/np.abs(sp.dp)
             sign = (sp.p-self.beta)/np.abs(sp.p-self.beta)
             Mg_R = self.M*sp.g/sp.R
             sp.Kp2,sp.Kp2_b = plastic_modulus2(sp.Ge,Mg_R,sp.rho2_ratio,sign)
@@ -456,7 +432,7 @@ class Li2002:
 
     # -------------------------------------------------------------------------------------- #
     def check_unload(self,sp):
-        H1,H2 = self.set_mapping_stress(sp,False,False)
+        self.set_mapping_stress(sp,False,False)
         self.set_parameters(sp)
         self.set_parameter_nm(sp)
         self.set_parameter_TZ(sp)
@@ -469,11 +445,15 @@ class Li2002:
             elastic_flag1 = False
 
         dL2 = np.einsum("ij,ij",sp.Zij,sp.dstrain)
-        if sp.elastic_flag2 or (dL2 < 0.0):
+        if sp.elastic_flag2 or (dL2 < -1.e-12):
             elastic_flag2 = True
             self.beta = np.copy(sp.p)
         else:
             elastic_flag2 = False
+
+        # print(dL1,dL2)
+        # print(elastic_flag1,elastic_flag2)
+        # exit()
 
         return elastic_flag1,elastic_flag2
 
@@ -567,6 +547,7 @@ class Li2002:
         dstress = np.copy(dstress_ep)
 
         # print()
+        # exit()
 
         return dstrain,dstress,sp2
 

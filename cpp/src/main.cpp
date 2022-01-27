@@ -44,21 +44,19 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,10*fp,0.01);
+  // fem.set_rayleigh_damping(fp,10*fp,0.01);
 
   // ----------------------------- //
-  size_t fsamp = 20000;
-  // fp = 3.75;
-  amp = amp*1.5;
+  size_t fsamp = 10000;
   // double duration = 5.0/fp + 1.0/fp;
-  double duration = 8.0/fp + 1.0/fp;
-  // double duration = 14.0/fp + 1.0/fp;
+  // double duration = 8.0/fp + 1.0/fp;
+  double duration = 14.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
   // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration,amp);
-  wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
-  // wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
+  // wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
+  wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
   size_t ntim = tim.size();
 
   std::ofstream f0(output_dir + "input.acc");
@@ -86,12 +84,14 @@ int main() {
   EV acc0 = EV::Zero(fem.dof);
   EV vel0 = EV::Zero(fem.dof);
 
+  // for (size_t it = 0 ; it < 1000 ; it++) {
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
 
     // fem.update_time_input_MD(vel0);
-    fem.update_time_input_MD_gravity(vel0);
+    // fem.update_time_input_MD_gravity(vel0);
+    fem.update_time_MD_gravity(acc0);
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node* node_p = fem.output_nodes_p[i];
@@ -109,14 +109,21 @@ int main() {
       output_element_stress_yy(it,i) = element_p->stress_yy;
     }
 
-    if (it%100 == 0) {
-      std::cout << it << " t= " << it*dt << " ";
-      std::cout << output_accx(it,0) << " ";
-      std::cout << output_element_stress_xx(it,0) << " ";
-      std::cout << output_element_stress_yy(it,0) << " ";
-      std::cout << output_element_stress_xx(it,1) << " ";
-      std::cout << output_element_stress_yy(it,1) << "\n";
-    }
+    std::cout << fem.elements[0].stress(0) << " ";
+    std::cout << fem.elements[0].stress(1) << " ";
+    std::cout << fem.elements[0].stress(2) << " ";
+    std::cout << fem.elements[0].stress_yy << std::endl;
+
+    // if (it%100 == 0) {
+    //   std::cout << it << " t= " << it*dt << " ";
+    //   std::cout << output_accx(it,0) << " ";
+    //   std::cout << output_element_stress_xx(it,0) << " ";
+    //   std::cout << output_element_stress_yy(it,0) << " ";
+    //   std::cout << output_element_stress_xx(it,1) << " ";
+    //   std::cout << output_element_stress_yy(it,1) << "\n";
+    // }
+
+    // exit(1);
   }
 
   clock_t end = clock();

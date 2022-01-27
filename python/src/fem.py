@@ -302,7 +302,7 @@ class Fem():
 
         for element in self.ep_elements:
             element.ep_init_calc_stress_all()
-
+        
     # ---------------------------------------
     def _set_ep_initial_state_node_clear(self):
         for node in self.node_set:

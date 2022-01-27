@@ -168,6 +168,8 @@ class EP:
             self.stress += dstress
             self.strain += dstrain
 
+            # print(self.stress)
+
             ev,gamma = self.model.set_strain_variable(self.strain)
             self.e = self.e0 - ev*(1+self.e0)
             # print(p,R,gamma)
@@ -190,7 +192,8 @@ class EP:
         ef1,ef2 = self.model.check_unload(sp0)
 
         # print(ef1,self.model.alpha)
-        # print(ef2,self.model.beta)
+        # print(ef2,sp0.p,self.model.beta)
+
 
         sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,ef1=ef1,ef2=ef2)
         Ep = self.model.plastic_stiffness(sp)
@@ -206,7 +209,6 @@ class EP:
 
         # print(self.strain)
         # print(self.stress)
-
 
         Dp = self.modulus_to_Dmatrix(Ep)
         stress_yy = -self.stress[1,1]

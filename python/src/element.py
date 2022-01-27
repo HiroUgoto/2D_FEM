@@ -331,6 +331,12 @@ class Element:
             gp.strain = B @ np.hstack(self.u)
             gp.stress = self.De @ gp.strain
 
+        dn = self.estyle.shape_function_dn(0.0,0.0)
+        _,dnj = mk_dnj(self.xnT,dn)
+        B = mk_b(self.dof,self.nnode,dnj)
+        self.strain = B @ np.hstack(self.u)
+        self.stress = self.De @ self.strain
+        self.ep.initial_state(self.stress)
         self.stress_yy = self.stress[0]
 
     def calc_ep_stress(self):

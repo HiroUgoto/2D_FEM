@@ -61,6 +61,7 @@ class Fem {
     void update_time_FD(const EV acc0);
     void update_time_MD(const EV acc0);
     void update_time_input_FD(const EV vel0);
+    void update_time_MD_gravity(const EV acc0);
     void update_time_input_MD(const EV vel0);
     void update_time_input_MD_gravity(const EV vel0);
 

@@ -332,20 +332,6 @@ void Fem::_self_gravity_cg(const bool full) {
 // ------------------------------------------------------------------- //
 // ------------------------------------------------------------------- //
 void Fem::set_ep_initial_state() {
-  double initial_pressure = 40.e3;
-  EV initial_stress = EV::Zero(3);
-  initial_stress(0) = -initial_pressure;
-  initial_stress(1) = -initial_pressure;
-  initial_stress(2) = -initial_pressure;
-
-  for (auto& element_p : this->ep_elements_p) {
-    element_p->ep_p->initial_state(initial_stress);
-    auto [rmu,rlambda] = element_p->ep_p->elastic_modulus_lame();
-    element_p->material.rmu = rmu;
-    element_p->material.rlambda = rlambda;
-    // std::cout << std::sqrt(element_p->material.rmu/element_p->rho) << std::endl;
-  }
-
   double u0 = this->nodes[0].u[1];
   for (size_t i = 0 ; i < 20 ; i++) {
     if (i == 0) {
@@ -382,6 +368,7 @@ void Fem::set_ep_initial_state() {
   for (auto& element_p : this->ep_elements_p) {
     element_p->ep_init_calc_stress_all();
   }
+
 }
 
 // ------------------------------------------------------------------- //
@@ -505,6 +492,35 @@ void Fem::update_time_MD(const EV acc0) {
 
     for (auto& element_p : this->output_elements_p) {
       element_p->calc_stress();
+    }
+  }
+
+// ------------------------------------------------------------------- //
+void Fem::update_time_MD_gravity(const EV acc0) {
+    for (auto& node : this->nodes) {
+      node.force = -node.static_force;
+    }
+
+    for (auto& element : this->elements) {
+      element.update_bodyforce(acc0);
+    }
+
+    for (auto& element_p : this->e_elements_p) {
+      element_p->mk_ku_cv();
+    }
+    for (auto& element_p : this->ep_elements_p) {
+      element_p->mk_ep_B_stress();
+    }
+
+    this->_update_time_set_free_nodes();
+    this->_update_time_set_fixed_nodes();
+    this->_update_time_set_connected_elements();
+
+    for (auto& element_p : this->output_e_elements_p) {
+      element_p->calc_stress();
+    }
+    for (auto& element_p : this->output_ep_elements_p) {
+      element_p->calc_ep_stress();
     }
   }
 

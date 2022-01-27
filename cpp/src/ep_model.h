@@ -61,7 +61,6 @@ class Li2002: public EP {
     void clear_strain();
 
     void initial_state(EV init_stress);
-    void initial_state_overload(EV init_stress, double amp);
 
     std::tuple<EM, EV, double> set_Dp_matrix(EV FEMdstrain);
     EV strain_to_stress(EV FEMdstrain);
@@ -94,7 +93,7 @@ class Li2002: public EP {
     Eigen::Tensor<double,4> plastic_stiffness(StateParameters &sp);
     void update_parameters(StateParameters &sp);
 
-    void set_mapping_stress(StateParameters &sp);
+    std::tuple<double, double> set_mapping_stress(StateParameters &sp);
     std::tuple<double, EM, double, double> _F1_boundary_surface_all(const double t, const EM rij, const EM alpha);
     double _F1_boundary_surface(const double t, const EM rij, const EM alpha);
     std::tuple<EM, double, double> _mapping_r(const double t, const EM rij, const EM alpha);
