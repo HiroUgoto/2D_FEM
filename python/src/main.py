@@ -38,19 +38,18 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-fem.set_rayleigh_damping(fp,40*fp,0.01)
+# fem.set_rayleigh_damping(fp,40*fp,0.01)
 
 ## --- Define input wave --- ##
 fsamp = 10000
-# fp = 3.75
-amp = amp*1.5
-duration = 5.0/fp + 1.0/fp
+# duration = 5.0/fp + 1.0/fp
 # duration = 8.0/fp + 1.0/fp
-# duration = 14.0/fp + 1.0/fp
+duration = 14.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
-# wave_acc = input_wave.tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp)
+# wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
+# wave_acc = input_wave.simple_sin(tim,fp,amp)
 ntim = len(tim)
 
 # plt.figure()
@@ -65,6 +64,7 @@ fem.update_init(dt)
 output_element_stress_xx = np.zeros((ntim,fem.output_nelem))
 output_element_stress_zz = np.zeros((ntim,fem.output_nelem))
 output_element_stress_xz = np.zeros((ntim,fem.output_nelem))
+output_element_stress_yy = np.zeros((ntim,fem.output_nelem))
 
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_dispx = np.zeros((ntim,fem.output_nnode))
@@ -75,10 +75,12 @@ vel0 = np.array([0.0,0.0])
 
 
 for it in range(ntim):
+# for it in range(ntim//3):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
 
-    fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
+    # fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
+    fem.update_time(acc0,self_gravity=True)
 
     output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
@@ -87,10 +89,14 @@ for it in range(ntim):
     output_element_stress_xx[it,:] = [element.stress[0] for element in fem.output_elements]
     output_element_stress_zz[it,:] = [element.stress[1] for element in fem.output_elements]
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
+    output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
 
+    # sys.exit()
+
+    print(fem.elements[0].stress,fem.elements[0].stress_yy)
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
-        print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_xx[it,1])
+        # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_xx[it,1])
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")

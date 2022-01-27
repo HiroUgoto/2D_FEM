@@ -331,6 +331,8 @@ class Element:
             gp.strain = B @ np.hstack(self.u)
             gp.stress = self.De @ gp.strain
 
+        self.stress_yy = self.stress[0]
+
     def calc_ep_stress(self):
         pass
 
@@ -343,8 +345,9 @@ class Element:
             B = mk_b(self.dof,self.nnode,dnj)
             strain = B @ np.hstack(self.u)
             dstrain = strain - self.strain
-            Dp,self.stress = self.ep.set_Dp_matrix(dstrain)
+            Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
             self.strain = np.copy(strain)
+            self.stress_yy = stress_yy
 
             for gp in self.gauss_points:
                 det,dnj = mk_dnj(self.xnT,gp.dn)
