@@ -50,15 +50,15 @@ int main() {
   size_t fsamp = 15000;
   amp = 0.75 ;
   fp = 3.75 ;
-  double duration = 5.0/fp + 1.0/fp;
+  // double duration = 5.0/fp + 1.0/fp;
   // double duration = 8.0/fp + 1.0/fp;
-  // double duration = 14.0/fp + 1.0/fp;
+  double duration = 14.0/fp + 1.0/fp;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
-  wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp);
+  // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp);
   // wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
-  // wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
+  wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
   size_t ntim = tim.size();
 
   std::ofstream f0(output_dir + "input.acc");
