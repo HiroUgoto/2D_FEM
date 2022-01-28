@@ -20,7 +20,6 @@ output_dir = "result/"
 fem.set_init()
 fem.set_output(outputs)
 plot_model.plot_mesh(fem)
-exit()
 
 ## --- Define input wave --- ##
 # Set amplitude #
@@ -39,7 +38,7 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-# fem.set_rayleigh_damping(fp,40*fp,0.01)
+# fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
 fsamp = 10000
@@ -94,7 +93,7 @@ for it in range(ntim):
     # print(fem.elements[0].stress,fem.elements[0].stress_yy)
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
-        print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_xx[it,1])
+        print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
 
 
 elapsed_time = time.time() - start

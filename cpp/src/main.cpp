@@ -48,7 +48,7 @@ int main() {
 
   // ----------------------------- //
   size_t fsamp = 15000;
-  amp = 0.75 ;
+  amp = 0.75*1.5;
   fp = 3.75 ;
   // double duration = 5.0/fp + 1.0/fp;
   // double duration = 8.0/fp + 1.0/fp;

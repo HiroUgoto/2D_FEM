@@ -22,7 +22,7 @@ for k in range(len(zg)):
         dofx,dofz = 1,1
         if k == len(zg)-1:
             dofz = 0
-            dofx = 0
+            # dofx = 0
 
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
@@ -48,7 +48,18 @@ for k in range(nz):
         ielem += 1
 
 ######
-for k in range(len(zg)-1):     #connected element
+for i in range(nx):
+    style = "1d3input"
+    im = 2
+
+    param_line = "{} {} {} ".format(ielem,style,im)
+    style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
+
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
+
+######
+for k in range(len(zg)):     #connected element
     style = "connect"
     im = -1
 
@@ -68,6 +79,8 @@ material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.3
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
 material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
                                                      # rho, nu, G0, M, e0, eg, d1
+material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,300.0,1700.0)]
+
 
 nmaterial = len(material_lines)
 

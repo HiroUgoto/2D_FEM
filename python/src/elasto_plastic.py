@@ -203,6 +203,9 @@ class EP:
         dstrain,dstress = \
             self.model.solve_strain_with_consttain(dstrain,dstress_input,Ep,self.deformation)
 
+        sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,ef1=ef1,ef2=ef2)
+        self.model.update_parameters(sp2)
+
         ev,gamma = self.model.set_strain_variable(self.strain)
         self.e = self.e0 - ev*(1+self.e0)
 

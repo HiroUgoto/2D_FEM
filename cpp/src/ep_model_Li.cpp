@@ -188,6 +188,9 @@ std::tuple<EM, EV, double> Li2002::set_Dp_matrix(EV FEMdstrain) {
 
   EM dstress = this->solve_stress(dstrain,Ep);
 
+  StateParameters sp2(strain,stress,dstrain,dstress,ef1,ef2);
+  this->update_parameters(sp2);
+
   // std::cout << "ef1 " << ef1 << " ";
   // std::cout << this->alpha << std::endl;
   //
@@ -657,8 +660,8 @@ void Li2002::set_parameters(StateParameters &sp) {
 
 double Li2002::_accumulated_load_index(const double L1) {
   double fL = 1.0-this->b3;
-  double fL2 = std::pow(1.0-L1/this->b1,2)+(L1/this->b1)/std::pow(this->b2,2) + this->b3;
-  return fL/std::sqrt(fL2);
+  double fL2 = std::pow(1.0-L1/this->b1,2)+(L1/this->b1)/std::pow(this->b2,2) ;
+  return fL/std::sqrt(fL2) + this->b3 ;
 }
 
 double Li2002::_scaling_factor(const double e, const double rho1_ratio) {
