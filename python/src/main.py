@@ -19,7 +19,8 @@ output_dir = "result/"
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-# plot_model.plot_mesh(fem)
+plot_model.plot_mesh(fem)
+exit()
 
 ## --- Define input wave --- ##
 # Set amplitude #

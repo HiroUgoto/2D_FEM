@@ -44,10 +44,12 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,10*fp,0.001);
+  fem.set_rayleigh_damping(fp,10*fp,0.002);
 
   // ----------------------------- //
   size_t fsamp = 15000;
+  amp = 0.75 ;
+  fp = 3.75 ;
   double duration = 5.0/fp + 1.0/fp;
   // double duration = 8.0/fp + 1.0/fp;
   // double duration = 14.0/fp + 1.0/fp;
@@ -117,10 +119,9 @@ int main() {
     if (it%100 == 0) {
       std::cout << it << " t= " << it*dt << " ";
       std::cout << output_accx(it,0) << " ";
-      std::cout << output_element_stress_xx(it,0) << " ";
-      std::cout << output_element_stress_yy(it,0) << " ";
       std::cout << output_element_stress_xx(it,1) << " ";
-      std::cout << output_element_stress_yy(it,1) << "\n";
+      std::cout << output_element_stress_zz(it,1) << " ";
+      std::cout << output_element_stress_yy(it,1) << std::endl;
     }
   }
 

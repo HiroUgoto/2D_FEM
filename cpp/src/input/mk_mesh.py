@@ -1,13 +1,13 @@
 import numpy as np
 import os,sys
 
-#area_x = 230.0
-area_x = 60.0
+area_x = 100.0
+# area_x = 60.0
 area_z = 10.0
 
 # nx = 240
 # nz = 40
-nx = 30
+nx = 60
 nz = 10
 dof = 2
 
@@ -30,25 +30,25 @@ i0_box_node = i0_box * 2         # 躯体左端のノード位置
 i1_box_node = (i1_box+1) * 2     # 躯体右端のノード位置
 k1_box_node = (k1_box+1) * 2     # 躯体下端のノード位置
 
-# #######  log2 で 要素幅を変える
-# xc = area_x/2.0
-# x0 = width_box*1.5
-# x1 = area_x - xc
-#
-# x0_log2 = np.log(x0)/np.log(2)
-# x1_log2 = np.log(x1)/np.log(2)
-# num_log = 2*(nx//2 - nx_box//2*3) + 1
-# log_grid = np.logspace(x0_log2,x1_log2,num_log,base=2)
-# box_grid = np.linspace(0,x0,3*nx_box,endpoint=False)
-#
-# xg_log = np.zeros_like(xg)
-# xg_log[nx:-num_log] = box_grid + xc
-# xg_log[-num_log:]    =  log_grid + xc
-# xg_log[num_log:nx+1] = -box_grid[::-1] + xc
-# xg_log[0:num_log] = -log_grid[::-1] + xc
+#######  log2 で 要素幅を変える
+xc = area_x/2.0
+x0 = width_box*1.5
+x1 = area_x - xc
 
-# xg = np.copy(xg_log)
-# print(xg)
+x0_log2 = np.log(x0)/np.log(2)
+x1_log2 = np.log(x1)/np.log(2)
+num_log = 2*(nx//2 - nx_box//2*3) + 1
+log_grid = np.logspace(x0_log2,x1_log2,num_log,base=2)
+box_grid = np.linspace(0,x0,3*nx_box,endpoint=False)
+
+xg_log = np.zeros_like(xg)
+xg_log[nx:-num_log] = box_grid + xc
+xg_log[-num_log:]    =  log_grid + xc
+xg_log[num_log:nx+1] = -box_grid[::-1] + xc
+xg_log[0:num_log] = -log_grid[::-1] + xc
+
+xg = np.copy(xg_log)
+print(xg)
 
 ### Set node ###
 node = np.empty([len(xg),len(zg)],dtype=np.int32)
