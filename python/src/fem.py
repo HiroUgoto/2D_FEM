@@ -290,6 +290,7 @@ class Fem():
                 element.ep.initial_state(element.stress)
                 element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
                 # print(np.sqrt(element.material.rmu/element.rho),element.stress)
+                # print(np.sqrt(element.material.rmu/element.rho))
 
             self._set_ep_initial_state_node_clear()
             self._set_initial_matrix()
@@ -302,7 +303,7 @@ class Fem():
 
         for element in self.ep_elements:
             element.ep_init_calc_stress_all()
-        
+
     # ---------------------------------------
     def _set_ep_initial_state_node_clear(self):
         for node in self.node_set:

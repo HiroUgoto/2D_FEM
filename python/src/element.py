@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 
+import material
 import element_style
 import elasto_plastic
 
@@ -30,16 +31,17 @@ class Element:
         self.nodes = nodes
         self.node_set = set(nodes)
 
-    def set_material(self,dof,material):
-        if material is None:
+    def set_material(self,dof,m):
+        if m is None:
             self.material = None
             self.rho = None
         else:
-            self.material = material
-            self.rho = material.rho
+            # self.material = material
+            self.material = material.Material(m.id,m.style,m.param)
+            self.rho = m.rho
 
-            if "ep_" in material.style:
-                self.ep = elasto_plastic.EP(dof,material.style,material.param)
+            if "ep_" in m.style:
+                self.ep = elasto_plastic.EP(dof,m.style,m.param)
                 p = 9.8*self.rho
                 self.material.rmu,self.material.rlambda = self.ep.elastic_modulus_ep(self.ep.e0,p)
 

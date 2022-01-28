@@ -1,13 +1,14 @@
 import numpy as np
 import os,sys
 
-area_x = 230.0
+#area_x = 230.0
+area_x = 30.0
 area_z = 10.0
 
 # nx = 240
 # nz = 40
-nx = 60
-nz = 10
+nx = 12
+nz = 4
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -18,8 +19,8 @@ zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
 width_box = 10.0  # 躯体の幅(m)
 # nx_box = 40  # 躯体の要素数（水平）
 # nz_box = 20  # 躯体の要素数（鉛直）
-nx_box = 10  # 躯体の要素数（水平）
-nz_box = 5  # 躯体の要素数（鉛直）
+nx_box = 4  # 躯体の要素数（水平）
+nz_box = 2  # 躯体の要素数（鉛直）
 
 i0_box = (nx-nx_box)//2     # 躯体左端の要素位置
 i1_box = (nx+nx_box)//2-1   # 躯体右端の要素位置
@@ -29,25 +30,25 @@ i0_box_node = i0_box * 2         # 躯体左端のノード位置
 i1_box_node = (i1_box+1) * 2     # 躯体右端のノード位置
 k1_box_node = (k1_box+1) * 2     # 躯体下端のノード位置
 
-#######  log2 で 要素幅を変える
-xc = area_x/2.0
-x0 = width_box*1.5
-x1 = area_x - xc
+# #######  log2 で 要素幅を変える
+# xc = area_x/2.0
+# x0 = width_box*1.5
+# x1 = area_x - xc
+#
+# x0_log2 = np.log(x0)/np.log(2)
+# x1_log2 = np.log(x1)/np.log(2)
+# num_log = 2*(nx//2 - nx_box//2*3) + 1
+# log_grid = np.logspace(x0_log2,x1_log2,num_log,base=2)
+# box_grid = np.linspace(0,x0,3*nx_box,endpoint=False)
+#
+# xg_log = np.zeros_like(xg)
+# xg_log[nx:-num_log] = box_grid + xc
+# xg_log[-num_log:]    =  log_grid + xc
+# xg_log[num_log:nx+1] = -box_grid[::-1] + xc
+# xg_log[0:num_log] = -log_grid[::-1] + xc
 
-x0_log2 = np.log(x0)/np.log(2)
-x1_log2 = np.log(x1)/np.log(2)
-num_log = 2*(nx//2 - nx_box//2*3) + 1
-log_grid = np.logspace(x0_log2,x1_log2,num_log,base=2)
-box_grid = np.linspace(0,x0,3*nx_box,endpoint=False)
-
-xg_log = np.zeros_like(xg)
-xg_log[nx:-num_log] = box_grid + xc
-xg_log[-num_log:]    =  log_grid + xc
-xg_log[num_log:nx+1] = -box_grid[::-1] + xc
-xg_log[0:num_log] = -log_grid[::-1] + xc
-
-xg = np.copy(xg_log)
-print(xg)
+# xg = np.copy(xg_log)
+# print(xg)
 
 ### Set node ###
 node = np.empty([len(xg),len(zg)],dtype=np.int32)
@@ -162,7 +163,8 @@ nelem = ielem       #number of elements
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0*0.5)]
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
-material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
+# material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
+material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.97,0.7148,0.957,0.0)]
                                                      # rho, nu, G0, M, e0, eg, d1
 
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,300.0,1700.0)]

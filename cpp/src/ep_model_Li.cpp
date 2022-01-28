@@ -131,13 +131,46 @@ void Li2002::initial_state(EV init_stress) {
     auto [p, R] = this->set_stress_variable(this->stress);
     auto [dstrain,sp0] = this->plastic_deformation_strain(dstrain_input,dstress_input,sp);
 
+    // if (i==0) {
+    //   std::cout << "strain: ";
+    //   std::cout << this->strain(0,0) << " ";
+    //   std::cout << this->strain(1,1) << " ";
+    //   std::cout << this->strain(2,2) << std::endl;
+    //   std::cout << this->strain(0,1) << " ";
+    //   std::cout << this->strain(1,2) << " ";
+    //   std::cout << this->strain(2,0) << std::endl;
+    //
+    //   std::cout << "dstress_input: ";
+    //   std::cout << dstress_input << std::endl;
+    // }
+
+
     this->stress += dstress_input;
     this->strain += dstrain;
     sp0_dstrain = sp0.dstrain;
 
+    // if (i==0) {
+    //   std::cout << "dstrain: ";
+    //   std::cout << dstrain << std::endl;
+    // }
+
     auto [ev, gamma] = this->set_strain_variable(this->strain);
     this->e = this->e0 - ev*(1.0+this->e0);
   }
+
+  // std::cout << "strain: ";
+  // std::cout << this->strain(0,0) << " ";
+  // std::cout << this->strain(1,1) << " ";
+  // std::cout << this->strain(2,2) << std::endl;
+  //
+  // std::cout << "stress: ";
+  // std::cout << this->stress(0,0) << " ";
+  // std::cout << this->stress(1,1) << " ";
+  // std::cout << this->stress(2,2) << std::endl;
+  //
+  // std::cout << "e: " << this->e << std::endl;
+
+
 }
 
 // ------------------------------------------------------------------- //
@@ -408,7 +441,10 @@ std::tuple<double, double>
       elastic_flag2 = false;
     }
 
-    // std::cout << dL1 << " " << dL2 << std::endl;
+    // std::cout << "  Tij: ";
+    // std::cout << sp.Tij << std::endl;
+    //
+    // std::cout << "dL "<<  dL1 << " " << dL2 << std::endl;
     // std::cout << elastic_flag1 << " " << elastic_flag2 << std::endl;
     // exit(1);
 
@@ -596,6 +632,14 @@ void Li2002::set_parameters(StateParameters &sp) {
     auto [Kp1,Kp1_b] = this->_plastic_modulus1(sp.Ge,sp.R_bar,sp.g_bar,sp.rho1_ratio,h,sp.psi);
     sp.h = h; sp.Kp1 = Kp1; sp.Kp1_b = Kp1_b;
     sp.D1 = this->_dilatancy1(sp.R,sp.g,sp.rho1_ratio,sp.psi);
+    // std::cout << " R " << sp.R << std::endl;
+    // std::cout << " g " << sp.g << std::endl;
+    // std::cout << " g_bar " << sp.g_bar << std::endl;
+    // std::cout << " r1_ratio " << sp.rho1_ratio << std::endl;
+    // std::cout << " D1 " << sp.D1 << std::endl;
+    // if (sp.g == 0.0) {
+    //   exit(1);
+    // }
   }
 
   if (sp.elastic_flag2 || (sp.R == 0.0)) {
@@ -675,8 +719,8 @@ void Li2002::set_parameter_nm(StateParameters &sp) {
   }
 
   // if (this->test_flag) {
-  //   std::cout << "nij " << sp.nij << std::endl;
-  //   std::cout << "mij " << sp.mij << std::endl;
+    // std::cout << "nij " << sp.nij << std::endl;
+    // std::cout << "mij " << sp.mij << std::endl;
   // }
 }
 
@@ -713,12 +757,16 @@ void Li2002::set_parameter_TZ(StateParameters &sp) {
     sp.Tij = Tu / Td;
 
     // if (this->test_flag) {
-    //   std::cout << " " << std::endl;
-    //   std::cout << "Tu" << std::endl;
-    //   std::cout << Tu << std::endl;
-    //   std::cout << " " << std::endl;
-    //   std::cout << "Td " << Td << std::endl;
-    //   std::cout << "nr " << nr << std::endl;
+      // std::cout << " " << std::endl;
+      // std::cout << "Tu" << std::endl;
+      // std::cout << Tu << std::endl;
+      // std::cout << " " << std::endl;
+      // std::cout << "Td " << Td << std::endl;
+      // std::cout << "nr " << nr << std::endl;
+      // std::cout << "Ge " << sp.Ge << std::endl;
+      // std::cout << "D1 " << sp.D1 << std::endl;
+      // std::cout << "B " << sp.B << std::endl;
+      // std::cout << "Kp1 " << sp.Kp1 << std::endl;
     // }
   }
 
@@ -852,7 +900,7 @@ std::tuple<double, double>
 double Li2002::g_theta(const EM dev_stress) {
   double theta3 = this->Lode_angle(dev_stress);
   if (theta3 == 0.0) {
-    return 0.0;
+    return this->g0;
   }
   double st = std::sin(theta3);
   double g1 = std::sqrt(std::pow(1.0+this->c*this->c,2) + 4*this->c*(1.0-this->c*this->c)*st) - (1.0+this->c*this->c);

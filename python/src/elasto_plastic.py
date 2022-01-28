@@ -178,6 +178,8 @@ class EP:
         # FEMstrain = self.matrix_to_FEMstrain(self.strain)
         # print("strain: ",FEMstrain)
         # print("stress: ",FEMstress)
+        # print("strain: ",self.strain.diagonal())
+        # print("stress: ",self.stress.diagonal())
 
     # -------------------------------------------------------------------------------------- #
     def set_Dp_matrix(self,FEMdstrain):
