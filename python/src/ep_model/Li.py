@@ -10,7 +10,7 @@ class Li2002:
     # Defalt parameters are for Toyoura sand (Li2002)
     def __init__(self,G0=125,nu=0.25,M=1.25,c=0.75,eg=0.934,rlambdac=0.019,xi=0.7, \
                  d1=0.41,m=3.5,h1=3.15,h2=3.05,h3=2.2,n=1.1, \
-                 d2=1,h4=3.5,a=1,b1=0.005,b2=2,b3=0.01):
+                 d2=1,h4=3.5,a=1,b1=0.005,b2=2,b3=0.01,cohesion=0.0):
         # Elastic parameters
         self.G0,self.nu = G0,nu
         # Critical state parameters
@@ -32,6 +32,10 @@ class Li2002:
         # stress & strain
         self.stress = np.zeros((3,3))
         self.strain = np.zeros((3,3))
+
+        # cohesion parameters
+        self.cohesion = cohesion
+        self.stress_shift = self.cohesion/self.M    # stress shift applied in State Parameter
 
         # BS parameters
         self.alpha = np.zeros((3,3))
@@ -59,23 +63,23 @@ class Li2002:
 
     # -------------------------------------------------------------------------------------- #
     class StateParameters:
-        def __init__(self,strain,stress,dstrain,dstress,ef1=False,ef2=False):
+        def __init__(self,strain,stress,dstrain,dstress,stress_shift,ef1=False,ef2=False):
             self.strain = np.copy(strain)
             self.stress = np.copy(stress)
             self.dstress = np.copy(dstress)
             self.dstrain = np.copy(dstrain)
             self.pmin = 1.0
 
-            self.set_stress_variable()
+            self.set_stress_variable(stress_shift)
             self.set_stress_increment()
 
             self.elastic_flag1 = ef1
             self.elastic_flag2 = ef2
 
-        def set_stress_variable(self):
+        def set_stress_variable(self,stress_shift):
             self.p = np.trace(self.stress)/3
             self.sij = self.stress - self.p*np.eye(3)
-            self.rij = self.sij / max(self.p,self.pmin)
+            self.rij = self.sij / max(self.p+stress_shift,self.pmin)
             self.R = np.sqrt(1.5*np.square(self.rij).sum())
 
         def set_stress_increment(self):
@@ -194,7 +198,6 @@ class Li2002:
 
     def elastic_stiffness(self,G):
         rlambda = G*self.rlambda_coeff
-        # Ee = rlambda*self.Dijkl + 2*G*self.Dikjl
         Ee = rlambda*self.Dijkl + G*(self.Dikjl+self.Diljk)
         return Ee
 
@@ -360,12 +363,6 @@ class Li2002:
             dF1_tr = np.trace(dF1)
             nij = dF1 - self.I3*dF1_tr/3.0
             sp.nij = nij / np.linalg.norm(nij)
-            # print(sp.rij)
-            # print("theta3_bar:",theta3_bar)
-            # print(dg_bar)
-            # print("R_bar:",sp.R_bar)
-            # print("rbar:",sp.rij_bar)
-            # print("dF1:",dF1)
 
         r_abs = math.sqrt(np.square(sp.rij).sum())
         if r_abs == 0.0:
@@ -412,10 +409,6 @@ class Li2002:
             nD = sp.nij + np.sqrt(2/27)*sp.D1*self.I3
             Lm1 = np.einsum("pq,kl->pqkl",nD,sp.Tij)
 
-            # print("nij:",sp.nij)
-            # print("nD:",nD[0,0],nD[1,1],nD[2,2])
-            # print("Lm1:",Lm1[0,0,0,2],Lm1[1,1,0,2],Lm1[2,2,0,2])
-
         if sp.elastic_flag2:
             Lm2 = np.zeros([3,3,3,3])
         elif sp.R == 0:
@@ -451,10 +444,6 @@ class Li2002:
         else:
             elastic_flag2 = False
 
-        # print(dL1,dL2)
-        # print(elastic_flag1,elastic_flag2)
-        # exit()
-
         return elastic_flag1,elastic_flag2
 
     # -------------------------------------------------------------------------------------- #
@@ -471,15 +460,10 @@ class Li2002:
 
         if not sp.elastic_flag1:
             self.L1 += dL1
-            # self.H1 += sp.Kp1_b*dL1 / sp.p
             self.H1 = H1
 
         if not sp.elastic_flag2:
-            # self.H2 += sp.Kp2_b*dL2
             self.H2 = H2
-
-        # print(H1,self.H1)
-        # print(H2,self.H2)
 
 
     # -------------------------------------------------------------------------------------- #
@@ -515,7 +499,6 @@ class Li2002:
 
         Ainv = np.linalg.pinv(A_mask)
         strain_mask = Ainv @ stress_mask
-        # strain_mask = np.linalg.solve(A_mask,stress_mask)
 
         strain[d] = strain_mask
         stress = np.dot(A,strain)
@@ -532,22 +515,15 @@ class Li2002:
         ef1,ef2 = self.check_unload(sp0)
         strain,stress = sp0.strain,sp0.stress
 
-        # print(ef1,ef2)
-        # print(strain)
-        # print(stress)
-
-        sp = self.StateParameters(strain,stress,dstrain_given,dstress_given,ef1=ef1,ef2=ef2)
+        sp = self.StateParameters(strain,stress,dstrain_given,dstress_given,self.stress_shift,ef1=ef1,ef2=ef2)
         Ep = self.plastic_stiffness(sp)
         dstrain_ep,dstress_ep = self.solve_strain_with_consttain(dstrain_given,dstress_given,Ep,deformation)
 
-        sp2 = self.StateParameters(strain,stress,dstrain_ep,dstress_ep,ef1=ef1,ef2=ef2)
+        sp2 = self.StateParameters(strain,stress,dstrain_ep,dstress_ep,self.stress_shift,ef1=ef1,ef2=ef2)
         self.update_parameters(sp2)
 
         dstrain = np.copy(dstrain_ep)
         dstress = np.copy(dstress_ep)
-
-        # print()
-        # exit()
 
         return dstrain,dstress,sp2
 
@@ -593,14 +569,14 @@ class Li2002:
         deformation_vec = np.array([True,True,False,True,True,True],dtype=bool)
         deformation = self.vector_to_matrix(deformation_vec)
 
-        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input)
+        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.stress_shift)
 
         gamma_list,R_list = [],[]
         ev_list = []
         max_p_stress = 0.0
         min_p_stress = compression_stress
-        for i in range(0,nstep):
-            sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input)
+        for i in range(nstep):
+            sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.stress_shift)
 
             p,R = self.set_stress_variable(self.stress)
             dstrain,dstress,sp0 = \
@@ -665,7 +641,7 @@ class Li2002:
         deformation_vec = np.array([False,False,False,True,True,True],dtype=bool)
         deformation = self.vector_to_matrix(deformation_vec)
 
-        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input)
+        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.stress_shift)
 
         gamma_list,tau_list = [],[]
         ev_list,p_list = [],[]
@@ -677,7 +653,7 @@ class Li2002:
                 dstress_vec = np.array([0.0,0.0,0.0,0.0,0.0,dtau])
                 dstress_input = self.vector_to_matrix(dstress_vec)
 
-                sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input)
+                sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.stress_shift)
 
                 p,R = self.set_stress_variable(self.stress)
                 dstrain,dstress,sp0 = \
@@ -713,22 +689,24 @@ if __name__ == "__main__":
     e0 = emax-Dr*(emax-emin)
     print(e0)
 
+
     # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
-    Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.0)
-    compression_stress = 20.e3
-    Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
-    exit()
+    # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.05,cohesion=3.e3)
+    # compression_stress = 20.e3
+    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
+    # exit()
 
     # Li_model = Li2002()
     # compression_stress = 300.e3
-    # Li_model.cyclic_shear_test(0.92,compression_stress,sr=0.2,cycle=2,print_result=True,plot=True)
+    # Li_model.cyclic_shear_test(0.92,compression_stress,sr=0.2,cycle=3,print_result=True,plot=True)
     # exit()
 
-    cs_list = [10.e3,20.e3,40.e3,80.e3]
+    cs_list = [0.1e3,1.e3,2.5e3,5.e3,10.e3,20.e3]
     sigma1_list, sigma3_list = [],[]
     gamma_list, ev_list = [],[]
     for compression_stress in cs_list:
-        Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.0)
+        # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.0)
+        Li_model = Li2002(G0=420,nu=0.33,M=0.93,eg=0.957,d1=0.0,cohesion=4.e3)
         s1,s3,gamma,ev = Li_model.triaxial_compression(e0,compression_stress,print_result=True,plot=False)
 
         sigma1_list += [s1]
