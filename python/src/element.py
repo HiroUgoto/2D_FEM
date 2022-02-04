@@ -84,8 +84,9 @@ class Element:
                     N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
                     M = mk_m(N)
                     dn = self.estyle.shape_function_dn(xi,zeta)
+                    n = self.estyle.shape_function_n(xi,zeta)
 
-                    gp = element_style.Gauss_Points(dn,wx*wz,N,M)
+                    gp = element_style.Gauss_Points(n,dn,wx*wz,N,M)
                     self.gauss_points.add(gp)
 
                     det,_ = mk_jacobi(self.xnT,dn)
@@ -99,11 +100,12 @@ class Element:
             self.imp = self.material.mk_imp(self.dof)
 
             for xi,wx in zip(self.xi,self.w):
+                n = self.estyle.shape_function_n(xi,0.0)
                 dn = self.estyle.shape_function_dn(xi,0.0)
                 N = mk_n(self.dof,self.estyle,self.nnode,xi,0.0)
                 w = wx
 
-                gp = element_style.Gauss_Points(dn,wx,N)
+                gp = element_style.Gauss_Points(n,dn,wx,N)
                 self.gauss_points.add(gp)
 
         elif self.dim == 0 and "slider" in self.style:
@@ -340,6 +342,7 @@ class Element:
         self.stress = self.De @ self.strain
         self.ep.initial_state(self.stress)
         self.stress_yy = self.stress[0]
+
 
     def calc_ep_stress(self):
         pass

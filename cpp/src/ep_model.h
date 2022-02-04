@@ -25,9 +25,9 @@ class StateParameters {
 
     bool elastic_flag1, elastic_flag2;
 
-    StateParameters(EM strain, EM stress, EM dstrain, EM dstress, bool ef1, bool ef2);
+    StateParameters(EM strain, EM stress, EM dstrain, EM dstress, double stress_shift, bool ef1, bool ef2);
 
-    void set_stress_variable();
+    void set_stress_variable(double stress_shift);
     void set_stress_increment();
 };
 
@@ -43,6 +43,8 @@ class Li2002: public EP {
     double eps;
     double pr,pmin;
 
+    double cohesion,stress_shift;
+
     EM alpha;
     double beta,H1,H2;
     double L1;
@@ -52,7 +54,8 @@ class Li2002: public EP {
 
     double sqrt2_3,fn,rlambda_coeff,G2_coeff,g0,dg0;
 
-    Li2002 (double G0=125, double nu=0.25, double M=1.25, double eg=0.934, double d1=0.41,
+    Li2002 (double G0=125, double nu=0.25, double M=1.25, double eg=0.934,
+            double d1=0.41, double cohesion=0.0,
             double c=0.75, double rlambdac=0.019, double xi=0.7,
             double m=3.5, double h1=3.15, double h2=3.05, double h3=2.2, double n=1.1,
             double d2=1, double h4=3.5, double a=1, double b1=0.005, double b2=2, double b3=0.01);

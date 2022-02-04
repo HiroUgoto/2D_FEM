@@ -19,7 +19,7 @@ output_dir = "result/"
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-plot_model.plot_mesh(fem)
+# plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
 # Set amplitude #
@@ -42,13 +42,13 @@ fem.set_ep_initial_state()
 
 ## --- Define input wave --- ##
 fsamp = 10000
-duration = 5.0/fp + 1.0/fp
+# duration = 5.0/fp + 1.0/fp
 # duration = 8.0/fp + 1.0/fp
-# duration = 14.0/fp + 1.0/fp
+duration = 14.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
-# wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
+# wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
 # wave_acc = input_wave.simple_sin(tim,fp,amp)
 ntim = len(tim)
 
@@ -90,7 +90,6 @@ for it in range(ntim):
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
     output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
 
-    # print(fem.elements[0].stress,fem.elements[0].stress_yy)
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,200.)
         print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])

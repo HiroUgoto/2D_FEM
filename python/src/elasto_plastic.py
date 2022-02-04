@@ -16,8 +16,8 @@ class EP:
     # -------------------------------------------------------------------------------------- #
     def set_model(self,param):
         if self.style == "ep_Li":
-            nu,G0,M,self.e0,eg,d1 = param
-            self.model = Li.Li2002(G0=G0,nu=nu,M=M,eg=eg,d1=d1)
+            nu,G0,M,self.e0,eg,d1,cohesion = param
+            self.model = Li.Li2002(G0=G0,nu=nu,M=M,eg=eg,d1=d1,cohesion=cohesion)
 
         deformation_vec = np.array([False,False,False,False,False,False],dtype=bool)
         self.deformation = self.vector_to_matrix(deformation_vec)
@@ -27,12 +27,12 @@ class EP:
     # Note: positive in compression!
     def FEMstress_to_matrix(self,FEMstress):
         if self.dof == 1:
-            stress_vec = np.array([0.0,0.0,0.0,FEMstress[0],FEMstress[1],0.0])
+            stress_vec = np.array([0.0,0.0,0.0,-FEMstress[0],-FEMstress[1],0.0])
         elif self.dof == 2:
-            stress_vec = np.array([-FEMstress[0],-FEMstress[0],-FEMstress[1],0.0,0.0,FEMstress[2]])
+            stress_vec = np.array([-FEMstress[0],-FEMstress[0],-FEMstress[1],0.0,0.0,-FEMstress[2]])
         elif self.dof == 3:
             stress_vec = np.array([-FEMstress[0],-FEMstress[0],-FEMstress[1], \
-                                         FEMstress[3], FEMstress[4], FEMstress[2]])
+                                         -FEMstress[3], -FEMstress[4], -FEMstress[2]])
 
         return self.vector_to_matrix(stress_vec)
 
@@ -40,11 +40,11 @@ class EP:
         stress_vec = self.matrix_to_vector(stress)
 
         if self.dof == 1:
-            FEMstress = np.array([stress_vec[3],stress_vec[4]])
+            FEMstress = np.array([-stress_vec[3],-stress_vec[4]])
         elif self.dof == 2:
-            FEMstress = np.array([-stress_vec[0],-stress_vec[2],stress_vec[5]])
+            FEMstress = np.array([-stress_vec[0],-stress_vec[2],-stress_vec[5]])
         elif self.dof == 3:
-            FEMstress = np.array([-stress_vec[0],-stress_vec[2],stress_vec[5],stress_vec[3],stress_vec[4]])
+            FEMstress = np.array([-stress_vec[0],-stress_vec[2],-stress_vec[5],-stress_vec[3],-stress_vec[4]])
 
         return FEMstress
 
@@ -53,12 +53,12 @@ class EP:
     # Note: positive in compression!
     def FEMstrain_to_matrix(self,FEMstrain):
         if self.dof == 1:
-            strain_vec = np.array([0.0,0.0,0.0,0.5*FEMstrain[0],0.5*FEMstrain[1],0.0])
+            strain_vec = np.array([0.0,0.0,0.0,-0.5*FEMstrain[0],-0.5*FEMstrain[1],0.0])
         elif self.dof == 2:
-            strain_vec = np.array([-FEMstrain[0],0.0,-FEMstrain[1],0.0,0.0,0.5*FEMstrain[2]])
+            strain_vec = np.array([-FEMstrain[0],0.0,-FEMstrain[1],0.0,0.0,-0.5*FEMstrain[2]])
         elif self.dof == 3:
             strain_vec = np.array([-FEMstrain[0],0.0,-FEMstrain[1], \
-                                         0.5*FEMstrain[3], 0.5*FEMstrain[4], 0.5*FEMstrain[2]])
+                                         -0.5*FEMstrain[3], -0.5*FEMstrain[4], -0.5*FEMstrain[2]])
 
         return self.vector_to_matrix(strain_vec)
 
@@ -66,11 +66,11 @@ class EP:
         strain_vec = self.matrix_to_vector(strain)
 
         if self.dof == 1:
-            FEMstrain = np.array([2*strain_vec[3],2*strain_vec[4]])
+            FEMstrain = np.array([-2*strain_vec[3],-2*strain_vec[4]])
         elif self.dof == 2:
-            FEMstrain = np.array([-strain_vec[0],-strain_vec[2],2*strain_vec[5]])
+            FEMstrain = np.array([-strain_vec[0],-strain_vec[2],-2*strain_vec[5]])
         elif self.dof == 3:
-            FEMstrain = np.array([-strain_vec[0],-strain_vec[2],2*strain_vec[5],2*strain_vec[3],2*strain_vec[4]])
+            FEMstrain = np.array([-strain_vec[0],-strain_vec[2],-2*strain_vec[5],-2*strain_vec[3],-2*strain_vec[4]])
 
         return FEMstrain
 
@@ -155,11 +155,11 @@ class EP:
         dstress_input = self.vector_to_matrix(dstress_vec)
         deformation = self.vector_to_matrix(deformation_vec)
 
-        sp0 = self.model.StateParameters(self.strain,self.stress,dstrain_input,dstress_input)
+        sp0 = self.model.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.model.stress_shift)
 
         # load to triaxial stress state
         for i in range(nstep):
-            sp = self.model.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input)
+            sp = self.model.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.model.stress_shift)
 
             p,R = self.model.set_stress_variable(self.stress)
             dstrain,dstress,sp0 = \
@@ -190,20 +190,20 @@ class EP:
         dstress_vec = np.zeros(6,dtype=np.float64)
         dstress_input = self.vector_to_matrix(dstress_vec)
 
-        sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input)
+        sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
         ef1,ef2 = self.model.check_unload(sp0)
 
         # print(ef1,self.model.alpha)
         # print(ef2,sp0.p,self.model.beta)
 
 
-        sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,ef1=ef1,ef2=ef2)
+        sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1,ef2=ef2)
         Ep = self.model.plastic_stiffness(sp)
 
         dstrain,dstress = \
             self.model.solve_strain_with_consttain(dstrain,dstress_input,Ep,self.deformation)
 
-        sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,ef1=ef1,ef2=ef2)
+        sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1,ef2=ef2)
         self.model.update_parameters(sp2)
 
         ev,gamma = self.model.set_strain_variable(self.strain)
@@ -217,6 +217,7 @@ class EP:
 
         Dp = self.modulus_to_Dmatrix(Ep)
         stress_yy = -self.stress[1,1]
+
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
 
     # -------------------------------------------------------------------------------------- #

@@ -1,15 +1,16 @@
 import numpy as np
 import os,sys
 
-area_x = 1.0
+area_x = 10.0
 area_z = 10.0
 
 nx = 1
-nz = 10
+nz = 1
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
 zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
+
 
 ### Set node ###
 node = np.empty([len(xg),len(zg)],dtype=np.int32)
@@ -21,11 +22,11 @@ for k in range(len(zg)):
         dofx,dofz = 1,1
         if k == len(zg)-1:
             dofz = 0
+            # dofx = 0
 
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
         inode += 1
-
 
 ### Set element ###
 element_lines = []
@@ -74,14 +75,11 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,100.0e9,850.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0*0.5)]
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
-material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,210,0.93,0.7148,0.957,0.0,4.e3)]
+material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.93,0.7148,0.957,0.0,4.e3)]
                                                      # rho, nu, G0, M, e0, eg, d1, cohesion
-material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
-
-# material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
-# material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
+material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,300.0,1700.0)]
 
 
 nmaterial = len(material_lines)
@@ -112,11 +110,3 @@ with open("output.in","w") as f:
     f.write("{} {} \n".format(output_nnode,output_nelem))
     f.writelines(output_node_lines)
     f.writelines(output_element_lines)
-
-# with open("var.in","w") as f:       #save var, depend on target area
-#     f.write("{} {}\n".format(modelid,"modelid"))
-#     f.write("{} {} {} {}\n".format(area_x,area_z,"area_x","area_z"))
-#     f.write("{} {} {} {}\n".format(nx,nz,"nx","nz"))
-#     if modelid == 1:
-#         f.write("{} {} {} {}\n".format(nx1,nx2,"nx1","nx2"))
-#         f.write("{} {} {} {}\n".format(nz1,nz2,"nz1","nz2"))

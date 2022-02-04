@@ -11,7 +11,7 @@ using EM = Eigen::MatrixXd ;
 using EM2 = Eigen::Matrix2d ;
 
 // ------------------------------------------------------------------- //
-StateParameters::StateParameters (EM strain, EM stress, EM dstrain, EM dstress, bool ef1, bool ef2)
+StateParameters::StateParameters (EM strain, EM stress, EM dstrain, EM dstress, double stress_shift, bool ef1, bool ef2)
   {
     this->strain = strain;
     this->stress = stress;
@@ -22,14 +22,14 @@ StateParameters::StateParameters (EM strain, EM stress, EM dstrain, EM dstress, 
     this->elastic_flag1 = ef1;
     this->elastic_flag2 = ef2;
 
-    this->set_stress_variable();
+    this->set_stress_variable(stress_shift);
     this->set_stress_increment();
   }
 
-void StateParameters::set_stress_variable() {
+void StateParameters::set_stress_variable(double stress_shift) {
   this->p = this->stress.trace()/3.0;
   this->sij = this->stress - this->p * EM::Identity(3,3);
-  this->rij = this->sij / std::max(this->p,this->pmin);
+  this->rij = this->sij / std::max(this->p+stress_shift,this->pmin);
   this->R = std::sqrt(1.5*this->rij.array().square().sum());
 }
 
@@ -40,7 +40,7 @@ void StateParameters::set_stress_increment() {
 }
 
 // ------------------------------------------------------------------- //
-Li2002::Li2002 (double G0, double nu, double M, double eg, double d1,
+Li2002::Li2002 (double G0, double nu, double M, double eg, double d1, double cohesion,
                 double c, double rlambdac, double xi,
                 double m, double h1, double h2, double h3, double n,
                 double d2, double h4, double a, double b1, double b2, double b3)
@@ -66,6 +66,10 @@ Li2002::Li2002 (double G0, double nu, double M, double eg, double d1,
     // stress and strain
     this->stress = EM::Zero(3,3);
     this->strain = EM::Zero(3,3);
+
+    // cohesion parameters
+    this->cohesion = cohesion;
+    this->stress_shift = cohesion / M;
 
     // BS parameters
     this->alpha = EM::Zero(3,3);
@@ -122,54 +126,22 @@ void Li2002::initial_state(EV init_stress) {
   EM dstrain_input = this->vector_to_matrix(dstrain_vec);
   EM dstress_input = this->vector_to_matrix(dstress_vec);
 
-  StateParameters sp0(this->strain,this->stress,dstrain_input,dstress_input,false,false);
+  StateParameters sp0(this->strain,this->stress,dstrain_input,dstress_input,this->stress_shift,false,false);
   EM sp0_dstrain = dstrain_input;
 
   for (size_t i = 0 ; i < nstep ; i++ ) {
-    StateParameters sp(this->strain,this->stress,sp0_dstrain,dstress_input,false,false);
+    StateParameters sp(this->strain,this->stress,sp0_dstrain,dstress_input,this->stress_shift,false,false);
 
     auto [p, R] = this->set_stress_variable(this->stress);
     auto [dstrain,sp0] = this->plastic_deformation_strain(dstrain_input,dstress_input,sp);
-
-    // if (i==0) {
-    //   std::cout << "strain: ";
-    //   std::cout << this->strain(0,0) << " ";
-    //   std::cout << this->strain(1,1) << " ";
-    //   std::cout << this->strain(2,2) << std::endl;
-    //   std::cout << this->strain(0,1) << " ";
-    //   std::cout << this->strain(1,2) << " ";
-    //   std::cout << this->strain(2,0) << std::endl;
-    //
-    //   std::cout << "dstress_input: ";
-    //   std::cout << dstress_input << std::endl;
-    // }
-
 
     this->stress += dstress_input;
     this->strain += dstrain;
     sp0_dstrain = sp0.dstrain;
 
-    // if (i==0) {
-    //   std::cout << "dstrain: ";
-    //   std::cout << dstrain << std::endl;
-    // }
-
     auto [ev, gamma] = this->set_strain_variable(this->strain);
     this->e = this->e0 - ev*(1.0+this->e0);
   }
-
-  // std::cout << "strain: ";
-  // std::cout << this->strain(0,0) << " ";
-  // std::cout << this->strain(1,1) << " ";
-  // std::cout << this->strain(2,2) << std::endl;
-  //
-  // std::cout << "stress: ";
-  // std::cout << this->stress(0,0) << " ";
-  // std::cout << this->stress(1,1) << " ";
-  // std::cout << this->stress(2,2) << std::endl;
-  //
-  // std::cout << "e: " << this->e << std::endl;
-
 
 }
 
@@ -178,36 +150,22 @@ std::tuple<EM, EV, double> Li2002::set_Dp_matrix(EV FEMdstrain) {
   EM dstrain = this->FEMstrain_to_matrix(FEMdstrain);
   EM dstress_input = EM::Zero(3,3);
 
-  // std::cout << " " << std::endl;
-
-  StateParameters sp0(this->strain,this->stress,dstrain,dstress_input,false,false);
+  StateParameters sp0(this->strain,this->stress,dstrain,dstress_input,this->stress_shift,false,false);
   auto [ef1, ef2] = this->check_unload(sp0);
 
-  StateParameters sp(this->strain,this->stress,dstrain,dstress_input,ef1,ef2);
+  StateParameters sp(this->strain,this->stress,dstrain,dstress_input,this->stress_shift,ef1,ef2);
   Eigen::Tensor<double,4> Ep = this->plastic_stiffness(sp);
 
   EM dstress = this->solve_stress(dstrain,Ep);
 
-  StateParameters sp2(strain,stress,dstrain,dstress,ef1,ef2);
+  StateParameters sp2(strain,stress,dstrain,dstress,this->stress_shift,ef1,ef2);
   this->update_parameters(sp2);
-
-  // std::cout << "ef1 " << ef1 << " ";
-  // std::cout << this->alpha << std::endl;
-  //
-  // std::cout << "ef2 " << ef2 << " ";
-  // std::cout << sp.p << " ";
-  // std::cout << this->beta << std::endl;
 
   auto [ev, gamma] = this->set_strain_variable(this->strain);
   this->e = this->e0 - ev*(1.0+this->e0);
 
   this->stress += dstress;
   this->strain += dstrain;
-
-  // std::cout << this->strain << std::endl;
-  // std::cout << " " << std::endl;
-  // std::cout << this->stress << std::endl;
-  // std::cout << " " << std::endl;
 
   EM Dp = this->modulus_to_Dmatrix(Ep);
   EV FEMstress = this->matrix_to_FEMstress(this->stress);
@@ -221,7 +179,7 @@ EV Li2002::strain_to_stress(EV FEMdstrain) {
   EM dstrain = this->FEMstrain_to_matrix(FEMdstrain);
   EM dstress_input = EM::Zero(3,3);
 
-  StateParameters sp(this->strain,this->stress,dstrain,dstress_input,false,false);
+  StateParameters sp(this->strain,this->stress,dstrain,dstress_input,this->stress_shift,false,false);
   auto [p,R] = this->set_stress_variable(this->stress);
 
   auto [dstress,_sp] = this->plastic_deformation_stress(dstrain,dstress_input,sp);
@@ -275,11 +233,11 @@ std::tuple<EM, StateParameters>
     // std::cout << strain << std::endl;
     // std::cout << stress << std::endl;
 
-    StateParameters sp(strain,stress,dstrain_given,dstress_given,ef1,ef2);
+    StateParameters sp(strain,stress,dstrain_given,dstress_given,this->stress_shift,ef1,ef2);
     Eigen::Tensor<double,4> Ep = this->plastic_stiffness(sp);
     EM dstrain_ep = this->solve_strain(dstress_given,Ep);
 
-    StateParameters sp2(strain,stress,dstrain_ep,dstress_given,ef1,ef2);
+    StateParameters sp2(strain,stress,dstrain_ep,dstress_given,this->stress_shift,ef1,ef2);
     this->update_parameters(sp2);
 
     // std::cout << " " << std::endl;
@@ -295,11 +253,11 @@ std::tuple<EM, StateParameters>
     EM strain = sp0.strain;
     EM stress = sp0.stress;
 
-    StateParameters sp(strain,stress,dstrain_given,dstress_given,ef1,ef2);
+    StateParameters sp(strain,stress,dstrain_given,dstress_given,this->stress_shift,ef1,ef2);
     Eigen::Tensor<double,4> Ep = this->plastic_stiffness(sp);
     EM dstress_ep = this->solve_stress(dstrain_given,Ep);
 
-    StateParameters sp2(strain,stress,dstrain_given,dstress_ep,false,false);
+    StateParameters sp2(strain,stress,dstrain_given,dstress_ep,this->stress_shift,false,false);
     this->update_parameters(sp2);
 
     return {dstress_ep, sp2};

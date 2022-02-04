@@ -163,9 +163,8 @@ nelem = ielem       #number of elements
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.33,2*3.904e9*(1+0.33),1700.0*0.5)]
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
-# material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
-material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.97,0.7148,0.957,0.0)]
-                                                     # rho, nu, G0, M, e0, eg, d1
+material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,210,0.93,0.7148,0.957,0.0,4.e3)]
+                                                     # rho, nu, G0, M, e0, eg, d1, cohesion
 
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,300.0,1700.0)]
 

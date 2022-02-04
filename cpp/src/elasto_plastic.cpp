@@ -20,8 +20,9 @@ EP* set_ep_style(double dof, std::string style, std::vector<double> param_ep) {
     double e0 = param_ep.at(3);
     double eg = param_ep.at(4);
     double d1 = param_ep.at(5);
+    double cohesion = param_ep.at(6);
 
-    ep_p = new Li2002(G0,nu,M,eg,d1);
+    ep_p = new Li2002(G0,nu,M,eg,d1,cohesion);
     ep_p->e0 = e0;
 
     ep_p->dof = dof;
@@ -40,17 +41,17 @@ EP::~EP () {}
 EM EP::FEMstress_to_matrix(EV FEMstress) {
   EV stress_vec = EV::Zero(6);
   if (this->dof == 1) {
-    stress_vec[0] = 0.0         ; stress_vec[1] = 0.0;
-    stress_vec[2] = 0.0         ; stress_vec[3] = FEMstress[0];
-    stress_vec[4] = FEMstress[1]; stress_vec[5] = 0.0;
+    stress_vec[0] =  0.0         ; stress_vec[1] =  0.0;
+    stress_vec[2] =  0.0         ; stress_vec[3] = -FEMstress[0];
+    stress_vec[4] = -FEMstress[1]; stress_vec[5] =  0.0;
   } else if (this->dof == 2) {
     stress_vec[0] = -FEMstress[0]; stress_vec[1] = -FEMstress[0];
     stress_vec[2] = -FEMstress[1]; stress_vec[3] = 0.0;
-    stress_vec[4] =  0.0         ; stress_vec[5] = FEMstress[2];
+    stress_vec[4] =  0.0         ; stress_vec[5] = -FEMstress[2];
   } else if (this->dof == 3) {
     stress_vec[0] = -FEMstress[0]; stress_vec[1] = -FEMstress[0];
-    stress_vec[2] = -FEMstress[1]; stress_vec[3] =  FEMstress[3];
-    stress_vec[4] =  FEMstress[4]; stress_vec[5] =  FEMstress[2];
+    stress_vec[2] = -FEMstress[1]; stress_vec[3] = -FEMstress[3];
+    stress_vec[4] = -FEMstress[4]; stress_vec[5] = -FEMstress[2];
   }
 
   return this->vector_to_matrix(stress_vec);
@@ -59,17 +60,17 @@ EM EP::FEMstress_to_matrix(EV FEMstress) {
 EM EP::FEMstrain_to_matrix(EV FEMstrain) {
   EV strain_vec = EV::Zero(6);
   if (this->dof == 1) {
-    strain_vec[0] = 0.0         ; strain_vec[1] = 0.0;
-    strain_vec[2] = 0.0         ; strain_vec[3] = 0.5*FEMstrain[0];
-    strain_vec[4] = 0.5*FEMstrain[1]; strain_vec[5] = 0.0;
+    strain_vec[0] =  0.0         ; strain_vec[1] =  0.0;
+    strain_vec[2] =  0.0         ; strain_vec[3] = -0.5*FEMstrain[0];
+    strain_vec[4] = -0.5*FEMstrain[1]; strain_vec[5] = 0.0;
   } else if (this->dof == 2) {
-    strain_vec[0] = -FEMstrain[0]; strain_vec[1] = 0.0;
-    strain_vec[2] = -FEMstrain[1]; strain_vec[3] = 0.0;
-    strain_vec[4] =  0.0         ; strain_vec[5] = 0.5*FEMstrain[2];
+    strain_vec[0] = -FEMstrain[0]; strain_vec[1] =  0.0;
+    strain_vec[2] = -FEMstrain[1]; strain_vec[3] =  0.0;
+    strain_vec[4] =  0.0         ; strain_vec[5] = -0.5*FEMstrain[2];
   } else if (this->dof == 3) {
     strain_vec[0] = -FEMstrain[0]; strain_vec[1] = 0.0;
-    strain_vec[2] = -FEMstrain[1]; strain_vec[3] = 0.5*FEMstrain[3];
-    strain_vec[4] = 0.5*FEMstrain[4]; strain_vec[5] = 0.5*FEMstrain[2];
+    strain_vec[2] = -FEMstrain[1]; strain_vec[3] = -0.5*FEMstrain[3];
+    strain_vec[4] = -0.5*FEMstrain[4]; strain_vec[5] = -0.5*FEMstrain[2];
   }
 
   return this->vector_to_matrix(strain_vec);
@@ -81,16 +82,16 @@ EV EP::matrix_to_FEMstress(EM stress) {
   EV stress_vec = this->matrix_to_vector(stress);
   if (this->dof == 1) {
     FEMstress = EV::Zero(2);
-    FEMstress(0) = stress_vec(3); FEMstress(1) = stress_vec(4);
+    FEMstress(0) = -stress_vec(3); FEMstress(1) = -stress_vec(4);
   } else if (this->dof == 2) {
     FEMstress = EV::Zero(3);
     FEMstress(0) = -stress_vec(0); FEMstress(1) = -stress_vec(2);
-    FEMstress(2) =  stress_vec(5);
+    FEMstress(2) = -stress_vec(5);
   } else if (this->dof == 3) {
     FEMstress = EV::Zero(5);
     FEMstress(0) = -stress_vec(0); FEMstress(1) = -stress_vec(2);
-    FEMstress(2) = stress_vec(5);
-    FEMstress(3) = stress_vec(3); FEMstress(4) = stress_vec(4);
+    FEMstress(2) = -stress_vec(5);
+    FEMstress(3) = -stress_vec(3); FEMstress(4) = -stress_vec(4);
   }
   return FEMstress;
 }

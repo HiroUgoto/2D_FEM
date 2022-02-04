@@ -680,6 +680,123 @@ class Li2002:
             # plt.plot(step_list,ep_list)
             # plt.show()
 
+    # -------------------------------------------------------------------------------------- #
+    def cyclic_pure_shear_test(self,e0,compression_stress,gmax=0.01,cycle=10,print_result=False,plot=False):
+        def cycle_load(nstep,amp,i):
+            tau = amp*np.sin((i+1)/nstep*2*np.pi)
+            tau0 = amp*np.sin((i+0)/nstep*2*np.pi)
+            return tau - tau0
+
+        self.isotropic_compression(e0,compression_stress*0.5)
+        self.e0 = np.copy(e0)
+        self.e = np.copy(e0)
+
+        ###
+        p,_ = self.set_stress_variable(self.stress)
+        self.beta,self.H2 = p,p
+        G0,K0 = self.elastic_modulus(self.e,p)
+
+        nstep = 100
+        ds = 0.5*compression_stress / nstep
+
+        dstrain_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
+        dstrain_input = self.vector_to_matrix(dstrain_vec)
+
+        dstress_vec = np.array([0.0,0.0,ds,0.0,0.0,0.0])
+        dstress_input = self.vector_to_matrix(dstress_vec)
+
+        deformation_vec = np.array([True,True,True,True,True,True],dtype=bool)
+        deformation = self.vector_to_matrix(deformation_vec)
+
+        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.stress_shift)
+
+        gamma_list,R_list = [],[]
+        ev_list = []
+        max_p_stress = 0.0
+        min_p_stress = compression_stress
+        for i in range(nstep):
+            sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.stress_shift)
+
+            p,R = self.set_stress_variable(self.stress)
+            dstrain,dstress,sp0 = \
+                self.plastic_deformation(dstrain_input,dstress_input,deformation,sp)
+
+            self.stress += dstress
+            self.strain += dstrain
+
+            ev,gamma = self.set_strain_variable(self.strain)
+            self.e = self.e0 - ev*(1+self.e0)
+
+            p_stress,_ = np.linalg.eig(self.stress)
+
+            # print(gamma,R,ev,p)
+            # print(gamma,p_stress[0],p_stress[2])
+            min_p_stress = min(min_p_stress,p_stress[0])
+            max_p_stress = max(max_p_stress,p_stress[2])
+
+            gamma_list += [gamma]
+            R_list += [R]
+            ev_list += [ev]
+
+        print(self.strain)
+        print(self.stress)
+        self.clear_strain()
+        ###
+
+        nstep = 50
+        ncycle = cycle
+
+        dstrain_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
+        dstrain_input = self.vector_to_matrix(dstrain_vec)
+
+        dstress_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
+        dstress_input = self.vector_to_matrix(dstress_vec)
+
+        deformation_vec = np.array([False,False,True,False,False,False],dtype=bool)
+        deformation = self.vector_to_matrix(deformation_vec)
+
+        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.stress_shift)
+
+        gamma_list,tau_list = [],[]
+        ev_list,p_list = [],[]
+        step_list,ep_list = [],[]
+        for ic in range(ncycle):
+            print("N :",ic+1)
+            for i in range(nstep):
+                dg = cycle_load(nstep,gmax,i)
+                dstrain_vec = np.array([0.0,0.0,0.0,0.0,0.0,dg])
+                dstrain_input = self.vector_to_matrix(dstrain_vec)
+
+                sp = self.StateParameters(self.strain,self.stress,dstrain_input,sp0.dstress,self.stress_shift)
+
+                p,R = self.set_stress_variable(self.stress)
+                dstrain,dstress,sp0 = \
+                    self.plastic_deformation(dstrain_input,dstress_input,deformation,sp)
+
+                self.stress += dstress
+                self.strain += dstrain
+
+                ev,gamma = self.set_strain_variable(self.strain)
+                self.e = self.e0 - ev*(1+self.e0)
+
+                gamma_list += [self.strain[0,2]]
+                tau_list += [self.stress[0,2]]
+                p_list += [p]
+                step_list += [ic*nstep+i]
+
+                print(self.strain)
+                print(self.stress)
+
+        if plot:
+            plt.figure()
+            plt.plot(gamma_list,tau_list)
+            plt.show()
+            plt.plot(p_list,tau_list)
+            plt.show()
+            # plt.plot(step_list,ep_list)
+            # plt.show()
+
+
 # --------------------------------#
 if __name__ == "__main__":
 
@@ -696,17 +813,22 @@ if __name__ == "__main__":
     # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.4,cycle=20,print_result=True,plot=True)
     # exit()
 
+    # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.0,cohesion=3.e3)
+    # compression_stress = 20.e3
+    # Li_model.cyclic_pure_shear_test(e0,compression_stress,gmax=0.0001,cycle=1,print_result=True,plot=True)
+    # exit()
+
     # Li_model = Li2002()
     # compression_stress = 300.e3
     # Li_model.cyclic_shear_test(0.92,compression_stress,sr=0.2,cycle=3,print_result=True,plot=True)
     # exit()
 
-    cs_list = [0.1e3,1.e3,2.5e3,5.e3,10.e3,20.e3]
+    cs_list = [1.e3,2.5e3,5.e3,10.e3,20.e3,40.e3]
     sigma1_list, sigma3_list = [],[]
     gamma_list, ev_list = [],[]
     for compression_stress in cs_list:
         # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.0)
-        Li_model = Li2002(G0=420,nu=0.33,M=0.93,eg=0.957,d1=0.0,cohesion=4.e3)
+        Li_model = Li2002(G0=210,nu=0.33,M=0.93,eg=0.957,d1=0.0,cohesion=4.e3)
         s1,s3,gamma,ev = Li_model.triaxial_compression(e0,compression_stress,print_result=True,plot=False)
 
         sigma1_list += [s1]

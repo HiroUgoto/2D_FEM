@@ -26,7 +26,8 @@ def set_style(style):
 
 # =================== Element style classes ============================ #
 class Gauss_Points:
-    def __init__(self,dn,w,N,M=None):
+    def __init__(self,n,dn,w,N,M=None):
+        self.n = n
         self.dn = dn
         self.w = w
         self.N = N
