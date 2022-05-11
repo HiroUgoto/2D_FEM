@@ -234,6 +234,7 @@ class Fem():
 
         self.dt = dt
         self.inv_dt2 = 1./(2.*dt)
+        self.inv_dtdt = 1./(dt*dt)
 
     # ======================================================================= #
     def update_matrix(self):
@@ -323,6 +324,7 @@ class Fem():
         u = np.copy(node.u)
         node.u[:] = node.mass_inv_mc*(2.*u-node.um) + node.c_inv_mc*node.um - node.dtdt_inv_mc*node.force
         node.v[:] = (node.u - node.um) * self.inv_dt2
+        node.a[:] = (node.u - 2.*u + node.um) * self.inv_dtdt
         node.um = u
 
     def _update_time_set_fixed_nodes(self,node):
@@ -333,14 +335,18 @@ class Fem():
             else:
                 node.u[i] = node.mass_inv_mc[i]*(2.*u[i]-node.um[i]) + node.c_inv_mc[i]*node.um[i] - node.dtdt_inv_mc[i]*node.force[i]
         node.v[:] = (node.u - node.um) * self.inv_dt2
+        node.a[:] = (node.u - 2.*u + node.um) * self.inv_dtdt
         node.um = u
 
     def _update_time_set_connected_elements_(self,element):
         u = np.zeros_like(element.nodes[0].u)
+        a = np.zeros_like(element.nodes[0].a)
         for node in element.node_set:
             u[:] += node.u[:]
+            a[:] += node.a[:]
         for node in element.node_set:
             node.u[:] = u[:]/element.nnode
+            node.a[:] = a[:]/element.nnode
 
     # ======================================================================= #
     def print_all(self):

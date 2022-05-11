@@ -22,10 +22,6 @@ for k in range(len(zg)):
         dofx,dofz = 1,1
         if k == len(zg)-1:
             dofz = 0
-        # if i == 0:
-        #     dofx = 0
-        # if i == len(xg)-1:
-        #     dofx = 0
 
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
@@ -80,8 +76,8 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",0.0,1500.0,1000.0)]
-material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",200.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",100.0,1500.0,1500.0)]
+material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
 

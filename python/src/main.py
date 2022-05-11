@@ -42,24 +42,26 @@ fem.update_init(dt)
 output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
 
+output_accx = np.zeros((ntim,fem.output_nnode))
+output_accz = np.zeros((ntim,fem.output_nnode))
+
 acc0 = np.array([0.0,0.0])
 vel0 = np.array([0.0,0.0])
 for it in range(len(tim)):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
 
-    # fem.update_time(acc0)
-    # fem.update_time(acc0,FD=True)
-    # fem.update_time(acc0,vel0,input_wave=True)
-    fem.update_time(acc0,vel0,input_wave=True,FD=True)
+    fem.update_time(acc0,vel0,input_wave=True)
 
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
+    output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
+    output_accz[it,:] = [node.a[1] for node in fem.output_nodes] + acc0[1]
+
     if it%100 == 0:
         plot_model.plot_mesh_update(ax,fem,10.)
-        print(it,"t=",it*dt,output_dispx[it,5],output_dispz[it,3])
-        # print(it,"t=",it*dt,output_dispz[it,0])
+        print(it,"t=",it*dt,output_dispx[it,5])
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
@@ -67,12 +69,14 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 # plot_model.plot_mesh_update(ax,fem,10.,fin=True)
 
 ## --- Write output file --- ##
-output_line = np.vstack([tim,output_dispx[:,5],output_dispz[:,3]]).T
-# output_line = np.vstack([tim,output_dispz[:,0]]).T
-np.savetxt(output_dir+"z0_vs00.disp",output_line)
+output_line = np.vstack([tim,output_dispx[:,5]]).T
+np.savetxt(output_dir+"output_x.disp",output_line)
+
+output_line = np.vstack([tim,output_accx[:,5]]).T
+np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
 plt.figure()
-plt.plot(tim,output_dispx[:,5])
-plt.plot(tim,output_dispz[:,3])
+plt.plot(tim,wave_acc,c='k')
+plt.plot(tim,output_accx[:,5],c='r')
 plt.show()
