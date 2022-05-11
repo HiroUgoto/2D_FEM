@@ -21,7 +21,7 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 2000
+fsamp = 1000
 fp = 2.5
 duration = 4.0/fp
 
@@ -49,14 +49,12 @@ output_velz = np.zeros((ntim,fem.output_nnode))
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_accz = np.zeros((ntim,fem.output_nnode))
 
-wave_vel = np.zeros(ntim)
 
 acc0 = np.array([0.0,0.0])
 vel0 = np.array([0.0,0.0])
 for it in range(len(tim)):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
-    wave_vel[it] = vel0[0]
 
     fem.update_time(acc0,vel0,input_wave=True)
 
@@ -66,12 +64,12 @@ for it in range(len(tim)):
     output_velx[it,:] = [node.v[0] for node in fem.output_nodes]
     output_velz[it,:] = [node.v[1] for node in fem.output_nodes]
 
-    output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
-    output_accz[it,:] = [node.a[1] for node in fem.output_nodes] + acc0[1]
+    output_accx[it,:] = [node.a[0] for node in fem.output_nodes]
+    output_accz[it,:] = [node.a[1] for node in fem.output_nodes]
 
-    if it%50 == 0:
+    if it%20 == 0:
         plot_model.plot_mesh_update(ax,fem,100.)
-        print(it,"t=",it*dt,output_dispx[it,5])
+        print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
@@ -79,17 +77,17 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 # plot_model.plot_mesh_update(ax,fem,10.,fin=True)
 
 ## --- Write output file --- ##
-output_line = np.vstack([tim,output_dispx[:,5]]).T
+output_line = np.vstack([tim,output_dispx[:,0],output_dispx[:,int(fem.output_nnode//2)]]).T
 np.savetxt(output_dir+"output_x.disp",output_line)
 
-output_line = np.vstack([tim,output_velx[:,5]]).T
+output_line = np.vstack([tim,output_velx[:,0],output_velx[:,int(fem.output_nnode//2)]]).T
 np.savetxt(output_dir+"output_x.vel",output_line)
 
-output_line = np.vstack([tim,output_accx[:,5]]).T
+output_line = np.vstack([tim,output_accx[:,0],output_accx[:,int(fem.output_nnode//2)]]).T
 np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
 plt.figure()
-plt.plot(tim,wave_vel,c='k')
-plt.plot(tim,output_velx[:,5],c='r')
+plt.plot(tim,wave_acc,c='k')
+plt.plot(tim,output_accx[:,0],c='r')
 plt.show()

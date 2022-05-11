@@ -30,7 +30,9 @@ Fem io_data::input_mesh (const std::string mesh_file) {
       std::getline(f, line);
       // std::cout << line + "\n";
 
-      std::istringstream iss(line);
+      size_t s = line.find_first_not_of(' ');
+      size_t e = line.find_last_not_of(' ');
+      std::istringstream iss(line.substr(s,e-s+1));
       iss >> id;
       for (size_t i = 0 ; i < 2 ; i++) {
         iss >> xyz.at(i);
@@ -54,7 +56,9 @@ Fem io_data::input_mesh (const std::string mesh_file) {
       std::getline(f, line);
       // std::cout << line + "\n";
 
-      std::istringstream iss(line);
+      size_t s = line.find_first_not_of(' ');
+      size_t e = line.find_last_not_of(' ');
+      std::istringstream iss(line.substr(s,e-s+1));
       iss >> id >> style >> material_id ;
       while(!iss.eof()) {
         size_t in;
@@ -76,7 +80,9 @@ Fem io_data::input_mesh (const std::string mesh_file) {
       std::getline(f, line);
       // std::cout << line + "\n";
 
-      std::istringstream iss(line);
+      size_t s = line.find_first_not_of(' ');
+      size_t e = line.find_last_not_of(' ');
+      std::istringstream iss(line.substr(s,e-s+1));
       iss >> id >> style ;
       while(!iss.eof()) {
         double ip;

@@ -302,6 +302,7 @@ void Fem::update_init(const double dt) {
     }
     this->dt = dt;
     this->inv_dt2 = 1.0/(2.0*dt);
+    this->inv_dtdt = 1.0/(dt*dt);
   }
 
 // ------------------------------------------------------------------- //
@@ -433,6 +434,7 @@ void Fem::_update_time_set_free_nodes() {
                 + node_p->c_inv_mc[i]*node_p->um[i] - node_p->dtdt_inv_mc[i]*node_p->force[i];
       }
       node_p->v = (node_p->u - node_p->um) * this->inv_dt2;
+      node_p->a = (node_p->u - 2*u + node_p->um) * this->inv_dtdt;
       node_p->um = u;
     }
   }
@@ -449,6 +451,7 @@ void Fem::_update_time_set_fixed_nodes() {
         }
       }
       node_p->v = (node_p->u - node_p->um) * this->inv_dt2;
+      node_p->a = (node_p->u - 2*u + node_p->um) * this->inv_dtdt;
       node_p->um = u;
     }
   }
@@ -456,11 +459,14 @@ void Fem::_update_time_set_fixed_nodes() {
 void Fem::_update_time_set_connected_elements() {
     for (auto& element_p : this->connected_elements_p) {
       EV u = EV::Zero(element_p->dof);
+      EV a = EV::Zero(element_p->dof);
       for (size_t inode = 0 ; inode < element_p->nnode ; inode++) {
         u += element_p->nodes_p[inode]->u;
+        a += element_p->nodes_p[inode]->a;
       }
       for (size_t inode = 0 ; inode < element_p->nnode ; inode++) {
         element_p->nodes_p[inode]->u = u/element_p->nnode;
+        element_p->nodes_p[inode]->a = a/element_p->nnode;
       }
     }
   }

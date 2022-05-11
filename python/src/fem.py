@@ -331,11 +331,13 @@ class Fem():
         u = np.copy(node.u)
         for i in range(self.dof):
             if node.freedom[i] == 0:
-                node.u[i]  = 0.0
+                node.u[i] = 0.0
+                node.v[i] = 0.0
+                node.a[i] = 0.0
             else:
                 node.u[i] = node.mass_inv_mc[i]*(2.*u[i]-node.um[i]) + node.c_inv_mc[i]*node.um[i] - node.dtdt_inv_mc[i]*node.force[i]
-        node.v[:] = (node.u - node.um) * self.inv_dt2
-        node.a[:] = (node.u - 2.*u + node.um) * self.inv_dtdt
+                node.v[i] = (node.u[i] - node.um[i]) * self.inv_dt2
+                node.a[i] = (node.u[i] - 2.*u[i] + node.um[i]) * self.inv_dtdt
         node.um = u
 
     def _update_time_set_connected_elements_(self,element):

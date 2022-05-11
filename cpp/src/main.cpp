@@ -25,8 +25,8 @@ int main() {
   fem.set_output(outputs);
 
   // ----- Define input wave ----- //
-  size_t fsamp = 5000;
-  double fp = 1.0;
+  size_t fsamp = 1000;
+  double fp = 2.5;
   double duration = 4.0/fp;
 
   EV wave_acc;
@@ -51,6 +51,8 @@ int main() {
   EM output_dispz = EM::Zero(ntim,fem.output_nnode);
   EM output_velx = EM::Zero(ntim,fem.output_nnode);
   EM output_velz = EM::Zero(ntim,fem.output_nnode);
+  EM output_accx = EM::Zero(ntim,fem.output_nnode);
+  EM output_accz = EM::Zero(ntim,fem.output_nnode);
 
   // ----- time iteration ----- //
   EV acc0 = EV::Zero(fem.dof);
@@ -60,8 +62,7 @@ int main() {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
 
-    // fem.update_time_input_MD(vel0);
-    fem.update_time_input_FD(vel0);
+    fem.update_time_input_MD(vel0);
 
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
       Node* node_p = fem.output_nodes_p[i];
@@ -69,12 +70,13 @@ int main() {
       output_dispz(it,i) = node_p->u(1);
       output_velx(it,i) = node_p->v(0);
       output_velz(it,i) = node_p->v(1);
+      output_accx(it,i) = node_p->a(0);
+      output_accz(it,i) = node_p->a(1);
     }
 
-    if (it%500 == 0) {
+    if (it%20 == 0) {
       std::cout << it << " t= " << it*dt << " ";
-      std::cout << output_dispx(it,5) << " ";
-      std::cout << output_dispz(it,3) << "\n";
+      std::cout << output_dispx(it,5) << "\n";
     }
   }
 
@@ -82,16 +84,34 @@ int main() {
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
 
   // --- Write output file --- //
-  std::ofstream f(output_dir + "z0_vs00.disp");
+  std::ofstream fd(output_dir + "output_x.disp");
   for (size_t it = 0 ; it < ntim ; it++) {
-    f << tim(it) ;
-    f << " " << output_dispx(it,5);
-    f << " " << output_dispz(it,3);
-    // for (size_t i = 0 ; i < fem.output_nnode ; i++) {
-    //   f << " " << output_dispz(it,i);
-    // }
-    f << "\n";
+    fd << tim(it) ;
+    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
+      fd << " " << output_dispx(it,i);
+    }
+    fd << "\n";
   }
-  f.close();
+  fd.close();
+
+  std::ofstream fv(output_dir + "output_x.vel");
+  for (size_t it = 0 ; it < ntim ; it++) {
+    fv << tim(it) ;
+    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
+      fv << " " << output_velx(it,i);
+    }
+    fv << "\n";
+  }
+  fv.close();
+
+  std::ofstream fa(output_dir + "output_x.acc");
+  for (size_t it = 0 ; it < ntim ; it++) {
+    fa << tim(it) ;
+    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
+      fa << " " << output_accx(it,i);
+    }
+    fa << "\n";
+  }
+  fa.close();
 
 }

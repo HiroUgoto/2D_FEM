@@ -17,7 +17,7 @@ class Fem {
     std::vector<Element*> output_elements_p;
 
   private:
-    double dt, inv_dt2;
+    double dt, inv_dt2, inv_dtdt;
 
   public:
     Fem (size_t dof, std::vector<Node> nodes,
