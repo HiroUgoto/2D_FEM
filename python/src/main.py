@@ -21,14 +21,15 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fsamp = 5000
-fp = 1.0
+fsamp = 2000
+fp = 2.5
 duration = 4.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # wave_acc = input_wave.simple_sin(tim,fp=fp,amp=1.0)
 wave_acc = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
 ntim = len(tim)
+
 
 # plt.figure()
 # plt.plot(tim,wave_acc)
@@ -42,25 +43,34 @@ fem.update_init(dt)
 output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
 
+output_velx = np.zeros((ntim,fem.output_nnode))
+output_velz = np.zeros((ntim,fem.output_nnode))
+
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_accz = np.zeros((ntim,fem.output_nnode))
+
+wave_vel = np.zeros(ntim)
 
 acc0 = np.array([0.0,0.0])
 vel0 = np.array([0.0,0.0])
 for it in range(len(tim)):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
+    wave_vel[it] = vel0[0]
 
     fem.update_time(acc0,vel0,input_wave=True)
 
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
 
+    output_velx[it,:] = [node.v[0] for node in fem.output_nodes]
+    output_velz[it,:] = [node.v[1] for node in fem.output_nodes]
+
     output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
     output_accz[it,:] = [node.a[1] for node in fem.output_nodes] + acc0[1]
 
-    if it%100 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.)
+    if it%50 == 0:
+        plot_model.plot_mesh_update(ax,fem,100.)
         print(it,"t=",it*dt,output_dispx[it,5])
 
 elapsed_time = time.time() - start
@@ -72,11 +82,14 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 output_line = np.vstack([tim,output_dispx[:,5]]).T
 np.savetxt(output_dir+"output_x.disp",output_line)
 
+output_line = np.vstack([tim,output_velx[:,5]]).T
+np.savetxt(output_dir+"output_x.vel",output_line)
+
 output_line = np.vstack([tim,output_accx[:,5]]).T
 np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
 plt.figure()
-plt.plot(tim,wave_acc,c='k')
-plt.plot(tim,output_accx[:,5],c='r')
+plt.plot(tim,wave_vel,c='k')
+plt.plot(tim,output_velx[:,5],c='r')
 plt.show()

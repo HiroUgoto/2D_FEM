@@ -1,8 +1,8 @@
 import numpy as np
 import os
 
-area_x = 10.0
-area_z = 5.0
+area_x = 50.0
+area_z = 25.0
 
 nx = 5
 nz = 5
@@ -76,8 +76,8 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",100.0,1500.0,1500.0)]
-material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",250.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",100.0,1500.0,1750.0)]
+material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",500.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
 
