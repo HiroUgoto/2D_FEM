@@ -28,6 +28,8 @@ Fem io_data::input_mesh (const std::string mesh_file) {
       std::vector<size_t> freedom(dof);
 
       std::getline(f, line);
+      if (line[line.size()-1] == '\n') line.erase(line.size()-1);
+      if (line[line.size()-1] == '\r') line.erase(line.size()-1);
       // std::cout << line + "\n";
 
       size_t s = line.find_first_not_of(' ');
@@ -54,6 +56,8 @@ Fem io_data::input_mesh (const std::string mesh_file) {
       std::vector<size_t> inode;
 
       std::getline(f, line);
+      if (line[line.size()-1] == '\n') line.erase(line.size()-1);
+      if (line[line.size()-1] == '\r') line.erase(line.size()-1);
       // std::cout << line + "\n";
 
       size_t s = line.find_first_not_of(' ');
@@ -65,7 +69,6 @@ Fem io_data::input_mesh (const std::string mesh_file) {
         iss >> in;
         inode.push_back(in);
       }
-
       Element element(id,style,material_id,inode);
       elements.push_back(element);
     }
@@ -78,6 +81,8 @@ Fem io_data::input_mesh (const std::string mesh_file) {
       std::vector<double> param;
 
       std::getline(f, line);
+      if (line[line.size()-1] == '\n') line.erase(line.size()-1);
+      if (line[line.size()-1] == '\r') line.erase(line.size()-1);
       // std::cout << line + "\n";
 
       size_t s = line.find_first_not_of(' ');
