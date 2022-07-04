@@ -70,6 +70,7 @@ for k in range(len(zg)):     #connected element
     element_lines += [param_line + style_line + "\n"]
     ielem += 1
 
+
 nnode = inode       #number of nodes
 nelem = ielem       #number of elements
 

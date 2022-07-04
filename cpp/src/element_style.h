@@ -69,6 +69,10 @@ class Input_1d_2Node: public Line_1d_2Node {};
 class Input_1d_3Node: public Line_1d_3Node {};
 
 // ----------------------------------------------------- //
+class Input_1d_2Visco: public Line_1d_2Node {};
+class Input_1d_3Visco: public Line_1d_3Node {};
+
+// ----------------------------------------------------- //
 class Connect: public Line_1d_2Node {
   public:
     Connect ();

@@ -151,7 +151,8 @@ void Element::mk_local_matrix() {
       this->C_off_diag = (this->C) - (this->C_off_diag);
 
     } else if (this->dim == 1) {
-      if (this->style.find("input") != std::string::npos) {
+      if (this->style.find("input") != std::string::npos ||
+          this->style.find("visco") != std::string::npos) {
         this->C = EM::Zero(this->ndof,this->ndof);
 
         for (size_t i = 0 ; i < this->ng_all ; i++){
@@ -248,7 +249,8 @@ void Element::mk_local_update() {
       this->force *= this->mass / V;
 
     } else if (this->dim == 1) {
-      if (this->style.find("input") != std::string::npos) {
+      if (this->style.find("input") != std::string::npos ||
+          this->style.find("visco") != std::string::npos) {
         this->C = EM::Zero(this->ndof,this->ndof);
 
         for (size_t i = 0 ; i < this->ng_all ; i++){

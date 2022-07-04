@@ -22,6 +22,10 @@ ElementStyle* set_element_style(const std::string style) {
     es_p = new Input_1d_2Node();
   } else if (style == "1d3input") {
     es_p = new Input_1d_3Node();
+  } else if (style == "1d2visco") {
+    es_p = new Input_1d_2Visco();
+  } else if (style == "1d3visco") {
+    es_p = new Input_1d_3Visco();
   } else if (style == "connect") {
     es_p = new Connect();
   } else {
