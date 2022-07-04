@@ -16,6 +16,10 @@ def set_style(style):
         return Input_1d_2Node()
     elif style == "1d3input":
         return Input_1d_3Node()
+    elif style == "1d2visco":
+        return Input_1d_2Visco()
+    elif style == "1d3visco":
+        return Input_1d_3Visco()
     elif style == "connect":
         return Connect()
 
@@ -223,10 +227,13 @@ class Connect:
         self.gauss = np.array([]),np.array([])
 
 # ---------------------------------------------------------------------- #
-
 class Input_1d_2Node(Line_1d_2Node):
+    pass
+class Input_1d_3Node(Line_1d_3Node):
     pass
 
 # ---------------------------------------------------------------------- #
-class Input_1d_3Node(Line_1d_3Node):
+class Input_1d_2Visco(Line_1d_2Node):
+    pass
+class Input_1d_3Visco(Line_1d_3Node):
     pass

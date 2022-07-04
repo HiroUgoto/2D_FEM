@@ -60,15 +60,36 @@ for i in range(nx):
     ielem += 1
 
 
-for k in range(len(zg)):     #connected element
-    style = "connect"
-    im = -1
+# for k in range(len(zg)):     #connected element
+#     style = "connect"
+#     im = -1
+#
+#     param_line = "{} {} {} ".format(ielem,style,im)
+#     style_line = "{} {}".format(node[0,k],node[2*nx,k])
+#
+#     element_lines += [param_line + style_line + "\n"]
+#     ielem += 1
+
+for k in range(nz):     #connected element
+    style = "1d3visco"
+    im = 1
 
     param_line = "{} {} {} ".format(ielem,style,im)
-    style_line = "{} {}".format(node[0,k],node[2*nx,k])
+    style_line = "{} {} {}".format(node[0,2*k],node[0,2*k+2],node[0,2*k+1])
 
     element_lines += [param_line + style_line + "\n"]
     ielem += 1
+
+for k in range(nz):     #connected element
+    style = "1d3visco"
+    im = 1
+
+    param_line = "{} {} {} ".format(ielem,style,im)
+    style_line = "{} {} {}".format(node[2*nx,2*k+2],node[2*nx,2*k],node[2*nx,2*k+1])
+
+    element_lines += [param_line + style_line + "\n"]
+    ielem += 1
+
 
 nnode = inode       #number of nodes
 nelem = ielem       #number of elements

@@ -130,7 +130,7 @@ class Element:
             self.C_off_diag = self.C - np.diag(self.C_diag)
 
         elif self.dim == 1:
-            if "input" in self.style:
+            if "input" or "visco" in self.style:
                 self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
                 for gp in self.gauss_points:
@@ -195,7 +195,7 @@ class Element:
             self.force *= self.mass/V
 
         elif self.dim == 1:
-            if "input" in self.style:
+            if "input" or "visco" in self.style:
                 self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
                 for gp in self.gauss_points:

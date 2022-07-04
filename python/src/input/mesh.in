@@ -1,4 +1,4 @@
-121 41 2 2 
+121 40 2 2 
 0 0.0 0.0 1 1 
 1 5.0 0.0 1 1 
 2 10.0 0.0 1 1 
@@ -150,16 +150,15 @@
 27 1d3input 1 114 116 115 
 28 1d3input 1 116 118 117 
 29 1d3input 1 118 120 119 
-30 connect -1 0 10
-31 connect -1 11 21
-32 connect -1 22 32
-33 connect -1 33 43
-34 connect -1 44 54
-35 connect -1 55 65
-36 connect -1 66 76
-37 connect -1 77 87
-38 connect -1 88 98
-39 connect -1 99 109
-40 connect -1 110 120
+30 1d3visco 1 0 22 11
+31 1d3visco 1 22 44 33
+32 1d3visco 1 44 66 55
+33 1d3visco 1 66 88 77
+34 1d3visco 1 88 110 99
+35 1d3visco 1 32 10 21
+36 1d3visco 1 54 32 43
+37 1d3visco 1 76 54 65
+38 1d3visco 1 98 76 87
+39 1d3visco 1 120 98 109
 0 vs_vp_rho 100.0 1500.0 1750.0 
 1 vs_vp_rho 500.0 1500.0 1750.0 

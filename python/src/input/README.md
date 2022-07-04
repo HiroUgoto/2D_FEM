@@ -72,6 +72,8 @@ id style material_id node_id
 - 1d3line : 3-node line element (1D)
 - 1d2input : 2-node line input boundary element
 - 1d3input : 3-node line input boundary element  
+- 1d2visco : 2-node viscous boundary
+- 1d3visco : 3-node viscous boundary  
 - connect : connecting two nodes with dimensionless rigid bar  
 
 **material_id** : Material ID defined in material block.  
