@@ -1,11 +1,11 @@
 import numpy as np
 import os
 
-area_x = 50.0
-area_z = 25.0
+area_x = 10.0
+area_z = 20.0
 
-nx = 5
-nz = 5
+nx = 1
+nz = 2
 dof = 2
 
 xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
@@ -20,8 +20,8 @@ inode = 0
 for k in range(len(zg)):
     for i in range(len(xg)):
         dofx,dofz = 1,1
-        if k == len(zg)-1:
-            dofz = 0
+        # if k == len(zg)-1:
+        #     dofz = 0
 
         node[i,k] = inode
         node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
@@ -34,10 +34,7 @@ element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        im = 1
-        if k <= 1:
-            if i >= 1 and i <=3:
-                im = 0
+        im = 0
 
         style = "2d9solid"
 
@@ -49,15 +46,13 @@ for k in range(nz):
         element_lines += [param_line + style_line + "\n"]
         ielem += 1
 
-for i in range(nx):
-    style = "1d3input"
-    im = 1
-
-    param_line = "{} {} {} ".format(ielem,style,im)
-    style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
-
-    element_lines += [param_line + style_line + "\n"]
-    ielem += 1
+# k = 2
+# for i in range(len(xg)):
+#     style = "kinematic_source"
+#     im = 1
+#
+#     param_line = "{} {} {} ".format(ielem,style,im)
+#     style_line = "{} {}".format(node[0,k],node[2*nx,k])
 
 
 for k in range(len(zg)):     #connected element

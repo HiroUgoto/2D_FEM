@@ -20,19 +20,20 @@ fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
+
 ## --- Define input wave --- ##
 fsamp = 1000
 fp = 2.5
 duration = 4.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.simple_sin(tim,fp=fp,amp=1.0)
-wave_acc = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
+slip = input_wave.smoothed_ramp(tim,fp=fp,tp=1.0/fp,amp=1.0)
+# slip_rate = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
 ntim = len(tim)
 
 
 # plt.figure()
-# plt.plot(tim,wave_acc)
+# plt.plot(tim,slip)
 # plt.show()
 
 ## --- Prepare time solver --- ##
@@ -49,14 +50,13 @@ output_velz = np.zeros((ntim,fem.output_nnode))
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_accz = np.zeros((ntim,fem.output_nnode))
 
-
-acc0 = np.array([0.0,0.0])
-vel0 = np.array([0.0,0.0])
+# slip0 = 0.0
 for it in range(len(tim)):
-    acc0 = np.array([wave_acc[it],0.0])
-    vel0 += acc0*dt
+    slip0 = slip[it]
+    # slip_rate0 = slip_rate[it]
+    # slip0 += slip_rate0*dt
 
-    fem.update_time(acc0,vel0,input_wave=True)
+    fem.update_time_slip(slip0)
 
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
@@ -68,7 +68,7 @@ for it in range(len(tim)):
     output_accz[it,:] = [node.a[1] for node in fem.output_nodes]
 
     if it%20 == 0:
-        plot_model.plot_mesh_update(ax,fem,100.)
+        plot_model.plot_mesh_update(ax,fem,1.)
         print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
 
 elapsed_time = time.time() - start

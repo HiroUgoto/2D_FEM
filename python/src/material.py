@@ -31,6 +31,17 @@ class Material:
             self.rlambda = 2*nu/(1-2*nu) * self.rmu
             self.rho = rho
 
+        elif self.style == "kinematic_source_normal":
+            self.rho = 0.0
+            n0,n1,amp = param
+
+            norm = np.sqrt(n0*n0+n1*n1)
+            n0,n1 = n0/norm,n1/norm
+
+            self.R = np.zeros([2,2], dtype=np.float64)
+            self.R[0,0],self.R[0,1] =  n0, n1
+            self.R[1,0],self.R[1,1] = -n1, n0
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:

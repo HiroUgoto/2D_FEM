@@ -22,6 +22,8 @@ def set_style(style):
         return Input_1d_3Visco()
     elif style == "connect":
         return Connect()
+    elif style == "kinematic_source":
+        return KinematicSource()
 
 # =================== Element style classes ============================ #
 class Gauss_Points:
@@ -225,6 +227,13 @@ class Connect:
     def __init__(self):
         self.dim = 0
         self.gauss = np.array([]),np.array([])
+
+# ---------------------------------------------------------------------- #
+class KinematicSource:
+    def __init__(self):
+        self.dim = 0
+        self.gauss = np.array([]),np.array([])
+
 
 # ---------------------------------------------------------------------- #
 class Input_1d_2Node(Line_1d_2Node):

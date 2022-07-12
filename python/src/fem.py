@@ -15,6 +15,7 @@ class Fem():
         self.free_nodes = []
         self.fixed_nodes = []
         self.connected_elements = []
+        self.kinematic_source_elements = []
 
     # ======================================================================= #
     def set_init(self):
@@ -53,6 +54,8 @@ class Fem():
                 self.input_elements += [element]
             if "connect" in element.style:
                 self.connected_elements += [element]
+            if "kinematic_source" in element.style:
+                self.kinematic_source_elements += [element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -304,6 +307,39 @@ class Fem():
         for element in self.output_element_set:
             element.calc_stress()
 
+    # ======================================================================= #
+    def update_time_slip(self,slip0):
+        for node in self.node_set:
+            node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+
+        for node in self.node_set:
+            self._update_time_node_init(node)
+
+        # if input_wave:
+        #     for element in self.input_element_set:
+        #         self._update_time_input_wave(element,vel0)
+        # else:
+        #     for element in self.element_set:
+        #         self._update_bodyforce(element,acc0)
+
+        for element in self.element_set:
+            element.mk_ku_cv()
+
+        for node in self.free_node_set:
+            self._update_time_set_free_nodes(node)
+        for node in self.fixed_node_set:
+            self._update_time_set_fixed_nodes(node)
+
+        for element in self.kinematic_source_elements:
+            self._update_time_set_kinematic_source_elements_(element,slip0)
+
+        for element in self.connected_element_set:
+            self._update_time_set_connected_elements_(element)
+
+        for element in self.output_element_set:
+            element.calc_stress()
+
+
     # ---------------------------------------
     def _update_time_node_init(self,node):
         node.force = -node.dynamic_force.copy()
@@ -349,6 +385,12 @@ class Fem():
         for node in element.node_set:
             node.u[:] = u[:]/element.nnode
             node.a[:] = a[:]/element.nnode
+
+    def _update_time_set_kinematic_source_elements_(self,element,slip0):
+        slip = np.array([0.0,0.5*slip0])
+        element.nodes[0].u =  element.R.T @ slip
+        element.nodes[1].u = -element.R.T @ slip
+        element.set_pointer_list()
 
     # ======================================================================= #
     def print_all(self):

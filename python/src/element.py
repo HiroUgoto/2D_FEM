@@ -98,6 +98,9 @@ class Element:
                 gp = element_style.Gauss_Points(dn,wx,N)
                 self.gauss_points.add(gp)
 
+        elif self.dim == 0 and "source" in self.style:
+            self.R = self.material.R
+
     # ---------------------------------------------------------
     def mk_local_matrix(self):
         if self.dim == 2:
