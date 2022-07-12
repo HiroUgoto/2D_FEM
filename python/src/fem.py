@@ -388,9 +388,9 @@ class Fem():
 
     def _update_time_set_slip_joint_node_elements_(self,element,slip0):
         slip = np.array([0.0,0.5*slip0])
-        element.nodes[0].u =  element.R.T @ slip
-        element.nodes[1].u = -element.R.T @ slip
-        element.set_pointer_list()
+        element.nodes[0].u[:] =  element.R.T @ slip
+        element.nodes[1].u[:] = -element.R.T @ slip
+
 
     # ======================================================================= #
     def print_all(self):
