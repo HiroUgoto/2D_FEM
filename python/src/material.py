@@ -31,7 +31,7 @@ class Material:
             self.rlambda = 2*nu/(1-2*nu) * self.rmu
             self.rho = rho
 
-        elif self.style == "kinematic_source_normal":
+        elif self.style == "slip_joint_node_normal":
             self.rho = 0.0
             n0,n1,amp = param
 

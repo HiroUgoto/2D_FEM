@@ -15,7 +15,7 @@ class Fem():
         self.free_nodes = []
         self.fixed_nodes = []
         self.connected_elements = []
-        self.kinematic_source_elements = []
+        self.slip_joint_node_elements = []
 
     # ======================================================================= #
     def set_init(self):
@@ -54,8 +54,8 @@ class Fem():
                 self.input_elements += [element]
             if "connect" in element.style:
                 self.connected_elements += [element]
-            if "kinematic_source" in element.style:
-                self.kinematic_source_elements += [element]
+            if "slip_joint_node" in element.style:
+                self.slip_joint_node_elements += [element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -330,8 +330,8 @@ class Fem():
         for node in self.fixed_node_set:
             self._update_time_set_fixed_nodes(node)
 
-        for element in self.kinematic_source_elements:
-            self._update_time_set_kinematic_source_elements_(element,slip0)
+        for element in self.slip_joint_node_elements:
+            self._update_time_set_slip_joint_node_elements_(element,slip0)
 
         for element in self.connected_element_set:
             self._update_time_set_connected_elements_(element)
@@ -386,7 +386,7 @@ class Fem():
             node.u[:] = u[:]/element.nnode
             node.a[:] = a[:]/element.nnode
 
-    def _update_time_set_kinematic_source_elements_(self,element,slip0):
+    def _update_time_set_slip_joint_node_elements_(self,element,slip0):
         slip = np.array([0.0,0.5*slip0])
         element.nodes[0].u =  element.R.T @ slip
         element.nodes[1].u = -element.R.T @ slip

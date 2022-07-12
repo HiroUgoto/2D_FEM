@@ -88,6 +88,6 @@ np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
 plt.figure()
-plt.plot(tim,wave_acc,c='k')
-plt.plot(tim,output_accx[:,0],c='r')
+plt.plot(tim,slip,c='k')
+plt.plot(tim,output_dispx[:,0],c='r')
 plt.show()
