@@ -1,15 +1,15 @@
 import numpy as np
 import os
 
-area_x = 50.0
-area_z = 25.0
+area_x = 6.0
+area_z = 2.0
 
-nx = 5
-nz = 5
+nx = 3
+nz = 1
 dof = 2
 
-xg = np.linspace(0,area_x,2*nx+1,endpoint=True)
-zg = np.linspace(0,area_z,2*nz+1,endpoint=True)
+xg = np.linspace(0,area_x,nx+1,endpoint=True)
+zg = np.linspace(0,area_z,nz+1,endpoint=True)
 
 
 ### Set node ###
@@ -20,6 +20,10 @@ inode = 0
 for k in range(len(zg)):
     for i in range(len(xg)):
         dofx,dofz = 1,1
+        if i == 0:
+            dofx = 0
+        elif i == len(xg)-1:
+            dofx = 0
         if k == len(zg)-1:
             dofz = 0
 
@@ -34,42 +38,15 @@ element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        im = 1
-        if k <= 1:
-            if i >= 1 and i <=3:
-                im = 0
+        im = 0
 
-        style = "2d9solid"
+        style = "2d4solid"
 
         param_line = "{} {} {} ".format(ielem,style,im)
-        style_line = "{} {} {} {} {} {} {} {} {}".format(node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2],
-                                                         node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1],
-                                                         node[2*i+1,2*k+1])
+        style_line = "{} {} {} {}".format(node[i,k],node[i+1,k],node[i+1,k+1],node[i,k+1])
 
         element_lines += [param_line + style_line + "\n"]
         ielem += 1
-
-for i in range(nx):
-    style = "1d3input"
-    im = 1
-
-    param_line = "{} {} {} ".format(ielem,style,im)
-    style_line = "{} {} {} ".format(node[2*i,-1],node[2*i+2,-1],node[2*i+1,-1])
-
-    element_lines += [param_line + style_line + "\n"]
-    ielem += 1
-
-
-for k in range(len(zg)):     #connected element
-    style = "connect"
-    im = -1
-
-    param_line = "{} {} {} ".format(ielem,style,im)
-    style_line = "{} {}".format(node[0,k],node[2*nx,k])
-
-    element_lines += [param_line + style_line + "\n"]
-    ielem += 1
-
 
 nnode = inode       #number of nodes
 nelem = ielem       #number of elements
@@ -78,7 +55,6 @@ nelem = ielem       #number of elements
 ### Set material ###
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"vs_vp_rho",100.0,1500.0,1750.0)]
-material_lines += ["{} {} {} {} {} \n".format(1,"vs_vp_rho",500.0,1500.0,1750.0)]
 
 nmaterial = len(material_lines)
 

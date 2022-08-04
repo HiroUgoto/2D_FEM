@@ -20,19 +20,20 @@ fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
+
 ## --- Define input wave --- ##
 fsamp = 1000
-fp = 2.5
-duration = 4.0/fp
+duration = 1.0
+amp = 0.01
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.simple_sin(tim,fp=fp,amp=1.0)
-wave_acc = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
+forced_disp = tim/duration * amp
+forced_nodes = [3,7]
+# wave_acc = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
 ntim = len(tim)
 
-
 # plt.figure()
-# plt.plot(tim,wave_acc)
+# plt.plot(tim,forced_disp)
 # plt.show()
 
 ## --- Prepare time solver --- ##
@@ -50,13 +51,14 @@ output_accx = np.zeros((ntim,fem.output_nnode))
 output_accz = np.zeros((ntim,fem.output_nnode))
 
 
-acc0 = np.array([0.0,0.0])
-vel0 = np.array([0.0,0.0])
+# acc0 = np.array([0.0,0.0])
+# vel0 = np.array([0.0,0.0])
 for it in range(len(tim)):
-    acc0 = np.array([wave_acc[it],0.0])
-    vel0 += acc0*dt
+    # acc0 = np.array([wave_acc[it],0.0])
+    # vel0 += acc0*dt
+    forced_disp0 = np.array([forced_disp[it],0.0])
 
-    fem.update_time(acc0,vel0,input_wave=True)
+    fem.update_time_disp(forced_disp0,forced_nodes)
 
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
@@ -87,7 +89,7 @@ output_line = np.vstack([tim,output_accx[:,0],output_accx[:,int(fem.output_nnode
 np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
-plt.figure()
-plt.plot(tim,wave_acc,c='k')
-plt.plot(tim,output_accx[:,0],c='r')
-plt.show()
+# plt.figure()
+# plt.plot(tim,wave_acc,c='k')
+# plt.plot(tim,output_accx[:,0],c='r')
+# plt.show()
