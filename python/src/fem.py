@@ -330,7 +330,7 @@ class Fem():
 
         for id in forced_nodes:
             for i in range(self.dof):
-                if node.freedom[i] == 0:
+                if self.nodes[id].freedom[i] == 0:
                     self.nodes[id].u[i] = forced_disp0[i]
 
         for element in self.output_element_set:
