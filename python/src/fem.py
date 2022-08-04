@@ -16,6 +16,8 @@ class Fem():
         self.fixed_nodes = []
         self.connected_elements = []
 
+        self.enrich_elements = []
+
     # ======================================================================= #
     def set_init(self):
         self._set_mesh()
@@ -53,6 +55,9 @@ class Fem():
                 self.input_elements += [element]
             if "connect" in element.style:
                 self.connected_elements += [element]
+
+            if "X" in element.style:
+                self.enrich_elements +=[element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -93,6 +98,7 @@ class Fem():
                     node.k[i] += element.K_diag[id]
                     node.static_force[i] += element.force[id]
                     id += 1
+
 
     # ======================================================================= #
     def set_output(self,outputs):
@@ -309,13 +315,6 @@ class Fem():
         for node in self.node_set:
             node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
             self._update_time_node_init(node)
-
-        # if input_wave:
-        #     for element in self.input_element_set:
-        #         self._update_time_input_wave(element,vel0)
-        # else:
-        #     for element in self.element_set:
-        #         self._update_bodyforce(element,acc0)
 
         for element in self.element_set:
             element.mk_ku_cv()

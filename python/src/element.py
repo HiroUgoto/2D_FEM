@@ -56,6 +56,9 @@ class Element:
         self.dof = dof
         self.ndof = dof*self.nnode
 
+        if "X" in self.style:
+            self.ndof += dof
+
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
 
         self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
@@ -69,22 +72,40 @@ class Element:
         self.force = np.zeros(self.ndof,dtype=np.float64)
 
         if self.dim == 2:
-            self.gauss_points = set()
-            V = 0.0
-            for xi,wx in zip(self.xi,self.w):
-                for zeta,wz in zip(self.xi,self.w):
-                    N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
-                    M = mk_m(N)
-                    dn = self.estyle.shape_function_dn(xi,zeta)
+            if "X" not in self.style:
+                self.gauss_points = set()
+                V = 0.0
+                for xi,wx in zip(self.xi,self.w):
+                    for zeta,wz in zip(self.xi,self.w):
+                        N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
+                        M = mk_m(N)
+                        dn = self.estyle.shape_function_dn(xi,zeta)
 
-                    gp = element_style.Gauss_Points(dn,wx*wz,N,M)
-                    self.gauss_points.add(gp)
+                        gp = element_style.Gauss_Points(dn,wx*wz,N,M)
+                        self.gauss_points.add(gp)
 
-                    det,_ = mk_jacobi(self.xnT,dn)
-                    detJ = wx*wz*det
-                    V += detJ
+                        det,_ = mk_jacobi(self.xnT,dn)
+                        detJ = wx*wz*det
+                        V += detJ
 
-            self.mass = self.rho*V
+                self.mass = self.rho*V
+
+            # enrich element
+            else:
+                self.gauss_points = set()
+                V = 0.0
+                for xi,wx in zip(self.xi,self.w):
+                    for zeta,wz in zip(self.xi,self.w):
+                        dn = self.estyle.shape_function_dn(xi,zeta)
+
+                        gp = element_style.Gauss_Points(dn,wx*wz,N=None,M=None)
+                        self.gauss_points.add(gp)
+
+                        det,_ = mk_jacobi(self.xnT,dn)
+                        detJ = wx*wz*det
+                        V += detJ
+
+                self.mass = self.rho*V
 
         elif self.dim == 1:
             self.gauss_points = set()
@@ -109,25 +130,69 @@ class Element:
             self.De = self.material.mk_d(self.dof)
             self.Dv = self.material.mk_visco(self.dof)
 
-            for gp in self.gauss_points:
-                det,dnj = mk_dnj(self.xnT,gp.dn)
-                B = mk_b(self.dof,self.nnode,dnj)
-                K = mk_k(B,self.De)
-                C = mk_k(B,self.Dv)
+            if "X" not in self.style:
+                for gp in self.gauss_points:
+                    det,dnj = mk_dnj(self.xnT,gp.dn)
+                    B = mk_b(self.dof,self.nnode,dnj)
+                    K = mk_k(B,self.De)
+                    C = mk_k(B,self.Dv)
 
-                detJ = gp.w*det
-                M += gp.M*detJ
-                self.K += K*detJ
-                self.C += C*detJ
+                    detJ = gp.w*det
+                    M += gp.M*detJ
+                    self.K += K*detJ
+                    self.C += C*detJ
 
-            tr_M = np.trace(M)/self.dof
-            self.M_diag = np.diag(M) * self.mass/tr_M
+                tr_M = np.trace(M)/self.dof
+                self.M_diag = np.diag(M) * self.mass/tr_M
 
-            self.K_diag = np.diag(self.K)
-            self.K_off_diag = self.K - np.diag(self.K_diag)
+                self.K_diag = np.diag(self.K)
+                self.K_off_diag = self.K - np.diag(self.K_diag)
 
-            self.C_diag = np.diag(self.C)
-            self.C_off_diag = self.C - np.diag(self.C_diag)
+                self.C_diag = np.diag(self.C)
+                self.C_off_diag = self.C - np.diag(self.C_diag)
+
+            # enrich element
+            else:
+                level_set = np.array([-1,1,1,-1])
+
+                Jp,Jm = ck_enrich_function_domain_init(level_set)
+
+                for xi,wx in zip(self.xi,self.w):
+                    for zeta,wz in zip(self.xi,self.w):
+                        dn = self.estyle.shape_function_dn(xi,zeta)
+                        n = self.estyle.shape_function_n(xi,zeta)
+                        det,dnj = mk_dnj(self.xnT,dn)
+
+                        sign = ck_enrich_function_domain(self.estyle,level_set,xi,zeta)
+                        g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
+
+                        B = mk_b_enrich(self.dof,self.nnode,dnj,dgj)
+                        N = mk_n_enrich(self.dof,self.nnode,n,g)
+
+                        Me = mk_m(N)
+                        K = mk_k(B,self.De)
+                        C = mk_k(B,self.Dv)
+
+                        detJ = wx*wz*det
+                        M += Me*detJ
+                        self.K += K*detJ
+                        self.C += C*detJ
+
+
+                tr_M = np.trace(M)/self.dof
+                self.M_diag = np.diag(M) * self.mass/tr_M
+
+                self.K_diag = np.diag(self.K)
+                self.K_off_diag = self.K - np.diag(self.K_diag)
+
+                self.C_diag = np.diag(self.C)
+                self.C_off_diag = self.C - np.diag(self.C_diag)
+
+                print(self.M_diag)
+                print(self.K_diag)
+
+                exit()
+
 
         elif self.dim == 1:
             if "input" or "visco" in self.style:
@@ -207,6 +272,10 @@ class Element:
 
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
+
+
+    # ---------------------------------------------------------
+    # ---------------------------------------------------------
 
 
     # ---------------------------------------------------------
@@ -378,6 +447,55 @@ def mk_b_T(dof,nnode,dnj):
         B[2::3,4] = dnj[:,1]
 
     return B
+
+# ---------------------------------------------------------
+def ck_enrich_function_domain_init(level_set):
+    Jp,Jm = [],[]
+
+    for id in range(len(level_set)):
+        if level_set[id] > 0:
+            Jp += [id]
+        else:
+            Jm += [id]
+
+    return Jp,Jm
+
+def ck_enrich_function_domain(estyle,level_set,xi,zeta):
+    n_shape = estyle.shape_function_n(xi,zeta)
+    sign = level_set @ n_shape
+
+    return sign
+
+def mk_enrich_function(estyle,xnT,dn,level_set,Jp,Jm,xi,zeta):
+    sign = ck_enrich_function_domain(estyle,level_set,xi,zeta)
+    g  = estyle.enrich_function_n(sign,Jp,Jm,xi,zeta)
+    dg = estyle.enrich_function_dn(sign,Jp,Jm,xi,zeta)
+
+    _,jacobi_inv = mk_inv_jacobi(xnT,dn)
+    dgj = dg @ jacobi_inv
+
+    return g, dgj
+
+def mk_b_enrich(dof,nnode,dnj,dgj):
+    B = mk_b(dof,nnode,dnj)
+
+    B_enrich = np.zeros([3,2*nnode+2],dtype=np.float64)
+    B_enrich[:,0:2*nnode] = B[:,:]
+
+    B_enrich[0,2*nnode] = dgj[0]
+    B_enrich[1,2*nnode+1] = dgj[1]
+    B_enrich[2,2*nnode],B_enrich[2,2*nnode+1] = dgj[1],dgj[0]
+
+    return B_enrich
+
+def mk_n_enrich(dof,nnode,n,g):
+    N_enrich = np.zeros([dof,dof*nnode+dof],dtype=np.float64)
+
+    for i in range(dof):
+        N_enrich[i,i:dof*nnode:dof] = n[:]
+        N_enrich[i,dof*nnode+i] = g
+
+    return N_enrich
 
 # ---------------------------------------------------------
 def Hencky_stress(dof,nnode,D,dnj,u):

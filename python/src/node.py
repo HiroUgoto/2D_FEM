@@ -16,6 +16,8 @@ class Node:
         self.v  = np.zeros(self.dof,dtype=np.float64)
         self.a  = np.zeros(self.dof,dtype=np.float64)
 
+        self.level_set = 0.0
+
         self.mass   = np.zeros(self.dof,dtype=np.float64)
         self.c      = np.zeros(self.dof,dtype=np.float64)
         self.k      = np.zeros(self.dof,dtype=np.float64)

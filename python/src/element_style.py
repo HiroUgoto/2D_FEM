@@ -8,10 +8,15 @@ def set_style(style):
         return Solid_2d_8Node()
     elif style == "2d9solid":
         return Solid_2d_9Node()
+
+    elif style == "2d4solidX":
+        return Solid_2d_4Node_X()
+
     elif style == "1d2line":
         return Line_1d_2Node()
     elif style == "1d3line":
         return Line_1d_3Node()
+
     elif style == "1d2input":
         return Input_1d_2Node()
     elif style == "1d3input":
@@ -20,6 +25,7 @@ def set_style(style):
         return Input_1d_2Visco()
     elif style == "1d3visco":
         return Input_1d_3Visco()
+
     elif style == "connect":
         return Connect()
 
@@ -171,6 +177,46 @@ class Solid_2d_9Node:
         dn[8,0] =  -2.0*xi*(1.0-zeta*zeta)
         dn[8,1] =  -2.0*(1.0-xi*xi)*zeta
         return dn
+
+# ---------------------------------------------------------------------- #
+class Solid_2d_4Node_X(Solid_2d_4Node):
+    def __init__(self):
+        self.dim = 2
+        self.gauss = np.polynomial.legendre.leggauss(11)
+
+    def enrich_function_n(self,sign,Jp,Jm,xi,zeta):
+        n = self.shape_function_n(xi,zeta)
+
+        g = 0.0
+        if sign > 0.0:      # (xi,zeta) in Omega+
+            for id in Jm:
+                g += n[id]
+        else:               # (xi,zeta) in Omega-
+            for id in Jp:
+                g -= n[id]
+
+        return g
+
+    def enrich_function_dn(self,sign,Jp,Jm,xi,zeta):
+        dn = self.shape_function_dn(xi,zeta)
+
+        dg = np.zeros(2)
+        if sign > 0.0:      # (xi,zeta) in Omega+
+            for id in Jm:
+                dg += dn[id,:]
+        else:               # (xi,zeta) in Omega-
+            for id in Jp:
+                dg -= dn[id,:]
+
+        return dg
+
+
+    def tip_enrich_function_n(self,sign,Jp,Jm,xi,zeta,phi):
+        h = 1.0 - np.abs(phi)/np.pi
+        g = self.enrich_function(sign,Jp,Jm,xi,zeta)
+
+        return g*h
+
 
 # ---------------------------------------------------------------------- #
 class Line_1d_2Node:

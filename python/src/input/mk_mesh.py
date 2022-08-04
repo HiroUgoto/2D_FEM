@@ -40,7 +40,10 @@ for k in range(nz):
     for i in range(nx):
         im = 0
 
-        style = "2d4solid"
+        if i == 1:
+            style = "2d4solidX"
+        else:
+            style = "2d4solid"
 
         param_line = "{} {} {} ".format(ielem,style,im)
         style_line = "{} {} {} {}".format(node[i,k],node[i+1,k],node[i+1,k+1],node[i,k+1])
