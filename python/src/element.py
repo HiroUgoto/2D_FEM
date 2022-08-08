@@ -58,6 +58,9 @@ class Element:
 
         if "X" in self.style:
             self.ndof += dof
+            self.du  = np.zeros(dof, dtype=np.float64)
+            self.dum = np.zeros(dof, dtype=np.float64)
+            self.dv  = np.zeros(dof, dtype=np.float64)
 
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
 
@@ -157,13 +160,13 @@ class Element:
 
                 Jp,Jm = ck_enrich_function_domain_init(level_set)
 
+                ml = 0.0
                 for xi,wx in zip(self.xi,self.w):
                     for zeta,wz in zip(self.xi,self.w):
                         dn = self.estyle.shape_function_dn(xi,zeta)
                         n = self.estyle.shape_function_n(xi,zeta)
                         det,dnj = mk_dnj(self.xnT,dn)
 
-                        sign = ck_enrich_function_domain(self.estyle,level_set,xi,zeta)
                         g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
 
                         B = mk_b_enrich(self.dof,self.nnode,dnj,dgj)
@@ -178,20 +181,17 @@ class Element:
                         self.K += K*detJ
                         self.C += C*detJ
 
+                        ml += self.rho*g*g * detJ
 
                 tr_M = np.trace(M)/self.dof
                 self.M_diag = np.diag(M) * self.mass/tr_M
+                self.M_diag[-self.dof:] = ml
 
                 self.K_diag = np.diag(self.K)
                 self.K_off_diag = self.K - np.diag(self.K_diag)
 
                 self.C_diag = np.diag(self.C)
                 self.C_off_diag = self.C - np.diag(self.C_diag)
-
-                print(self.M_diag)
-                print(self.K_diag)
-
-                exit()
 
 
         elif self.dim == 1:
@@ -213,15 +213,40 @@ class Element:
         # if self.dof == 1:
         #     return
         if self.dim == 2:
-            self.force = np.zeros(self.ndof,dtype=np.float64)
-            V = 0.0
-            for gp in self.gauss_points:
-                det,_ = mk_jacobi(self.xnT,gp.dn)
-                detJ = gp.w*det
-                V += detJ
-                self.force += gp.N[1,:]*detJ * self.gravity
+            if "X" not in self.style:
+                self.force = np.zeros(self.ndof,dtype=np.float64)
+                V = 0.0
+                for gp in self.gauss_points:
+                    det,_ = mk_jacobi(self.xnT,gp.dn)
+                    detJ = gp.w*det
+                    V += detJ
+                    self.force += gp.N[1,:]*detJ * self.gravity
 
-            self.force = self.force * self.mass/V
+                self.force = self.force * self.mass/V
+
+            # enrich element
+            else:
+                self.force = np.zeros(self.ndof,dtype=np.float64)
+
+                level_set = np.array([-1,1,1,-1])
+
+                Jp,Jm = ck_enrich_function_domain_init(level_set)
+
+                V = 0.0
+                for xi,wx in zip(self.xi,self.w):
+                    for zeta,wz in zip(self.xi,self.w):
+                        dn = self.estyle.shape_function_dn(xi,zeta)
+                        n = self.estyle.shape_function_n(xi,zeta)
+                        det,dnj = mk_dnj(self.xnT,dn)
+
+                        g,_ = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
+                        N = mk_n_enrich(self.dof,self.nnode,n,g)
+
+                        detJ = wx*wz*det
+                        V += detJ
+                        self.force += N[1,:]*detJ * self.gravity
+
+                self.force = self.force * self.mass/V
 
     # ---------------------------------------------------------
     def mk_local_update(self):
@@ -314,6 +339,18 @@ class Element:
                 self.force += (gp.N[0,:]*acc0[0] + gp.N[1,:]*acc0[1])*detJ
 
             self.force = self.force * self.mass/V
+
+    # -------------------------------------------------------
+    def mk_ku_cv_enrich(self):
+        u = np.append(np.hstack(self.u),self.du)
+        v = np.append(np.hstack(self.v),self.dv)
+
+        f = self.K @ u + self.C_off_diag @ v
+        for i in range(self.nnode):
+            i0 = self.dof*i
+            self.nodes[i].force[:] += f[i0:i0+self.dof]
+
+        self.enrich_force = f[-self.dof:]
 
     # --------------------------------------------------------
     def mk_B_stress(self):

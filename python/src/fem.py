@@ -17,6 +17,8 @@ class Fem():
         self.connected_elements = []
 
         self.enrich_elements = []
+        self.normal_elements = []
+
 
     # ======================================================================= #
     def set_init(self):
@@ -58,6 +60,8 @@ class Fem():
 
             if "X" in element.style:
                 self.enrich_elements +=[element]
+            else:
+                self.normal_elements +=[element]
 
     # ---------------------------------------
     def _set_initial_condition(self):
@@ -99,6 +103,16 @@ class Fem():
                     node.static_force[i] += element.force[id]
                     id += 1
 
+            if "X" in element.style:
+                element.enrich_node_mass = np.zeros(self.dof, dtype=np.float64)
+                element.enrich_node_c = np.zeros(self.dof, dtype=np.float64)
+                element.enrich_node_k = np.zeros(self.dof, dtype=np.float64)
+
+                for i in range(self.dof):
+                    element.enrich_node_mass[i] = element.M_diag[id]
+                    element.enrich_node_c[i] = element.C_diag[id]
+                    element.enrich_node_k[i] = element.K_diag[id]
+                    id += 1
 
     # ======================================================================= #
     def set_output(self,outputs):
@@ -238,6 +252,12 @@ class Fem():
             node.c_inv_mc = node.c[:]*node.inv_mc[:]*0.5*dt
             node.dtdt_inv_mc = dt*dt*node.inv_mc[:]
 
+        for element in self.enrich_elements:
+            element.enrich_inv_mc = 1.0 / (element.enrich_node_mass[:] + 0.5*dt*element.enrich_node_c[:])
+            element.enrich_mass_inv_mc = element.enrich_node_mass[:]*element.enrich_inv_mc[:]
+            element.enrich_c_inv_mc = element.enrich_node_c[:]*element.enrich_inv_mc[:]*0.5*dt
+            element.enrich_dtdt_inv_mc = dt*dt*element.enrich_inv_mc[:]
+
         self.dt = dt
         self.inv_dt2 = 1./(2.*dt)
         self.inv_dtdt = 1./(dt*dt)
@@ -316,8 +336,10 @@ class Fem():
             node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
             self._update_time_node_init(node)
 
-        for element in self.element_set:
+        for element in self.normal_elements:
             element.mk_ku_cv()
+        for element in self.enrich_elements:
+            element.mk_ku_cv_enrich()
 
         for node in self.free_node_set:
             self._update_time_set_free_nodes(node)
@@ -326,6 +348,9 @@ class Fem():
 
         for element in self.connected_element_set:
             self._update_time_set_connected_elements_(element)
+
+        for element in self.enrich_elements:
+            self._update_time_set_enrich_nodes(element)
 
         for id in forced_nodes:
             for i in range(self.dof):
@@ -381,6 +406,15 @@ class Fem():
         for node in element.node_set:
             node.u[:] = u[:]/element.nnode
             node.a[:] = a[:]/element.nnode
+
+    # ------------------------------------------------
+    def _update_time_set_enrich_nodes(self,element):
+        du = np.copy(element.du)
+        for i in range(self.dof):
+            element.du[i] = element.enrich_mass_inv_mc[i]*(2.*du[i]-element.dum[i]) + element.enrich_c_inv_mc[i]*element.dum[i] - element.enrich_dtdt_inv_mc[i]*element.enrich_force[i]
+            element.dv[i] = (element.du[i] - element.dum[i]) * self.inv_dt2
+        element.dum = du
+
 
     # ======================================================================= #
     def print_all(self):

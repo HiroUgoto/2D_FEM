@@ -18,12 +18,11 @@ output_dir = "result/"
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-plot_model.plot_mesh(fem)
+# plot_model.plot_mesh(fem)
 
-exit()
 
 ## --- Define input wave --- ##
-fsamp = 1000
+fsamp = 10000
 duration = 1.0
 amp = 0.01
 
@@ -72,7 +71,9 @@ for it in range(len(tim)):
 
     if it%20 == 0:
         plot_model.plot_mesh_update(ax,fem,100.)
-        print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
+        print(it,"t=",it*dt,fem.elements[1].du)
+        # print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
+
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
