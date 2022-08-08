@@ -58,6 +58,9 @@ class Element:
 
         if "X" in self.style:
             self.ndof += dof
+            # du[0]: dun +tension, -compress
+            # du[1]: dus +down stream, -reverse
+            # theta: compatible with coulomb
             self.du  = np.zeros(dof, dtype=np.float64)
             self.dum = np.zeros(dof, dtype=np.float64)
             self.dv  = np.zeros(dof, dtype=np.float64)
@@ -156,9 +159,16 @@ class Element:
 
             # enrich element
             else:
-                level_set = np.array([-1,1,1,-1])
+                self.crack_xp = np.array([3.0,1.0])
+                self.crack_theta = np.pi/3.0
 
-                Jp,Jm = ck_enrich_function_domain_init(level_set)
+                self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
+
+
+                level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
+                self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
+                self.R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
+                                   [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
 
                 ml = 0.0
                 for xi,wx in zip(self.xi,self.w):
@@ -167,10 +177,10 @@ class Element:
                         n = self.estyle.shape_function_n(xi,zeta)
                         det,dnj = mk_dnj(self.xnT,dn)
 
-                        g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
+                        g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,self.Jp,self.Jm,xi,zeta)
 
-                        B = mk_b_enrich(self.dof,self.nnode,dnj,dgj)
-                        N = mk_n_enrich(self.dof,self.nnode,n,g)
+                        B = mk_b_enrich(self.dof,self.nnode,dnj,dgj,self.R)
+                        N = mk_n_enrich(self.dof,self.nnode,n,g,self.R)
 
                         Me = mk_m(N)
                         K = mk_k(B,self.De)
@@ -228,9 +238,10 @@ class Element:
             else:
                 self.force = np.zeros(self.ndof,dtype=np.float64)
 
-                level_set = np.array([-1,1,1,-1])
-
+                level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
                 Jp,Jm = ck_enrich_function_domain_init(level_set)
+                R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
+                              [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
 
                 V = 0.0
                 for xi,wx in zip(self.xi,self.w):
@@ -240,7 +251,7 @@ class Element:
                         det,dnj = mk_dnj(self.xnT,dn)
 
                         g,_ = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
-                        N = mk_n_enrich(self.dof,self.nnode,n,g)
+                        N = mk_n_enrich(self.dof,self.nnode,n,g,R)
 
                         detJ = wx*wz*det
                         V += detJ
@@ -400,6 +411,27 @@ class Element:
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
 
+    # ---------------------------------------------------------
+    def calc_crack_edge_disp(self):
+        up,um = [],[]
+        for xi in self.crack_edges_xi:
+            n = self.estyle.shape_function_n(xi[0],xi[1])
+            gp = self.estyle.enrich_function_n( 1.0,self.Jp,self.Jm,xi[0],xi[1])
+            gm = self.estyle.enrich_function_n(-1.0,self.Jp,self.Jm,xi[0],xi[1])
+
+            Np = mk_n_enrich(self.dof,self.nnode,n,gp,self.R)
+            Nm = mk_n_enrich(self.dof,self.nnode,n,gm,self.R)
+
+            ua = np.append(np.hstack(self.u),self.du)
+            up += [Np @ np.hstack(ua)]
+            um += [Nm @ np.hstack(ua)]
+
+            # print("up:",up)
+            # print("um:",um)
+
+        return up,um
+
+
 # ---------------------------------------------------------
 def mk_m(N):
     return N.T @ N
@@ -486,6 +518,49 @@ def mk_b_T(dof,nnode,dnj):
     return B
 
 # ---------------------------------------------------------
+def set_levelset_function(xnT,xp,theta):
+    u = np.array([np.cos(theta),-np.sin(theta)])
+
+    level_set = []
+    for x in xnT.T:
+        px = x - xp
+        level_set += [np.cross(u,px)]
+
+    return np.array(level_set)
+
+def set_crack_edge(xnT,xp,theta):
+    level_set = set_levelset_function(xnT,xp,theta)
+
+    crack_edges = []
+    crack_edges_xi = []
+    for i in range(len(level_set)):
+        i0 = i
+        if i+1 < len(level_set):
+            i1 = i+1
+        else:
+            i1 = 0
+
+        l0 = level_set[i0]
+        l1 = level_set[i1]
+
+        if l0*l1 < 0.0:
+            t = (l0+l1)/(l0-l1)
+            xe = 0.5*(xnT[:,i1]-xnT[:,i0])*t + 0.5*(xnT[:,i1]+xnT[:,i0])
+            crack_edges += [xe]
+
+            if i == 0:
+                xi,zeta = t,-1.0
+            elif i == 1:
+                xi,zeta = 1.0,t
+            elif i == 2:
+                xi,zeta = -t,1.0
+            elif i == 3:
+                xi,zeta = -1.0,-t
+
+            crack_edges_xi += [np.array([xi,zeta])]
+
+    return crack_edges, crack_edges_xi
+
 def ck_enrich_function_domain_init(level_set):
     Jp,Jm = [],[]
 
@@ -513,24 +588,29 @@ def mk_enrich_function(estyle,xnT,dn,level_set,Jp,Jm,xi,zeta):
 
     return g, dgj
 
-def mk_b_enrich(dof,nnode,dnj,dgj):
+def mk_b_enrich(dof,nnode,dnj,dgj,R):
     B = mk_b(dof,nnode,dnj)
+
+    dG = np.zeros([3,2],dtype=np.float64)
+    dG[0,0] = dgj[0]
+    dG[1,1] = dgj[1]
+    dG[2,0],dG[2,1] = dgj[1],dgj[0]
+
+    dGR = dG @ R
 
     B_enrich = np.zeros([3,2*nnode+2],dtype=np.float64)
     B_enrich[:,0:2*nnode] = B[:,:]
-
-    B_enrich[0,2*nnode] = dgj[0]
-    B_enrich[1,2*nnode+1] = dgj[1]
-    B_enrich[2,2*nnode],B_enrich[2,2*nnode+1] = dgj[1],dgj[0]
+    B_enrich[:,2*nnode:] = dGR[:,:]
 
     return B_enrich
 
-def mk_n_enrich(dof,nnode,n,g):
+def mk_n_enrich(dof,nnode,n,g,R):
     N_enrich = np.zeros([dof,dof*nnode+dof],dtype=np.float64)
 
     for i in range(dof):
         N_enrich[i,i:dof*nnode:dof] = n[:]
-        N_enrich[i,dof*nnode+i] = g
+
+    N_enrich[:,dof*nnode:] = g * R
 
     return N_enrich
 

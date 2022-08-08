@@ -74,6 +74,30 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
         p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
         ax.add_patch(p)
 
+    for element in fem.enrich_elements:
+        up,um = element.calc_crack_edge_disp()
+
+        try:
+            f0 = (element.crack_edges[0][0]+um[0][0]*amp,
+                  element.crack_edges[0][1]+um[0][1]*amp)
+            f1 = (element.crack_edges[0][0]+up[0][0]*amp,
+                  element.crack_edges[0][1]+up[0][1]*amp)
+            f2 = (element.crack_edges[1][0]+up[1][0]*amp,
+                  element.crack_edges[1][1]+up[1][1]*amp)
+            f3 = (element.crack_edges[1][0]+um[1][0]*amp,
+                  element.crack_edges[1][1]+um[1][1]*amp)
+
+            fpoly = plt.Polygon((f0,f1,f2,f3),fc="white")
+            ax.add_patch(fpoly)
+
+            fpoly = plt.Polygon((f0,f3),ec="k")
+            ax.add_patch(fpoly)
+            fpoly = plt.Polygon((f1,f2),ec="k")
+            ax.add_patch(fpoly)
+            
+        except:
+            print("plot error")
+
     if fin:
         plt.show()
     else:

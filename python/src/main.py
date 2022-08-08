@@ -22,7 +22,7 @@ fem.set_output(outputs)
 
 
 ## --- Define input wave --- ##
-fsamp = 10000
+fsamp = 2000
 duration = 1.0
 amp = 0.01
 
