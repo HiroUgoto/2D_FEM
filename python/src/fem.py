@@ -315,13 +315,6 @@ class Fem():
         for node in self.node_set:
             self._update_time_node_init(node)
 
-        # if input_wave:
-        #     for element in self.input_element_set:
-        #         self._update_time_input_wave(element,vel0)
-        # else:
-        #     for element in self.element_set:
-        #         self._update_bodyforce(element,acc0)
-
         for element in self.element_set:
             element.mk_ku_cv()
 
@@ -332,6 +325,30 @@ class Fem():
 
         for element in self.slip_joint_node_elements:
             self._update_time_set_slip_joint_node_elements_(element,slip0)
+
+        for element in self.connected_element_set:
+            self._update_time_set_connected_elements_(element)
+
+        for element in self.output_element_set:
+            element.calc_stress()
+
+    # ======================================================================= #
+    def update_time_source(self,source,slip0):
+        for node in self.node_set:
+            node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+
+        for node in self.node_set:
+            self._update_time_node_init(node)
+
+        self._update_time_source(source,slip0)
+
+        for element in self.element_set:
+            element.mk_ku_cv()
+
+        for node in self.free_node_set:
+            self._update_time_set_free_nodes(node)
+        for node in self.fixed_node_set:
+            self._update_time_set_fixed_nodes(node)
 
         for element in self.connected_element_set:
             self._update_time_set_connected_elements_(element)
@@ -355,6 +372,12 @@ class Fem():
         for i in range(element.nnode):
             i0 = self.dof*i
             element.nodes[i].force[:] -= element.force[i0:i0+self.dof]
+
+    def _update_time_source(self,source,slip0):
+        self.elements[source.element_id].mk_source(source,slip0)
+        for i in range(self.elements[source.element_id].nnode):
+            i0 = self.dof*i
+            self.elements[source.element_id].nodes[i].force[:] -= self.elements[source.element_id].force[i0:i0+self.dof]
 
     def _update_time_set_free_nodes(self,node):
         u = np.copy(node.u)

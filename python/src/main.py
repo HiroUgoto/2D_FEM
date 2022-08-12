@@ -4,6 +4,7 @@ import time
 
 import io_data
 import input_wave
+import source
 import plot_model
 import datetime
 
@@ -19,22 +20,28 @@ output_dir = "result/"
 fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
+# exit()
 
 
-## --- Define input wave --- ##
+## --- Define EQ source --- ##
 fsamp = 1000
-fp = 2.5
-duration = 4.0/fp
+
+fp = 1.0
+duration = 4
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-slip = input_wave.smoothed_ramp(tim,fp=fp,tp=1.0/fp,amp=1.0)
-# slip_rate = input_wave.ricker(tim,fp=fp,tp=1.0/fp,amp=1.0)
+slip_rate = input_wave.ricker(tim,fp,tp=1.0/fp,amp=1.0)
 ntim = len(tim)
 
+
+dip = 30.0  # degree
+width = 10.0   # m
+src = source.Source(dip,width,40)
 
 # plt.figure()
 # plt.plot(tim,slip)
 # plt.show()
+# exit()
 
 ## --- Prepare time solver --- ##
 ax = plot_model.plot_mesh_update_init()
@@ -50,13 +57,11 @@ output_velz = np.zeros((ntim,fem.output_nnode))
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_accz = np.zeros((ntim,fem.output_nnode))
 
-# slip0 = 0.0
+slip0 = 0.0
 for it in range(len(tim)):
-    slip0 = slip[it]
-    # slip_rate0 = slip_rate[it]
-    # slip0 += slip_rate0*dt
+    slip0 += slip_rate[it]*dt
 
-    fem.update_time_slip(slip0)
+    fem.update_time_source(src,slip0)
 
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
@@ -68,7 +73,7 @@ for it in range(len(tim)):
     output_accz[it,:] = [node.a[1] for node in fem.output_nodes]
 
     if it%20 == 0:
-        plot_model.plot_mesh_update(ax,fem,1.)
+        plot_model.plot_mesh_update(ax,fem,10.)
         print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
 
 elapsed_time = time.time() - start
@@ -88,6 +93,6 @@ np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
 plt.figure()
-plt.plot(tim,slip,c='k')
-plt.plot(tim,output_dispx[:,0],c='r')
+# plt.plot(tim,slip_rate,c='k')
+plt.plot(tim,output_velx[:,int(fem.output_nnode//2)],c='r')
 plt.show()

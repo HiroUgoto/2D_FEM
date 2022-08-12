@@ -249,6 +249,20 @@ class Element:
 
             self.force = self.force * self.mass/V
 
+    def mk_source(self,source,slip0):
+        if self.dim == 2:
+            self.force = np.zeros(self.ndof,dtype=np.float64)
+
+            for gp in self.gauss_points:
+                det,dnj = mk_dnj(self.xnT,gp.dn)
+                BT = mk_b_T(self.dof,self.nnode,dnj)
+                moment = self.material.rmu * source.strain_tensor * slip0
+
+                detJ = gp.w*det
+                self.force += BT @ moment * detJ
+
+
+
     # --------------------------------------------------------
     def mk_B_stress(self):
         if self.dim == 1:
