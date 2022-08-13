@@ -333,14 +333,15 @@ class Fem():
             element.calc_stress()
 
     # ======================================================================= #
-    def update_time_source(self,source,slip0):
+    def update_time_source(self,sources,slip0):
         for node in self.node_set:
             node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
         for node in self.node_set:
             self._update_time_node_init(node)
 
-        self._update_time_source(source,slip0)
+        for source in sources:
+            self._update_time_source(source,slip0)
 
         for element in self.element_set:
             element.mk_ku_cv()
@@ -374,10 +375,11 @@ class Fem():
             element.nodes[i].force[:] -= element.force[i0:i0+self.dof]
 
     def _update_time_source(self,source,slip0):
-        self.elements[source.element_id].mk_source(source,slip0)
-        for i in range(self.elements[source.element_id].nnode):
+        id = source.element_id
+        self.elements[id].mk_source(source,slip0)
+        for i in range(self.elements[id].nnode):
             i0 = self.dof*i
-            self.elements[source.element_id].nodes[i].force[:] -= self.elements[source.element_id].force[i0:i0+self.dof]
+            self.elements[id].nodes[i].force[:] -= self.elements[id].force[i0:i0+self.dof]
 
     def _update_time_set_free_nodes(self,node):
         u = np.copy(node.u)

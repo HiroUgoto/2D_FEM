@@ -35,8 +35,8 @@ ntim = len(tim)
 
 
 dip = 30.0  # degree
-width = 10.0   # m
-src = source.Source(dip,width,40)
+width = 1000.0   # m
+sources = source.set_source(fem.elements,dip,width,2500,2500,n=10)
 
 # plt.figure()
 # plt.plot(tim,slip)
@@ -61,7 +61,7 @@ slip0 = 0.0
 for it in range(len(tim)):
     slip0 += slip_rate[it]*dt
 
-    fem.update_time_source(src,slip0)
+    fem.update_time_source(sources,slip0)
 
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
     output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
@@ -73,7 +73,7 @@ for it in range(len(tim)):
     output_accz[it,:] = [node.a[1] for node in fem.output_nodes]
 
     if it%20 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.)
+        plot_model.plot_mesh_update(ax,fem,2000.)
         print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
 
 elapsed_time = time.time() - start

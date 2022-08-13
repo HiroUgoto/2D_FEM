@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize
 import sys
 
 import element_style
@@ -251,17 +252,11 @@ class Element:
 
     def mk_source(self,source,slip0):
         if self.dim == 2:
-            self.force = np.zeros(self.ndof,dtype=np.float64)
-
-            for gp in self.gauss_points:
-                det,dnj = mk_dnj(self.xnT,gp.dn)
-                BT = mk_b_T(self.dof,self.nnode,dnj)
-                moment = self.material.rmu * source.strain_tensor * slip0
-
-                detJ = gp.w*det
-                self.force += BT @ moment * detJ
-
-
+            dn = self.estyle.shape_function_dn(source.xi,source.zeta)
+            _,dnj = mk_dnj(self.xnT,dn)
+            BT = mk_b_T(self.dof,self.nnode,dnj)
+            moment = self.material.rmu * source.strain_tensor * slip0
+            self.force = BT @ moment
 
     # --------------------------------------------------------
     def mk_B_stress(self):
@@ -310,6 +305,31 @@ class Element:
         B = mk_b(self.dof,self.nnode,dnj)
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
+
+
+    # ---------------------------------------------------------
+    def check_inside(self,x):
+        def J_func(xi,x,xnT,shape_function_n,shape_function_dn):
+            n = shape_function_n(xi[0],xi[1])
+            return xnT@n - x
+
+        def dJ_func(xi,x,xnT,shape_function_n,shape_function_dn):
+            dn = shape_function_dn(xi[0],xi[1])
+            _,dJ = mk_jacobi(xnT,dn)
+            return dJ
+
+        args = (x, self.xnT,
+                self.estyle.shape_function_n,
+                self.estyle.shape_function_dn)
+        solve = scipy.optimize.root(J_func,[0,0],args=args,jac=dJ_func)
+        xi = solve.x
+
+        if (-1.0 <= xi[0] < 1.0) and (-1.0 <= xi[1] < 1.0):
+            is_inside = True
+        else:
+            is_inside = False
+
+        return is_inside,xi
 
 # ---------------------------------------------------------
 def mk_m(N):
