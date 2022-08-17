@@ -43,4 +43,4 @@ class Source:
 
         self.strain_tensor[0] = -np.sin(2*self.dip) *self.width
         self.strain_tensor[1] =  np.sin(2*self.dip) *self.width
-        self.strain_tensor[2] =  np.cos(2*self.dip) *self.width
+        self.strain_tensor[2] = -np.cos(2*self.dip) *self.width
