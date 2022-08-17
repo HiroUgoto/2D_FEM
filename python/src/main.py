@@ -24,7 +24,7 @@ fem.set_output(outputs)
 
 
 ## --- Define EQ source --- ##
-fsamp = 1000
+fsamp = 100
 
 fp = 1.0
 duration = 4
