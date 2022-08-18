@@ -26,8 +26,8 @@ fem.set_output(outputs)
 ## --- Define EQ source --- ##
 fsamp = 100
 
-fp = 1.0
-duration = 4
+fp = 0.5
+duration = 6
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 slip_rate = input_wave.ricker(tim,fp,tp=1.0/fp,amp=1.0)
@@ -74,7 +74,7 @@ for it in range(len(tim)):
 
     if it%20 == 0:
         plot_model.plot_mesh_update(ax,fem,2000.)
-        print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
+        print(it,"t=",it*dt,output_dispx[it,0])
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
@@ -82,17 +82,17 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 # plot_model.plot_mesh_update(ax,fem,10.,fin=True)
 
 ## --- Write output file --- ##
-output_line = np.vstack([tim,output_dispx[:,0],output_dispx[:,int(fem.output_nnode//2)]]).T
+output_line = np.vstack([tim,output_dispx.T]).T
 np.savetxt(output_dir+"output_x.disp",output_line)
 
-output_line = np.vstack([tim,output_velx[:,0],output_velx[:,int(fem.output_nnode//2)]]).T
+output_line = np.vstack([tim,output_velx.T]).T
 np.savetxt(output_dir+"output_x.vel",output_line)
 
-output_line = np.vstack([tim,output_accx[:,0],output_accx[:,int(fem.output_nnode//2)]]).T
+output_line = np.vstack([tim,output_accx.T]).T
 np.savetxt(output_dir+"output_x.acc",output_line)
 
 ## Output result ##
 plt.figure()
 # plt.plot(tim,slip_rate,c='k')
-plt.plot(tim,output_velx[:,int(fem.output_nnode//2)],c='r')
+plt.plot(tim,output_velx[:,0],c='r')
 plt.show()

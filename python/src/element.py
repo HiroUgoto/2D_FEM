@@ -318,11 +318,19 @@ class Element:
             _,dJ = mk_jacobi(xnT,dn)
             return dJ
 
-        args = (x, self.xnT,
-                self.estyle.shape_function_n,
-                self.estyle.shape_function_dn)
-        solve = scipy.optimize.root(J_func,[0,0],args=args,jac=dJ_func)
-        xi = solve.x
+        xi = np.zeros(2)
+        for itr in range(20):
+            n = self.estyle.shape_function_n(xi[0],xi[1])
+            dn = self.estyle.shape_function_dn(xi[0],xi[1])
+
+            J = self.xnT@n - x
+            _,dJ = mk_jacobi(self.xnT,dn)
+
+            r = np.linalg.solve(dJ,J)
+            if np.linalg.norm(r) < 1e-8:
+                break
+
+            xi -= r
 
         if (-1.0 <= xi[0] < 1.0) and (-1.0 <= xi[1] < 1.0):
             is_inside = True

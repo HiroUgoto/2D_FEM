@@ -9,6 +9,7 @@ def set_source(elements,dip,width,sx,sz,n=1):
     dw = width/n
 
     x = np.array([sx,sz])
+    id = 0
     for i in range(n):
         x[0] = sx + w[i]*np.cos(dip_rad)
         x[1] = sz + w[i]*np.sin(dip_rad)
@@ -19,6 +20,8 @@ def set_source(elements,dip,width,sx,sz,n=1):
                 if is_inside:
                     source = Source(i,dip,dw,element.id,xi[0],xi[1])
                     source_list += [source]
+                    id += 1
+                    break
 
     return source_list
 

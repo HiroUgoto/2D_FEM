@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 #--------------------------------------------------------#
 def plot_mesh(fem,amp=1.0):
-    pc = ["lightblue","gray","yellow","green","pink"]
+    pc = ["gray","yellow","green","pink"]
 
     fig,ax = plt.subplots(figsize=(6,4))
 
@@ -42,7 +42,7 @@ def plot_mesh_update_init():
     return ax
 
 def plot_mesh_update(ax,fem,amp=1.0,fin=False):
-    pc = ["lightblue","gray","yellow","green","pink"]
+    pc = ["gray","yellow","green","pink"]
 
     ax.cla()
     ax.grid()
@@ -66,7 +66,7 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
             f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
             f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
 
-            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic])
+            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic],alpha=0.4)
             ax.add_patch(fpoly)
 
     rc = 0.01*area_z
