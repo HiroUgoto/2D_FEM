@@ -234,22 +234,32 @@ class Element:
 
     # ---------------------------------------------------------
     def check_enrich_rupture(self):
-        if self.a > 5.0 and not self.rupture:
-            self.ndof += self.dof
-            # du[0]: dun +tension, -compress
-            # du[1]: dus +down stream, -reverse
-            # theta: compatible with coulomb
-            self.du  = np.zeros(self.dof, dtype=np.float64)
-            self.dum = np.zeros(self.dof, dtype=np.float64)
-            self.dv  = np.zeros(self.dof, dtype=np.float64)
+        self.ft = 30000.0
 
-            self.crack_xp = np.array([3.0,1.0])
-            self.crack_theta = np.pi/3.0
-            self.rupture = True
-            self.a = 0.0
+        if not self.rupture:
+            self.calc_stress()
 
-        else:
-            self.a += 0.01
+            # check tension crack
+            stress = np.array([ [self.stress[0], self.stress[2]],
+                                [self.stress[2], self.stress[1]]])
+            s,v = np.linalg.eig(stress)
+            s_max = s[0]
+            n_max = v[:,0]
+
+            if self.ft < s_max:
+                self.ndof += self.dof
+                # du[0]: dun +tension, -compress
+                # du[1]: dus +down stream, -reverse
+                # theta: compatible with coulomb
+                self.du  = np.zeros(self.dof, dtype=np.float64)
+                self.dum = np.zeros(self.dof, dtype=np.float64)
+                self.dv  = np.zeros(self.dof, dtype=np.float64)
+
+                self.crack_theta = np.arctan2(n_max[0],n_max[1])
+                n = self.estyle.shape_function_n(0.0,0.0)
+                self.crack_xp = self.xnT @ n
+
+                self.rupture = True
 
     # ---------------------------------------------------------
     def mk_local_matrix_enrich(self):
