@@ -103,16 +103,16 @@ class Fem():
                     node.static_force[i] += element.force[id]
                     id += 1
 
-            if "X" in element.style:
-                element.enrich_node_mass = np.zeros(self.dof, dtype=np.float64)
-                element.enrich_node_c = np.zeros(self.dof, dtype=np.float64)
-                element.enrich_node_k = np.zeros(self.dof, dtype=np.float64)
-
-                for i in range(self.dof):
-                    element.enrich_node_mass[i] = element.M_diag[id]
-                    element.enrich_node_c[i] = element.C_diag[id]
-                    element.enrich_node_k[i] = element.K_diag[id]
-                    id += 1
+            # if "X" in element.style:
+            #     element.enrich_node_mass = np.zeros(self.dof, dtype=np.float64)
+            #     element.enrich_node_c = np.zeros(self.dof, dtype=np.float64)
+            #     element.enrich_node_k = np.zeros(self.dof, dtype=np.float64)
+            #
+            #     for i in range(self.dof):
+            #         element.enrich_node_mass[i] = element.M_diag[id]
+            #         element.enrich_node_c[i] = element.C_diag[id]
+            #         element.enrich_node_k[i] = element.K_diag[id]
+            #         id += 1
 
     # ======================================================================= #
     def set_output(self,outputs):
@@ -252,12 +252,6 @@ class Fem():
             node.c_inv_mc = node.c[:]*node.inv_mc[:]*0.5*dt
             node.dtdt_inv_mc = dt*dt*node.inv_mc[:]
 
-        for element in self.enrich_elements:
-            element.enrich_inv_mc = 1.0 / (element.enrich_node_mass[:] + 0.5*dt*element.enrich_node_c[:])
-            element.enrich_mass_inv_mc = element.enrich_node_mass[:]*element.enrich_inv_mc[:]
-            element.enrich_c_inv_mc = element.enrich_node_c[:]*element.enrich_inv_mc[:]*0.5*dt
-            element.enrich_dtdt_inv_mc = dt*dt*element.enrich_inv_mc[:]
-
         self.dt = dt
         self.inv_dt2 = 1./(2.*dt)
         self.inv_dtdt = 1./(dt*dt)
@@ -286,6 +280,23 @@ class Fem():
                 node.c[i] += element.C_diag[id]
                 node.dynamic_force[i] += element.force[id]
                 id += 1
+
+        if "X" in element.style and element.rupture:
+            element.enrich_node_mass = np.zeros(self.dof, dtype=np.float64)
+            element.enrich_node_c = np.zeros(self.dof, dtype=np.float64)
+            element.enrich_node_k = np.zeros(self.dof, dtype=np.float64)
+
+            for i in range(self.dof):
+                element.enrich_node_mass[i] = element.M_diag[id]
+                element.enrich_node_c[i] = element.C_diag[id]
+                element.enrich_node_k[i] = element.K_diag[id]
+                id += 1
+
+            element.enrich_inv_mc = 1.0 / (element.enrich_node_mass[:] + 0.5*self.dt*element.enrich_node_c[:])
+            element.enrich_mass_inv_mc = element.enrich_node_mass[:]*element.enrich_inv_mc[:]
+            element.enrich_c_inv_mc = element.enrich_node_c[:]*element.enrich_inv_mc[:]*0.5*self.dt
+            element.enrich_dtdt_inv_mc = self.dt*self.dt*element.enrich_inv_mc[:]
+
 
     def _update_matrix_set_nodes(self,node):
         node.inv_mc = 1.0 / (node.mass[:] + 0.5*self.dt*node.c[:])
@@ -332,6 +343,8 @@ class Fem():
 
     # ======================================================================= #
     def update_time_disp(self,forced_disp0,forced_nodes):
+        for element in self.enrich_elements:
+            element.check_enrich_rupture()
 
         self.update_matrix()
 
@@ -412,13 +425,13 @@ class Fem():
 
     # ------------------------------------------------
     def _update_time_set_enrich_nodes(self,element):
-        du = np.copy(element.du)
-        for i in range(self.dof):
-            element.du[i] = element.enrich_mass_inv_mc[i]*(2.*du[i]-element.dum[i]) + element.enrich_c_inv_mc[i]*element.dum[i] - element.enrich_dtdt_inv_mc[i]*element.enrich_force[i]
-            element.dv[i] = (element.du[i] - element.dum[i]) * self.inv_dt2
+        if element.rupture:
+            du = np.copy(element.du)
+            for i in range(self.dof):
+                element.du[i] = element.enrich_mass_inv_mc[i]*(2.*du[i]-element.dum[i]) + element.enrich_c_inv_mc[i]*element.dum[i] - element.enrich_dtdt_inv_mc[i]*element.enrich_force[i]
+                element.dv[i] = (element.du[i] - element.dum[i]) * self.inv_dt2
 
-        print(element.du,element.enrich_force[i])
-        element.dum = du
+            element.dum = du
 
 
     # ======================================================================= #

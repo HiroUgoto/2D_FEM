@@ -71,7 +71,8 @@ for it in range(len(tim)):
 
     if it%20 == 0:
         plot_model.plot_mesh_update(ax,fem,100.)
-        print(it,"t=",it*dt,fem.elements[1].du)
+        if fem.elements[1].rupture:
+            print(it,"t=",it*dt,fem.elements[1].du)
         # print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
 
 

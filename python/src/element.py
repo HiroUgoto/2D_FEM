@@ -57,17 +57,8 @@ class Element:
         self.ndof = dof*self.nnode
 
         if "X" in self.style:
-            self.ndof += dof
-            # du[0]: dun +tension, -compress
-            # du[1]: dus +down stream, -reverse
-            # theta: compatible with coulomb
-            self.du  = np.zeros(dof, dtype=np.float64)
-            self.dum = np.zeros(dof, dtype=np.float64)
-            self.dv  = np.zeros(dof, dtype=np.float64)
-
-            self.crack_xp = np.array([3.0,1.0])
-            self.crack_theta = np.pi/3.0
-
+            self.a = 0.0
+            self.rupture = False
 
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
 
@@ -82,40 +73,22 @@ class Element:
         self.force = np.zeros(self.ndof,dtype=np.float64)
 
         if self.dim == 2:
-            if "X" not in self.style:
-                self.gauss_points = set()
-                V = 0.0
-                for xi,wx in zip(self.xi,self.w):
-                    for zeta,wz in zip(self.xi,self.w):
-                        N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
-                        M = mk_m(N)
-                        dn = self.estyle.shape_function_dn(xi,zeta)
+            self.gauss_points = set()
+            V = 0.0
+            for xi,wx in zip(self.xi,self.w):
+                for zeta,wz in zip(self.xi,self.w):
+                    N = mk_n(self.dof,self.estyle,self.nnode,xi,zeta)
+                    M = mk_m(N)
+                    dn = self.estyle.shape_function_dn(xi,zeta)
 
-                        gp = element_style.Gauss_Points(dn,wx*wz,N,M)
-                        self.gauss_points.add(gp)
+                    gp = element_style.Gauss_Points(dn,wx*wz,N,M)
+                    self.gauss_points.add(gp)
 
-                        det,_ = mk_jacobi(self.xnT,dn)
-                        detJ = wx*wz*det
-                        V += detJ
+                    det,_ = mk_jacobi(self.xnT,dn)
+                    detJ = wx*wz*det
+                    V += detJ
 
-                self.mass = self.rho*V
-
-            # enrich element
-            else:
-                self.gauss_points = set()
-                V = 0.0
-                for xi,wx in zip(self.xi,self.w):
-                    for zeta,wz in zip(self.xi,self.w):
-                        dn = self.estyle.shape_function_dn(xi,zeta)
-
-                        gp = element_style.Gauss_Points(dn,wx*wz,N=None,M=None)
-                        self.gauss_points.add(gp)
-
-                        det,_ = mk_jacobi(self.xnT,dn)
-                        detJ = wx*wz*det
-                        V += detJ
-
-                self.mass = self.rho*V
+            self.mass = self.rho*V
 
         elif self.dim == 1:
             self.gauss_points = set()
@@ -132,15 +105,17 @@ class Element:
     # ---------------------------------------------------------
     def mk_local_matrix(self):
         if self.dim == 2:
-            M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            if "X" in self.style and self.rupture:
+                self.mk_local_matrix_enrich()
+            else:
+                M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
-            self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
-            self.K = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+                self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+                self.K = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
-            self.De = self.material.mk_d(self.dof)
-            self.Dv = self.material.mk_visco(self.dof)
+                self.De = self.material.mk_d(self.dof)
+                self.Dv = self.material.mk_visco(self.dof)
 
-            if "X" not in self.style:
                 for gp in self.gauss_points:
                     det,dnj = mk_dnj(self.xnT,gp.dn)
                     B = mk_b(self.dof,self.nnode,dnj)
@@ -154,48 +129,6 @@ class Element:
 
                 tr_M = np.trace(M)/self.dof
                 self.M_diag = np.diag(M) * self.mass/tr_M
-
-                self.K_diag = np.diag(self.K)
-                self.K_off_diag = self.K - np.diag(self.K_diag)
-
-                self.C_diag = np.diag(self.C)
-                self.C_off_diag = self.C - np.diag(self.C_diag)
-
-            # enrich element
-            else:
-                self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
-
-                level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
-                self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
-                self.R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
-                                   [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
-
-                ml = 0.0
-                for xi,wx in zip(self.xi,self.w):
-                    for zeta,wz in zip(self.xi,self.w):
-                        dn = self.estyle.shape_function_dn(xi,zeta)
-                        n = self.estyle.shape_function_n(xi,zeta)
-                        det,dnj = mk_dnj(self.xnT,dn)
-
-                        g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,self.Jp,self.Jm,xi,zeta)
-
-                        B = mk_b_enrich(self.dof,self.nnode,dnj,dgj,self.R)
-                        N = mk_n_enrich(self.dof,self.nnode,n,g,self.R)
-
-                        Me = mk_m(N)
-                        K = mk_k(B,self.De)
-                        C = mk_k(B,self.Dv)
-
-                        detJ = wx*wz*det
-                        M += Me*detJ
-                        self.K += K*detJ
-                        self.C += C*detJ
-
-                        ml += self.rho*g*g * detJ
-
-                tr_M = np.trace(M)/self.dof
-                self.M_diag = np.diag(M) * self.mass/tr_M
-                self.M_diag[-self.dof:] = ml
 
                 self.K_diag = np.diag(self.K)
                 self.K_off_diag = self.K - np.diag(self.K_diag)
@@ -223,7 +156,9 @@ class Element:
         # if self.dof == 1:
         #     return
         if self.dim == 2:
-            if "X" not in self.style:
+            if "X" in self.style and self.rupture:
+                self.mk_local_vector_enrich()
+            else:
                 self.force = np.zeros(self.ndof,dtype=np.float64)
                 V = 0.0
                 for gp in self.gauss_points:
@@ -234,45 +169,22 @@ class Element:
 
                 self.force = self.force * self.mass/V
 
-            # enrich element
-            else:
-                self.force = np.zeros(self.ndof,dtype=np.float64)
-
-                level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
-                Jp,Jm = ck_enrich_function_domain_init(level_set)
-                R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
-                              [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
-
-                V = 0.0
-                for xi,wx in zip(self.xi,self.w):
-                    for zeta,wz in zip(self.xi,self.w):
-                        dn = self.estyle.shape_function_dn(xi,zeta)
-                        n = self.estyle.shape_function_n(xi,zeta)
-                        det,dnj = mk_dnj(self.xnT,dn)
-
-                        g,_ = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
-                        N = mk_n_enrich(self.dof,self.nnode,n,g,R)
-
-                        detJ = wx*wz*det
-                        V += detJ
-                        self.force += N[1,:]*detJ * self.gravity
-
-                self.force = self.force * self.mass/V
-
     # ---------------------------------------------------------
     def mk_local_update(self):
         if self.dim == 2:
-            M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            if "X" in self.style and self.rupture:
+                self.mk_local_matrix_enrich()
+                self.mk_local_vector_enrich()
+            else:
+                M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
-            self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
-            self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+                self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+                self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
 
-            self.De = self.material.mk_d(self.dof)
-            self.Dv = self.material.mk_visco(self.dof)
+                self.De = self.material.mk_d(self.dof)
+                self.Dv = self.material.mk_visco(self.dof)
 
-            gravity_force = np.array([0.0,self.gravity])
-
-            if "X" not in self.style:
+                gravity_force = np.array([0.0,self.gravity])
                 self.force = np.zeros(self.ndof,dtype=np.float64)
                 V = 0.0
                 for gp in self.gauss_points:
@@ -304,55 +216,6 @@ class Element:
 
                 self.force *= self.mass/V
 
-            # enrich element
-            else:
-                self.force = np.zeros(self.ndof,dtype=np.float64)
-
-                self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
-
-                level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
-                self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
-                self.R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
-                                   [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
-
-                ml = 0.0
-                V = 0.0
-                for xi,wx in zip(self.xi,self.w):
-                    for zeta,wz in zip(self.xi,self.w):
-                        dn = self.estyle.shape_function_dn(xi,zeta)
-                        n = self.estyle.shape_function_n(xi,zeta)
-                        det,dnj = mk_dnj(self.xnT,dn)
-
-                        g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,self.Jp,self.Jm,xi,zeta)
-
-                        B = mk_b_enrich(self.dof,self.nnode,dnj,dgj,self.R)
-                        N = mk_n_enrich(self.dof,self.nnode,n,g,self.R)
-
-                        Me = mk_m(N)
-                        K = mk_k(B,self.De)
-                        C = mk_k(B,self.Dv)
-
-                        detJ = wx*wz*det
-                        M += Me*detJ
-                        self.K += K*detJ
-                        self.C += C*detJ
-
-                        ml += self.rho*g*g * detJ
-                        V += detJ
-                        self.force += N[1,:]*detJ * self.gravity
-
-                tr_M = np.trace(M)/self.dof
-                self.M_diag = np.diag(M) * self.mass/tr_M
-                self.M_diag[-self.dof:] = ml
-
-                self.K_diag = np.diag(self.K)
-                self.K_off_diag = self.K - np.diag(self.K_diag)
-
-                self.C_diag = np.diag(self.C)
-                self.C_off_diag = self.C - np.diag(self.C_diag)
-
-                self.force = self.force * self.mass/V
-
 
         elif self.dim == 1:
             if "input" or "visco" in self.style:
@@ -370,7 +233,102 @@ class Element:
 
 
     # ---------------------------------------------------------
+    def check_enrich_rupture(self):
+        if self.a > 5.0 and not self.rupture:
+            self.ndof += self.dof
+            # du[0]: dun +tension, -compress
+            # du[1]: dus +down stream, -reverse
+            # theta: compatible with coulomb
+            self.du  = np.zeros(self.dof, dtype=np.float64)
+            self.dum = np.zeros(self.dof, dtype=np.float64)
+            self.dv  = np.zeros(self.dof, dtype=np.float64)
+
+            self.crack_xp = np.array([3.0,1.0])
+            self.crack_theta = np.pi/3.0
+            self.rupture = True
+            self.a = 0.0
+
+        else:
+            self.a += 0.01
+
     # ---------------------------------------------------------
+    def mk_local_matrix_enrich(self):
+        M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
+        self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+        self.K = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
+        self.De = self.material.mk_d(self.dof)
+        self.Dv = self.material.mk_visco(self.dof)
+
+
+        self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
+
+        level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
+        self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
+        self.R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
+                           [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
+
+        ml = 0.0
+        for xi,wx in zip(self.xi,self.w):
+            for zeta,wz in zip(self.xi,self.w):
+                dn = self.estyle.shape_function_dn(xi,zeta)
+                n = self.estyle.shape_function_n(xi,zeta)
+                det,dnj = mk_dnj(self.xnT,dn)
+
+                g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,self.Jp,self.Jm,xi,zeta)
+
+                B = mk_b_enrich(self.dof,self.nnode,dnj,dgj,self.R)
+                N = mk_n_enrich(self.dof,self.nnode,n,g,self.R)
+
+                Me = mk_m(N)
+                K = mk_k(B,self.De)
+                C = mk_k(B,self.Dv)
+
+                detJ = wx*wz*det
+                M += Me*detJ
+                self.K += K*detJ
+                self.C += C*detJ
+
+                ml += self.rho*g*g * detJ
+
+        tr_M = np.trace(M)/self.dof
+        self.M_diag = np.diag(M) * self.mass/tr_M
+        self.M_diag[-self.dof:] = ml
+
+        self.K_diag = np.diag(self.K)
+        self.K_off_diag = self.K - np.diag(self.K_diag)
+
+        self.C_diag = np.diag(self.C)
+        self.C_off_diag = self.C - np.diag(self.C_diag)
+
+    # ---------------------------------------------------------
+    def mk_local_vector_enrich(self):
+        self.force = np.zeros(self.ndof,dtype=np.float64)
+
+        level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
+        Jp,Jm = ck_enrich_function_domain_init(level_set)
+        R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
+                      [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
+
+        V = 0.0
+        for xi,wx in zip(self.xi,self.w):
+            for zeta,wz in zip(self.xi,self.w):
+                dn = self.estyle.shape_function_dn(xi,zeta)
+                n = self.estyle.shape_function_n(xi,zeta)
+                det,dnj = mk_dnj(self.xnT,dn)
+
+                g,_ = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
+                N = mk_n_enrich(self.dof,self.nnode,n,g,R)
+
+                detJ = wx*wz*det
+                V += detJ
+                self.force += N[1,:]*detJ * self.gravity
+
+        self.force = self.force * self.mass/V
+
+    # ---------------------------------------------------------
+
 
 
     # ---------------------------------------------------------
@@ -412,15 +370,19 @@ class Element:
 
     # -------------------------------------------------------
     def mk_ku_cv_enrich(self):
-        u = np.append(np.hstack(self.u),self.du)
-        v = np.append(np.hstack(self.v),self.dv)
+        if self.rupture:
+            u = np.append(np.hstack(self.u),self.du)
+            v = np.append(np.hstack(self.v),self.dv)
 
-        f = self.K @ u + self.C_off_diag @ v
-        for i in range(self.nnode):
-            i0 = self.dof*i
-            self.nodes[i].force[:] += f[i0:i0+self.dof]
+            f = self.K @ u + self.C_off_diag @ v
+            for i in range(self.nnode):
+                i0 = self.dof*i
+                self.nodes[i].force[:] += f[i0:i0+self.dof]
 
-        self.enrich_force = f[-self.dof:]
+            self.enrich_force = f[-self.dof:]
+
+        else:
+            self.mk_ku_cv()
 
     # --------------------------------------------------------
     def mk_B_stress(self):
