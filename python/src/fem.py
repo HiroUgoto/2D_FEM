@@ -332,6 +332,9 @@ class Fem():
 
     # ======================================================================= #
     def update_time_disp(self,forced_disp0,forced_nodes):
+
+        self.update_matrix()
+
         for node in self.node_set:
             node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
             self._update_time_node_init(node)
@@ -413,6 +416,8 @@ class Fem():
         for i in range(self.dof):
             element.du[i] = element.enrich_mass_inv_mc[i]*(2.*du[i]-element.dum[i]) + element.enrich_c_inv_mc[i]*element.dum[i] - element.enrich_dtdt_inv_mc[i]*element.enrich_force[i]
             element.dv[i] = (element.du[i] - element.dum[i]) * self.inv_dt2
+
+        print(element.du,element.enrich_force[i])
         element.dum = du
 
 

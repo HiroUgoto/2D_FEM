@@ -65,6 +65,10 @@ class Element:
             self.dum = np.zeros(dof, dtype=np.float64)
             self.dv  = np.zeros(dof, dtype=np.float64)
 
+            self.crack_xp = np.array([3.0,1.0])
+            self.crack_theta = np.pi/3.0
+
+
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
 
         self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
@@ -131,7 +135,7 @@ class Element:
             M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
             self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
-            self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+            self.K = np.zeros([self.ndof,self.ndof], dtype=np.float64)
 
             self.De = self.material.mk_d(self.dof)
             self.Dv = self.material.mk_visco(self.dof)
@@ -159,11 +163,7 @@ class Element:
 
             # enrich element
             else:
-                self.crack_xp = np.array([3.0,1.0])
-                self.crack_theta = np.pi/3.0
-
                 self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
-
 
                 level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
                 self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
@@ -263,37 +263,96 @@ class Element:
     def mk_local_update(self):
         if self.dim == 2:
             M = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+
             self.C = np.zeros([self.ndof,self.ndof], dtype=np.float64)
+            self.K = np.zeros([self.ndof,self.ndof],dtype=np.float64)
+
+            self.De = self.material.mk_d(self.dof)
             self.Dv = self.material.mk_visco(self.dof)
 
             gravity_force = np.array([0.0,self.gravity])
 
-            self.force = np.zeros(self.ndof,dtype=np.float64)
-            V = 0.0
+            if "X" not in self.style:
+                self.force = np.zeros(self.ndof,dtype=np.float64)
+                V = 0.0
+                for gp in self.gauss_points:
+                    det,dnj = mk_dnj(self.xnT,gp.dn)
+                    B = mk_b(self.dof,self.nnode,dnj)
+                    K = mk_k(B,self.De)
+                    C = mk_k(B,self.Dv)
 
-            for gp in self.gauss_points:
-                det,dnj = mk_dnj(self.xnT,gp.dn)
-                B = mk_b(self.dof,self.nnode,dnj)
-                C = mk_k(B,self.Dv)
+                    J,F_inv = mk_F_inv(self.nnode,dnj,self.u)
+                    IFT = np.eye(2) - F_inv.T / J
+                    sf = IFT @ gravity_force
 
-                J,F_inv = mk_F_inv(self.nnode,dnj,self.u)
-                IFT = np.eye(2) - F_inv.T / J
-                sf = IFT @ gravity_force
+                    detJ = gp.w*det
+                    M += gp.M*detJ
+                    self.K += K*detJ
+                    self.C += C*detJ
 
-                detJ = gp.w*det
-                M += gp.M*detJ
-                self.C += C*detJ
+                    V += detJ
+                    self.force += (gp.N.T @ sf) *detJ
 
-                V += detJ
-                self.force += (gp.N.T @ sf) *detJ
+                tr_M = np.trace(M)/self.dof
+                self.M_diag = np.diag(M) * self.mass/tr_M
 
-            tr_M = np.trace(M)/self.dof
-            self.M_diag = np.diag(M) * self.mass/tr_M
+                self.K_diag = np.diag(self.K)
+                self.K_off_diag = self.K - np.diag(self.K_diag)
 
-            self.C_diag = np.diag(self.C)
-            self.C_off_diag = self.C - np.diag(self.C_diag)
+                self.C_diag = np.diag(self.C)
+                self.C_off_diag = self.C - np.diag(self.C_diag)
 
-            self.force *= self.mass/V
+                self.force *= self.mass/V
+
+            # enrich element
+            else:
+                self.force = np.zeros(self.ndof,dtype=np.float64)
+
+                self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
+
+                level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
+                self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
+                self.R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
+                                   [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
+
+                ml = 0.0
+                V = 0.0
+                for xi,wx in zip(self.xi,self.w):
+                    for zeta,wz in zip(self.xi,self.w):
+                        dn = self.estyle.shape_function_dn(xi,zeta)
+                        n = self.estyle.shape_function_n(xi,zeta)
+                        det,dnj = mk_dnj(self.xnT,dn)
+
+                        g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,self.Jp,self.Jm,xi,zeta)
+
+                        B = mk_b_enrich(self.dof,self.nnode,dnj,dgj,self.R)
+                        N = mk_n_enrich(self.dof,self.nnode,n,g,self.R)
+
+                        Me = mk_m(N)
+                        K = mk_k(B,self.De)
+                        C = mk_k(B,self.Dv)
+
+                        detJ = wx*wz*det
+                        M += Me*detJ
+                        self.K += K*detJ
+                        self.C += C*detJ
+
+                        ml += self.rho*g*g * detJ
+                        V += detJ
+                        self.force += N[1,:]*detJ * self.gravity
+
+                tr_M = np.trace(M)/self.dof
+                self.M_diag = np.diag(M) * self.mass/tr_M
+                self.M_diag[-self.dof:] = ml
+
+                self.K_diag = np.diag(self.K)
+                self.K_off_diag = self.K - np.diag(self.K_diag)
+
+                self.C_diag = np.diag(self.C)
+                self.C_off_diag = self.C - np.diag(self.C_diag)
+
+                self.force = self.force * self.mass/V
+
 
         elif self.dim == 1:
             if "input" or "visco" in self.style:
