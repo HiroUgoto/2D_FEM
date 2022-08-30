@@ -57,7 +57,6 @@ class Element:
         self.ndof = dof*self.nnode
 
         if "X" in self.style:
-            self.a = 0.0
             self.rupture = False
 
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
@@ -247,19 +246,29 @@ class Element:
             n_max = v[:,0]
 
             if self.ft < s_max:
-                self.ndof += self.dof
+                self.ncrack = 2
+                self.ndof += self.ncrack*self.dof
+
                 # du[0]: dun +tension, -compress
                 # du[1]: dus +down stream, -reverse
                 # theta: compatible with coulomb
-                self.du  = np.zeros(self.dof, dtype=np.float64)
-                self.dum = np.zeros(self.dof, dtype=np.float64)
-                self.dv  = np.zeros(self.dof, dtype=np.float64)
+                # self.du  = np.zeros(self.dof, dtype=np.float64)
+                # self.dum = np.zeros(self.dof, dtype=np.float64)
+                # self.dv  = np.zeros(self.dof, dtype=np.float64)
+                self.du_list  = self.ncrack*[np.zeros(self.dof, dtype=np.float64)]
+                self.dum_list = self.ncrack*[np.zeros(self.dof, dtype=np.float64)]
+                self.dv_list  = self.ncrack*[np.zeros(self.dof, dtype=np.float64)]
 
-                self.crack_theta = np.arctan2(n_max[0],n_max[1])
+                theta0 = np.arctan2( n_max[0], n_max[1])
+                theta1 = np.arctan2(-n_max[0],-n_max[1])
+                self.crack_theta_list = [theta0,theta1]
+
                 n = self.estyle.shape_function_n(0.0,0.0)
-                self.crack_xp = self.xnT @ n
+                xp = self.xnT @ n
+                self.crack_xp_list = [xp,xp]
 
                 self.rupture = True
+
 
     # ---------------------------------------------------------
     def mk_local_matrix_enrich(self):
@@ -271,25 +280,48 @@ class Element:
         self.De = self.material.mk_d(self.dof)
         self.Dv = self.material.mk_visco(self.dof)
 
+        self.level_set_list = []
+        self.Jp_list,self.Jm_list = [],[]
+        self.R_list = []
+        for ic in range(self.ncrack):
+            crack_xp = self.crack_xp_list[ic]
+            crack_theta = self.crack_theta_list[ic]
+            self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,crack_xp,crack_theta)
 
-        self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,self.crack_xp,self.crack_theta)
+            level_set = set_levelset_function(self.xnT,crack_xp,crack_theta)
+            Jp,Jm = ck_enrich_function_domain_init(level_set)
+            R = np.array([[np.sin(crack_theta), np.cos(crack_theta)],
+                          [np.cos(crack_theta),-np.sin(crack_theta)]])
+            # if -np.sin(crack_theta) > 0.0:
+            #     R = -R
 
-        level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
-        self.Jp,self.Jm = ck_enrich_function_domain_init(level_set)
-        self.R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
-                           [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
+            self.level_set_list += [level_set]
+            self.Jp_list += [Jp]
+            self.Jm_list += [Jm]
+            self.R_list += [R]
 
-        ml = 0.0
+        ml_list = [0.0]*self.ncrack
         for xi,wx in zip(self.xi,self.w):
             for zeta,wz in zip(self.xi,self.w):
                 dn = self.estyle.shape_function_dn(xi,zeta)
                 n = self.estyle.shape_function_n(xi,zeta)
                 det,dnj = mk_dnj(self.xnT,dn)
 
-                g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,level_set,self.Jp,self.Jm,xi,zeta)
+                gh_list,dgh_list = [],[]
+                for ic in range(self.ncrack):
+                    g,dgj = mk_enrich_function(self.estyle,self.xnT,dn,self.level_set_list[ic],self.Jp_list[ic],self.Jm_list[ic],xi,zeta)
 
-                B = mk_b_enrich(self.dof,self.nnode,dnj,dgj,self.R)
-                N = mk_n_enrich(self.dof,self.nnode,n,g,self.R)
+                    x = self.xnT @ n
+                    h,dhj = mk_tip_enrich_function(x,self.crack_xp_list[ic],self.crack_theta_list[ic])
+
+                    gh = g*h
+                    dgh = dgj*h + dhj*g
+
+                    gh_list += [gh]
+                    dgh_list += [dgh]
+
+                B = mk_b_enrich(self.dof,self.nnode,dnj,self.ncrack,dgh_list,self.R_list)
+                N = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,gh_list,self.R_list)
 
                 Me = mk_m(N)
                 K = mk_k(B,self.De)
@@ -300,11 +332,14 @@ class Element:
                 self.K += K*detJ
                 self.C += C*detJ
 
-                ml += self.rho*g*g * detJ
+                for ic in range(self.ncrack):
+                    ml_list[ic] += self.rho*gh_list[ic]*gh_list[ic] * detJ
 
         tr_M = np.trace(M)/self.dof
         self.M_diag = np.diag(M) * self.mass/tr_M
-        self.M_diag[-self.dof:] = ml
+
+        for ic in range(self.ncrack):
+            self.M_diag[self.dof*self.nnode+self.dof*ic : self.dof*self.nnode+self.dof*(ic+1)] = ml_list[ic]
 
         self.K_diag = np.diag(self.K)
         self.K_off_diag = self.K - np.diag(self.K_diag)
@@ -316,11 +351,6 @@ class Element:
     def mk_local_vector_enrich(self):
         self.force = np.zeros(self.ndof,dtype=np.float64)
 
-        level_set = set_levelset_function(self.xnT,self.crack_xp,self.crack_theta)
-        Jp,Jm = ck_enrich_function_domain_init(level_set)
-        R = np.array([[np.sin(self.crack_theta), np.cos(self.crack_theta)],
-                      [np.cos(self.crack_theta),-np.sin(self.crack_theta)]])
-
         V = 0.0
         for xi,wx in zip(self.xi,self.w):
             for zeta,wz in zip(self.xi,self.w):
@@ -328,8 +358,17 @@ class Element:
                 n = self.estyle.shape_function_n(xi,zeta)
                 det,dnj = mk_dnj(self.xnT,dn)
 
-                g,_ = mk_enrich_function(self.estyle,self.xnT,dn,level_set,Jp,Jm,xi,zeta)
-                N = mk_n_enrich(self.dof,self.nnode,n,g,R)
+                gh_list = []
+                for ic in range(self.ncrack):
+                    g,_ = mk_enrich_function(self.estyle,self.xnT,dn,self.level_set_list[ic],self.Jp_list[ic],self.Jm_list[ic],xi,zeta)
+
+                    x = self.xnT @ n
+                    h,_ = mk_tip_enrich_function(x,self.crack_xp_list[ic],self.crack_theta_list[ic])
+
+                    gh = g*h
+                    gh_list += [gh]
+
+                N = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,gh_list,self.R_list)
 
                 detJ = wx*wz*det
                 V += detJ
@@ -381,15 +420,16 @@ class Element:
     # -------------------------------------------------------
     def mk_ku_cv_enrich(self):
         if self.rupture:
-            u = np.append(np.hstack(self.u),self.du)
-            v = np.append(np.hstack(self.v),self.dv)
+            u = np.append(np.hstack(self.u),self.du_list)
+            v = np.append(np.hstack(self.v),self.dv_list)
 
             f = self.K @ u + self.C_off_diag @ v
+
             for i in range(self.nnode):
                 i0 = self.dof*i
                 self.nodes[i].force[:] += f[i0:i0+self.dof]
 
-            self.enrich_force = f[-self.dof:]
+            self.enrich_force = f[-self.dof*self.ncrack:]
 
         else:
             self.mk_ku_cv()
@@ -445,20 +485,36 @@ class Element:
     # ---------------------------------------------------------
     def calc_crack_edge_disp(self):
         up,um = [],[]
-        for xi in self.crack_edges_xi:
-            n = self.estyle.shape_function_n(xi[0],xi[1])
-            gp = self.estyle.enrich_function_n( 1.0,self.Jp,self.Jm,xi[0],xi[1])
-            gm = self.estyle.enrich_function_n(-1.0,self.Jp,self.Jm,xi[0],xi[1])
 
-            Np = mk_n_enrich(self.dof,self.nnode,n,gp,self.R)
-            Nm = mk_n_enrich(self.dof,self.nnode,n,gm,self.R)
+        for ic in range(self.ncrack):
+            crack_xp = self.crack_xp_list[ic]
+            crack_theta = self.crack_theta_list[ic]
+            crack_edges,crack_edges_xi = set_crack_edge(self.xnT,crack_xp,crack_theta)
 
-            ua = np.append(np.hstack(self.u),self.du)
-            up += [Np @ np.hstack(ua)]
-            um += [Nm @ np.hstack(ua)]
+            for xi in crack_edges_xi:
+                n = self.estyle.shape_function_n(xi[0],xi[1])
+                x = self.xnT @ n
+                h = mk_tip_enrich_function_h(x,crack_xp,crack_theta)
 
-            # print("up:",up)
-            # print("um:",um)
+                if h > 0.95:
+                    ghp_list,ghm_list = [],[]
+                    for jc in range(self.ncrack):
+                        gp = self.estyle.enrich_function_n( 1.0,self.Jp_list[jc],self.Jm_list[jc],xi[0],xi[1])
+                        gm = self.estyle.enrich_function_n(-1.0,self.Jp_list[jc],self.Jm_list[jc],xi[0],xi[1])
+                        hc = mk_tip_enrich_function_h(x,self.crack_xp_list[jc],self.crack_theta_list[jc])
+
+                        ghp_list += [gp*hc]
+                        ghm_list += [gm*hc]
+
+                    Np = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,ghp_list,self.R_list)
+                    Nm = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,ghm_list,self.R_list)
+
+                    ua = np.append(np.hstack(self.u),self.du_list)
+                    up += [Np @ np.hstack(ua)]
+                    um += [Nm @ np.hstack(ua)]
+
+                    # print("up:",up)
+                    # print("um:",um)
 
         return up,um
 
@@ -477,7 +533,7 @@ def mk_n(dof,estyle,nnode,xi,zeta):
     return N
 
 # ---------------------------------------------------------
-def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
+def mk_nqn(dof,n,q,imp):
     nqn = np.linalg.multi_dot([n.T,q.T,imp,q,n])
     return nqn
 
@@ -551,6 +607,8 @@ def mk_b_T(dof,nnode,dnj):
 # ---------------------------------------------------------
 def set_levelset_function(xnT,xp,theta):
     u = np.array([np.cos(theta),-np.sin(theta)])
+    # if -np.sin(theta) > 0.0:
+    #     u = -u
 
     level_set = []
     for x in xnT.T:
@@ -609,6 +667,40 @@ def ck_enrich_function_domain(estyle,level_set,xi,zeta):
 
     return sign
 
+
+def mk_tip_enrich_function_h(x,xp,theta):
+    x_xp = x-xp
+    r = np.linalg.norm(x_xp)
+    u = np.array([np.cos(theta),-np.sin(theta)])
+    p = np.dot(x_xp,u)/r
+
+    if p >= 1.0:
+        phi = 0.0
+    elif p <= -1.0:
+        phi = np.pi
+    else:
+        phi = np.arccos(p)
+    h = 1.0 - phi/np.pi
+
+    return h
+
+def mk_tip_enrich_function(x,xp,theta):
+    x_xp = x-xp
+    r = np.linalg.norm(x_xp)
+    u = np.array([np.cos(theta),-np.sin(theta)])
+    p = np.dot(x_xp,u)/r
+
+    p_x = u[0]/r - x_xp[0]*np.dot(x_xp,u)/r**3
+    p_z = u[1]/r - x_xp[1]*np.dot(x_xp,u)/r**3
+
+    phi = np.arccos(p)
+    h = 1.0 - phi/np.pi
+    h_x = p_x / np.pi / np.sqrt(1-p**2)
+    h_z = p_z / np.pi / np.sqrt(1-p**2)
+
+    return h, np.array([h_x,h_z])
+
+
 def mk_enrich_function(estyle,xnT,dn,level_set,Jp,Jm,xi,zeta):
     sign = ck_enrich_function_domain(estyle,level_set,xi,zeta)
     g  = estyle.enrich_function_n(sign,Jp,Jm,xi,zeta)
@@ -619,29 +711,33 @@ def mk_enrich_function(estyle,xnT,dn,level_set,Jp,Jm,xi,zeta):
 
     return g, dgj
 
-def mk_b_enrich(dof,nnode,dnj,dgj,R):
+def mk_b_enrich(dof,nnode,dnj,ncrack,dgj,R):
     B = mk_b(dof,nnode,dnj)
 
-    dG = np.zeros([3,2],dtype=np.float64)
-    dG[0,0] = dgj[0]
-    dG[1,1] = dgj[1]
-    dG[2,0],dG[2,1] = dgj[1],dgj[0]
+    dGR_list = []
+    for ic in range(ncrack):
+        dG = np.zeros([3,2],dtype=np.float64)
+        dG[0,0] = dgj[ic][0]
+        dG[1,1] = dgj[ic][1]
+        dG[2,0],dG[2,1] = dgj[ic][1],dgj[ic][0]
+        dGR_list += [dG @ R[ic]]
 
-    dGR = dG @ R
-
-    B_enrich = np.zeros([3,2*nnode+2],dtype=np.float64)
+    B_enrich = np.zeros([3,2*nnode+2*ncrack],dtype=np.float64)
     B_enrich[:,0:2*nnode] = B[:,:]
-    B_enrich[:,2*nnode:] = dGR[:,:]
+
+    for ic in range(ncrack):
+        B_enrich[:,2*nnode+2*ic:2*nnode+2*(ic+1)] = dGR_list[ic][:,:]
 
     return B_enrich
 
-def mk_n_enrich(dof,nnode,n,g,R):
-    N_enrich = np.zeros([dof,dof*nnode+dof],dtype=np.float64)
+def mk_n_enrich(dof,nnode,n,ncrack,g,R):
+    N_enrich = np.zeros([dof,dof*nnode+dof*ncrack],dtype=np.float64)
 
     for i in range(dof):
         N_enrich[i,i:dof*nnode:dof] = n[:]
 
-    N_enrich[:,dof*nnode:] = g * R
+    for ic in range(ncrack):
+        N_enrich[:,dof*nnode+dof*ic:dof*nnode+dof*(ic+1)] = g[ic] * R[ic]
 
     return N_enrich
 

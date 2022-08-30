@@ -1,4 +1,5 @@
 import numpy as np
+import copy
 from concurrent import futures
 
 class Fem():
@@ -282,11 +283,11 @@ class Fem():
                 id += 1
 
         if "X" in element.style and element.rupture:
-            element.enrich_node_mass = np.zeros(self.dof, dtype=np.float64)
-            element.enrich_node_c = np.zeros(self.dof, dtype=np.float64)
-            element.enrich_node_k = np.zeros(self.dof, dtype=np.float64)
+            element.enrich_node_mass = np.zeros(self.dof*element.ncrack, dtype=np.float64)
+            element.enrich_node_c = np.zeros(self.dof*element.ncrack, dtype=np.float64)
+            element.enrich_node_k = np.zeros(self.dof*element.ncrack, dtype=np.float64)
 
-            for i in range(self.dof):
+            for i in range(self.dof*element.ncrack):
                 element.enrich_node_mass[i] = element.M_diag[id]
                 element.enrich_node_c[i] = element.C_diag[id]
                 element.enrich_node_k[i] = element.K_diag[id]
@@ -296,7 +297,6 @@ class Fem():
             element.enrich_mass_inv_mc = element.enrich_node_mass[:]*element.enrich_inv_mc[:]
             element.enrich_c_inv_mc = element.enrich_node_c[:]*element.enrich_inv_mc[:]*0.5*self.dt
             element.enrich_dtdt_inv_mc = self.dt*self.dt*element.enrich_inv_mc[:]
-
 
     def _update_matrix_set_nodes(self,node):
         node.inv_mc = 1.0 / (node.mass[:] + 0.5*self.dt*node.c[:])
@@ -426,13 +426,18 @@ class Fem():
     # ------------------------------------------------
     def _update_time_set_enrich_nodes(self,element):
         if element.rupture:
-            du = np.copy(element.du)
-            for i in range(self.dof):
-                element.du[i] = element.enrich_mass_inv_mc[i]*(2.*du[i]-element.dum[i]) + element.enrich_c_inv_mc[i]*element.dum[i] - element.enrich_dtdt_inv_mc[i]*element.enrich_force[i]
-                element.dv[i] = (element.du[i] - element.dum[i]) * self.inv_dt2
+            du_list = copy.deepcopy(element.du_list)
 
-            element.dum = du
+            id = 0
+            for ic in range(element.ncrack):
+                du = np.copy(element.du_list[ic])
 
+                for i in range(self.dof):
+                    element.du_list[ic][i] = element.enrich_mass_inv_mc[id]*(2.*du[i]-element.dum_list[ic][i]) + element.enrich_c_inv_mc[id]*element.dum_list[ic][i] - element.enrich_dtdt_inv_mc[id]*element.enrich_force[id]
+                    element.dv_list[ic][i] = (element.du_list[ic][i] - element.dum_list[ic][i]) * self.inv_dt2
+                    id += 1
+
+            element.dum_list = copy.deepcopy(du_list)
 
     # ======================================================================= #
     def print_all(self):

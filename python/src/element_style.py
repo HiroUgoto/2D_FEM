@@ -182,7 +182,7 @@ class Solid_2d_9Node:
 class Solid_2d_4Node_X(Solid_2d_4Node):
     def __init__(self):
         self.dim = 2
-        self.gauss = np.polynomial.legendre.leggauss(11)
+        self.gauss = np.polynomial.legendre.leggauss(12)
 
     def enrich_function_n(self,sign,Jp,Jm,xi,zeta):
         n = self.shape_function_n(xi,zeta)
@@ -209,13 +209,6 @@ class Solid_2d_4Node_X(Solid_2d_4Node):
                 dg -= dn[id,:]
 
         return dg
-
-
-    def tip_enrich_function_n(self,sign,Jp,Jm,xi,zeta,phi):
-        h = 1.0 - np.abs(phi)/np.pi
-        g = self.enrich_function(sign,Jp,Jm,xi,zeta)
-
-        return g*h
 
 
 # ---------------------------------------------------------------------- #
