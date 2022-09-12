@@ -20,9 +20,8 @@ fem.set_init()
 fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
-
 ## --- Define input wave --- ##
-fsamp = 2000
+fsamp = 5000
 duration = 1.0
 amp = 0.01
 

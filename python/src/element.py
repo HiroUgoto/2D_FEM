@@ -58,6 +58,7 @@ class Element:
 
         if "X" in self.style:
             self.rupture = False
+            self.crack_edges = []
 
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
 
@@ -231,7 +232,7 @@ class Element:
 
 
     # ---------------------------------------------------------
-    def check_enrich_rupture(self):
+    def check_enrich_rupture(self,all_crack_edges):
         self.ft = 30000.0
 
         if not self.rupture:
@@ -259,21 +260,31 @@ class Element:
                     self.dum_list += [np.zeros(self.dof, dtype=np.float64)]
                     self.dv_list += [np.zeros(self.dof, dtype=np.float64)]
 
-                # self.du_list  = self.ncrack*[np.zeros(self.dof, dtype=np.float64)]
-                # self.dum_list = self.ncrack*[np.zeros(self.dof, dtype=np.float64)]
-                # self.dv_list  = self.ncrack*[np.zeros(self.dof, dtype=np.float64)]
-
                 theta0 = np.arctan2( n_max[0], n_max[1])
                 theta1 = np.arctan2( n_max[0], n_max[1])
                 self.crack_theta_list = [theta0,theta1]
                 self.crack_open_side = [0.0, np.pi]
 
+                # initial crack
                 n = self.estyle.shape_function_n(0.0,0.0)
                 xp = self.xnT @ n
                 self.crack_xp_list = [xp,xp]
-
                 self.rupture = True
 
+                # continuous crack
+                if all_crack_edges:
+                    for c in all_crack_edges:
+                        is_inside,xi = self.check_inside(c,margin=0.01)
+                        if is_inside:
+                            d,cxi = set_crack_edge(self.xnT,c,theta0)
+                            xp = 0.5*(d[0]+d[1])
+                            self.crack_xp_list = [xp,xp]
+                            self.rupture = True
+                            return True
+
+                return True
+
+        return False
 
     # ---------------------------------------------------------
     def mk_local_matrix_enrich(self):
@@ -486,6 +497,7 @@ class Element:
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
 
+
     # ---------------------------------------------------------
     def calc_crack_edge_disp(self):
         up,um = [],[]
@@ -523,6 +535,37 @@ class Element:
 
         return up,um
 
+    # ---------------------------------------------------------
+    def check_inside(self,x,margin=0.0):
+        def J_func(xi,x,xnT,shape_function_n,shape_function_dn):
+            n = shape_function_n(xi[0],xi[1])
+            return xnT@n - x
+
+        def dJ_func(xi,x,xnT,shape_function_n,shape_function_dn):
+            dn = shape_function_dn(xi[0],xi[1])
+            _,dJ = mk_jacobi(xnT,dn)
+            return dJ
+
+        xi = np.zeros(2)
+        for itr in range(20):
+            n = self.estyle.shape_function_n(xi[0],xi[1])
+            dn = self.estyle.shape_function_dn(xi[0],xi[1])
+
+            J = self.xnT@n - x
+            _,dJ = mk_jacobi(self.xnT,dn)
+
+            r = np.linalg.solve(dJ,J)
+            if np.linalg.norm(r) < 1e-8:
+                break
+
+            xi -= r
+
+        if (-1.0-margin <= xi[0] <= 1.0+margin) and (-1.0-margin <= xi[1] <= 1.0+margin):
+            is_inside = True
+        else:
+            is_inside = False
+
+        return is_inside,xi
 
 # ---------------------------------------------------------
 def mk_m(N):

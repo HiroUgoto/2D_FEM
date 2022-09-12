@@ -2,10 +2,10 @@ import numpy as np
 import os
 
 area_x = 6.0
-area_z = 2.0
+area_z = 6.0
 
 nx = 3
-nz = 1
+nz = 3
 dof = 2
 
 xg = np.linspace(0,area_x,nx+1,endpoint=True)
