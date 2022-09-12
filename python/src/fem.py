@@ -426,18 +426,18 @@ class Fem():
     # ------------------------------------------------
     def _update_time_set_enrich_nodes(self,element):
         if element.rupture:
-            du_list = copy.deepcopy(element.du_list)
 
             id = 0
             for ic in range(element.ncrack):
-                du = np.copy(element.du_list[ic])
-
                 for i in range(self.dof):
-                    element.du_list[ic][i] = element.enrich_mass_inv_mc[id]*(2.*du[i]-element.dum_list[ic][i]) + element.enrich_c_inv_mc[id]*element.dum_list[ic][i] - element.enrich_dtdt_inv_mc[id]*element.enrich_force[id]
+                    du = np.copy(element.du_list[ic][i])
+
+                    element.du_list[ic][i] = element.enrich_mass_inv_mc[id]*(2.*du-element.dum_list[ic][i]) + element.enrich_c_inv_mc[id]*element.dum_list[ic][i] - element.enrich_dtdt_inv_mc[id]*element.enrich_force[id]
                     element.dv_list[ic][i] = (element.du_list[ic][i] - element.dum_list[ic][i]) * self.inv_dt2
                     id += 1
 
-            element.dum_list = copy.deepcopy(du_list)
+                    element.dum_list[ic][i] = np.copy(du)
+
 
     # ======================================================================= #
     def print_all(self):
