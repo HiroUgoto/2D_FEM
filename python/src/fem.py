@@ -350,6 +350,13 @@ class Fem():
             crack_update = crack_update or check_element_update
 
         if crack_update:
+            self.collect_crack_edges()
+            if self.all_crack_edges_dummy:
+                for element in self.enrich_elements:
+                    element.make_connect_crack(self.all_crack_edges_dummy,self.all_crack_theta_dummy)
+            self.collect_crack_edges()
+            for element in self.enrich_elements:
+                element.make_half_crack(self.all_crack_edges,self.all_crack_theta)
             self.update_matrix()
             self.collect_crack_edges()
 
@@ -446,10 +453,24 @@ class Fem():
     # -------------------------------------------------
     def collect_crack_edges(self):
         self.all_crack_edges = []
+        self.all_crack_theta = []
+
+        self.all_crack_edges_dummy = []
+        self.all_crack_theta_dummy = []
+
         for element in self.enrich_elements:
             if element.crack_edges:
                 for c in element.crack_edges:
                     self.all_crack_edges += [c]
+                for theta in element.crack_theta_list:
+                    self.all_crack_theta += [theta]
+
+            if element.crack_edges_dummy:
+                for c in element.crack_edges_dummy:
+                    self.all_crack_edges_dummy += [c]
+                for theta in element.crack_theta_list_dummy:
+                    self.all_crack_theta_dummy += [theta]
+
 
     # ======================================================================= #
     def print_all(self):

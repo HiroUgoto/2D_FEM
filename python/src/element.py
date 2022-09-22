@@ -58,7 +58,9 @@ class Element:
 
         if "X" in self.style:
             self.rupture = False
+            self.ncrack = 0
             self.crack_edges = []
+            self.crack_edges_dummy = []
 
         self.M_diag = np.zeros(self.ndof, dtype=np.float64)
 
@@ -247,7 +249,7 @@ class Element:
 
             if self.ft < s_max:
                 self.ncrack = 2
-                self.ndof += self.ncrack*self.dof
+                self.ndof = self.nnode*self.dof + self.ncrack*self.dof
 
                 # du[0]: dun +tension, -compress
                 # du[1]: dus +down stream, -reverse
@@ -270,21 +272,94 @@ class Element:
                 xp = self.xnT @ n
                 self.crack_xp_list = [xp,xp]
                 self.rupture = True
+                self.crack_edges,_ = set_crack_edge(self.xnT,xp,theta0)
 
                 # continuous crack
                 if all_crack_edges:
                     for c in all_crack_edges:
                         is_inside,xi = self.check_inside(c,margin=0.01)
                         if is_inside:
-                            d,cxi = set_crack_edge(self.xnT,c,theta0)
-                            xp = 0.5*(d[0]+d[1])
-                            self.crack_xp_list = [xp,xp]
+                            self.ncrack = 0
+                            self.ndof = self.nnode*self.dof + self.ncrack*self.dof
+                            theta = np.arctan2( n_max[0], n_max[1])
+
+                            self.crack_theta_list = []
+                            self.crack_edges = []
+
+                            self.crack_theta_list_dummy = [theta]
+                            self.crack_edges_dummy = [c]
+
                             self.rupture = True
                             return True
-
                 return True
 
         return False
+
+    # ---------------------------------------------------------
+    def make_half_crack(self,all_crack_edges,all_crack_theta):
+        if self.ncrack == 0:
+            if all_crack_edges:
+                for ic in range(len(all_crack_edges)):
+                    c = all_crack_edges[ic]
+                    theta = all_crack_theta[ic]
+                    is_inside,xi = self.check_inside(c,margin=0.01)
+                    if is_inside:
+                        self.ncrack = 1
+                        self.ndof = self.nnode*self.dof + self.ncrack*self.dof
+
+                        self.du_list = [np.zeros(self.dof, dtype=np.float64)]
+                        self.dum_list = [np.zeros(self.dof, dtype=np.float64)]
+                        self.dv_list = [np.zeros(self.dof, dtype=np.float64)]
+
+                        d,cxi = set_crack_edge(self.xnT,c,theta)
+                        xp = 0.5*(d[0]+d[1])
+                        self.crack_xp_list = [xp]
+                        self.crack_theta_list = [theta]
+
+                        u = np.array([np.cos(theta),-np.sin(theta)])
+                        if np.dot(u,(c-xp)) > 0.0:
+                            self.crack_open_side = [0.0]
+                        else:
+                            self.crack_open_side = [np.pi]
+
+                        self.rupture = True
+                        self.crack_edges = [ 2*xp-c ]
+
+                        self.crack_theta_list_dummy = []
+                        self.crack_edges_dummy = []
+
+    # ---------------------------------------------------------
+    def make_connect_crack(self,all_crack_edges_dummy,all_crack_theta_dummy):
+        if self.ncrack == 1:
+            if all_crack_edges_dummy:
+                for ic in range(len(all_crack_edges_dummy)):
+                    c = all_crack_edges_dummy[ic]
+                    theta = all_crack_theta_dummy[ic]
+                    is_inside,xi = self.check_inside(c,margin=0.01)
+                    if is_inside:
+                        self.ncrack = 2
+                        self.ndof = self.nnode*self.dof + self.ncrack*self.dof
+
+                        self.du_list += [np.zeros(self.dof, dtype=np.float64)]
+                        self.dum_list += [np.zeros(self.dof, dtype=np.float64)]
+                        self.dv_list += [np.zeros(self.dof, dtype=np.float64)]
+
+                        xp = self.crack_xp_list[0]
+                        self.crack_xp_list += [xp]
+                        self.crack_theta_list += [theta]
+
+                        u = np.array([np.cos(theta),-np.sin(theta)])
+                        if np.dot(u,(c-xp)) > 0.0:
+                            self.crack_open_side += [0.0]
+                        else:
+                            self.crack_open_side += [np.pi]
+
+                        d,cxi = set_crack_edge(self.xnT,xp,theta)
+                        if np.dot((c-xp),(d[0]-xp)) > 0.0:
+                            self.crack_edges = [d[0]]
+                        else:
+                            self.crack_edges = [d[1]]
+
 
     # ---------------------------------------------------------
     def mk_local_matrix_enrich(self):
@@ -302,7 +377,6 @@ class Element:
         for ic in range(self.ncrack):
             crack_xp = self.crack_xp_list[ic]
             crack_theta = self.crack_theta_list[ic]
-            self.crack_edges,self.crack_edges_xi = set_crack_edge(self.xnT,crack_xp,crack_theta)
 
             level_set = set_levelset_function(self.xnT,crack_xp,crack_theta)
 
