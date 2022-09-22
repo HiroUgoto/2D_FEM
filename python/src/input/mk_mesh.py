@@ -39,7 +39,6 @@ ielem = 0
 for k in range(nz):
     for i in range(nx):
         im = 0
-
         if i == 1:
             style = "2d4solidX"
         else:

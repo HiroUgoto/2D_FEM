@@ -69,9 +69,9 @@ for it in range(len(tim)):
     output_accz[it,:] = [node.a[1] for node in fem.output_nodes]
 
     if it%20 == 0:
-        plot_model.plot_mesh_update(ax,fem,200.)
-        if fem.elements[1].rupture:
-            print(it,"t=",it*dt,fem.elements[1].du_list)
+        plot_model.plot_mesh_update(ax,fem,50.)
+        if fem.enrich_elements[0].rupture:
+            print(it,"t=",it*dt,fem.enrich_elements[0].du_list)
         # print(it,"t=",it*dt,output_dispx[it,int(fem.output_nnode//2)])
 
 

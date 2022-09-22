@@ -574,12 +574,39 @@ class Element:
 
     # ---------------------------------------------------------
     def calc_crack_edge_disp(self):
-        up,um = [],[]
-
+        crack_list = []
         for ic in range(self.ncrack):
+            crack_dict = {}
+            crack_dict["x"] = []
+            crack_dict["up"] = []
+            crack_dict["um"] = []
+
             crack_xp = self.crack_xp_list[ic]
+            _,crack_xip = self.check_inside(crack_xp)
             crack_theta = self.crack_theta_list[ic]
             crack_edges,crack_edges_xi = set_crack_edge(self.xnT,crack_xp,crack_theta)
+
+            n = self.estyle.shape_function_n(crack_xip[0],crack_xip[1])
+            x = self.xnT @ n
+
+            ghp_list,ghm_list = [],[]
+            for jc in range(self.ncrack):
+                gp = self.estyle.enrich_function_n( 1.0,self.Jp_list[jc],self.Jm_list[jc],crack_xip[0],crack_xip[1])
+                gm = self.estyle.enrich_function_n(-1.0,self.Jp_list[jc],self.Jm_list[jc],crack_xip[0],crack_xip[1])
+
+                ghp_list += [gp*0.5]
+                ghm_list += [gm*0.5]
+
+            Np = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,ghp_list,self.R_list)
+            Nm = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,ghm_list,self.R_list)
+
+            ua = np.append(np.hstack(self.u),self.du_list)
+            up = Np @ np.hstack(ua)
+            um = Nm @ np.hstack(ua)
+
+            crack_dict["x"] += [x]
+            crack_dict["up"] += [up]
+            crack_dict["um"] += [um]
 
             for xi in crack_edges_xi:
                 n = self.estyle.shape_function_n(xi[0],xi[1])
@@ -601,13 +628,16 @@ class Element:
                     Nm = mk_n_enrich(self.dof,self.nnode,n,self.ncrack,ghm_list,self.R_list)
 
                     ua = np.append(np.hstack(self.u),self.du_list)
-                    up += [Np @ np.hstack(ua)]
-                    um += [Nm @ np.hstack(ua)]
+                    up = Np @ np.hstack(ua)
+                    um = Nm @ np.hstack(ua)
 
-                    # print("up:",up)
-                    # print("um:",um)
+                    crack_dict["x"] += [x]
+                    crack_dict["up"] += [up]
+                    crack_dict["um"] += [um]
 
-        return up,um
+            crack_list += [crack_dict]
+
+        return crack_list
 
     # ---------------------------------------------------------
     def check_inside(self,x,margin=0.0):
