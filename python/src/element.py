@@ -362,8 +362,8 @@ class Element:
         for gp in self.gauss_points:
             gp.strain = clear_stress_strain(self.dof)
             gp.eff_stress = clear_stress_strain(self.dof)
-            gp.pore_pressure = 0.0
-        self.pore_pressure = 0.0
+            gp.excess_pore_pressure = 0.0
+        self.excess_pore_pressure = 0.0
         self.eff_stress_yy = self.stress[0]
 
     def calc_ep_stress(self):
@@ -413,9 +413,9 @@ class Element:
         self.eff_stress_yy = eff_stress_yy
 
         self.ep.n = self.ep.e / (1+self.ep.e)
-        self.pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
-        self.stress = self.eff_stress - np.array([self.pore_pressure,self.pore_pressure,0])
-        self.stress_yy = self.eff_stress_yy - self.pore_pressure
+        self.excess_pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
+        self.stress = self.eff_stress - np.array([self.excess_pore_pressure,self.excess_pore_pressure,0])
+        self.stress_yy = self.eff_stress_yy - self.excess_pore_pressure
 
         self.strain = np.copy(strain)
 
@@ -426,8 +426,8 @@ class Element:
             dstrain = strain - gp.strain
             eff_dstress = Dp @ dstrain
             gp.eff_stress += eff_dstress
-            gp.pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
-            gp.stress = gp.eff_stress - np.array([gp.pore_pressure,gp.pore_pressure,0])
+            gp.excess_pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
+            gp.stress = gp.eff_stress - np.array([gp.excess_pore_pressure,gp.excess_pore_pressure,0])
 
             gp.strain = np.copy(strain)
 
