@@ -8,14 +8,12 @@ import plot_model
 import datetime
 import sys
 
-from ep_model.DL1d import constitution as DL1d
-
 start = time.time()
 
 ## --- Input FEM Mesh --- ##
-fem = io_data.input_mesh("input/mesh.in")
+fem = io_data.input_mesh("input/mesh_elastic.in")
 # fem = io_data.input_mesh("input/mesh_elastic.in")
-outputs = io_data.input_outputs("input/output.in")
+outputs = io_data.input_outputs("input/output_elastic.in")
 output_dir = "result/"
 
 ## --- FEM Set up --- ##
@@ -30,8 +28,7 @@ vs1,rho1 = 150.0,1700.0  # ground
 h = 10.0    # thickness
 fp = vs1/(4*h)
 print('fp',fp)
-# fp = 2.0  # Hz
-fp = 0.5  # Hz
+fp = 2.0
 
 R = (vs1*rho1)/(vs0*rho0)
 omega = 2*np.pi*fp
@@ -39,9 +36,7 @@ c,s = np.cos(omega*h/vs1),np.sin(omega*h/vs1)
 H = 2/np.sqrt(c**2+R**2*s**2)
 
 # amp = 0.3*9.8 / H
-amp = 0.1
-# amp = 2.0  # m
-# amp = 1.45
+amp = 2.0
 # amp = 10.0
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
@@ -51,12 +46,10 @@ fem.set_ep_initial_state()
 
 ## --- Define input wave --- ##
 # fsamp = 10000
-# fsamp = 2000
-# fsamp = 1000
-fsamp = 50
+fsamp = 2000
 # duration = 5.0/fp + 1.0/fp
-# duration = 8.0/fp + 1.0/fp
-duration = 14.0/fp + 1.0/fp
+duration = 8.0/fp + 1.0/fp
+# duration = 14.0/fp + 1.0/fp
 print('duration,fp',duration,fp)
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -103,64 +96,45 @@ for it in range(ntim):
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
     # output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
 
-    # if it%50 == 0:
-    if it%200 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.)
+    if it%50 == 0:
+        plot_model.plot_mesh_update(ax,fem,200.)
         # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
         print(f'{it} t={it*dt:.3f} {output_accx[it,0]} {output_element_stress_xx[it,0]} {output_element_stress_zz[it,0]}')
 
-elapsed_time = time.time() - start
-print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
-
-for i,element in enumerate(fem.output_elements):
-    fname = f'result/constitution{i}.png'
-    element.ep.model.plot(fname)
 # for element in fem.output_elements:
 #     element.ep.model.plot()
 #     element.ep.plot()
-#     info = {  # soil 10 of cycle data
-#         'H':17.23,  # m
-#         'P0':280.0,  # kN/m2
-#         'N':4.6,  # times
-#         'G0':48.3e6,  # N/m2
-#         'sand':3.0,  # %
-#         'silt':46.0,  # %
-#         'clay':51.0,  # %
-#         'wL':47.3,  # negative number instead of np.nan
-#         'wP':22.0,  # negative number instead of np.nan
-#     }
-#     dl = DL1d.DL1d(info)
-#     dl.cyclic_shear_test(element.ep.model.gamma_list)
-#     dl.plot('result/constitution_check.png')
 
+elapsed_time = time.time() - start
+print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
 # plot_model.plot_mesh_update(ax,fem,100.,fin=True)
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim[:ntim],wave_acc[:ntim]]).T
-np.savetxt(output_dir+"input.acc",output_line)
+np.savetxt(output_dir+"input_e.acc",output_line)
 
-# output_line = np.vstack([tim[:ntim],output_dispx[:,0],output_dispx[:,int(fem.output_nnode//2)]]).T
-# np.savetxt(output_dir+"result.disp",output_line)
+output_line = np.vstack([tim[:ntim],output_dispx[:,0],output_dispx[:,int(fem.output_nnode//2)]]).T
+np.savetxt(output_dir+"result_e.disp",output_line)
 
 output_line = np.vstack([tim[:ntim],output_accx[:,0]]).T
-np.savetxt(output_dir+"result.acc",output_line)
+np.savetxt(output_dir+"result_e.acc",output_line)
 
 #
 output_line = np.vstack([element.xnT[:,8] for element in fem.output_elements])
-np.savetxt(output_dir+"output_element_list.dat",output_line)
+np.savetxt(output_dir+"output_element_list_e.dat",output_line)
 
-# output_line = tim[:ntim]
-# for ielem in range(fem.output_nelem):
-#     output_line = np.vstack([output_line,output_element_stress_xx[:,ielem]])
-# np.savetxt(output_dir+"output_element.stress_xx",output_line.T)
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_stress_xx[:,ielem]])
+np.savetxt(output_dir+"output_element_e.stress_xx",output_line.T)
 
-# output_line = tim[:ntim]
-# for ielem in range(fem.output_nelem):
-#     output_line = np.vstack([output_line,output_element_stress_zz[:,ielem]])
-# np.savetxt(output_dir+"output_element.stress_zz",output_line.T)
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_stress_zz[:,ielem]])
+np.savetxt(output_dir+"output_element_e.stress_zz",output_line.T)
 
-# output_line = tim[:ntim]
-# for ielem in range(fem.output_nelem):
-#     output_line = np.vstack([output_line,output_element_stress_xz[:,ielem]])
-# np.savetxt(output_dir+"output_element.stress_xz",output_line.T)
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_stress_xz[:,ielem]])
+np.savetxt(output_dir+"output_element_e.stress_xz",output_line.T)

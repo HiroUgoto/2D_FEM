@@ -53,6 +53,8 @@ class Fem():
                         if m.id == element.material_id:
                             material = m
                             break
+                # print(material.style)
+                # print(material.style,material.param)
                 element.set_material(self.dof,material)
                 if "ep_" in material.style:
                     self.ep_elements += [element]

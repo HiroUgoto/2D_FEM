@@ -1,9 +1,25 @@
+from errno import EINPROGRESS
 import numpy as np
 import matplotlib.pyplot as plt
 
 from ep_model import Li
+from ep_model.DL1d import constitution as DL1d
 
 import sys
+
+def instantiateEP(dof,style,param):
+    if style == 'ep_Li':
+        return EP(dof,style,param)
+    elif style == 'ep_DL1d':
+        return EP_DL1d(dof,style,param)
+    elif style == 'ep_lightDL':
+        return Light_DL(dof,style,param)
+    elif style == 'ep_GHE_NN':
+        return GHE_NN(dof,style,param)
+    else:
+        print('Element style does not exist.')
+        return
+
 
 class EP:
     def __init__(self,dof,style,param):
@@ -77,7 +93,6 @@ class EP:
     # -------------------------------------------------------------------------------------- #
     # convert material modulus (3,3,3,3) to D matrix (ndof,ndof)
     def modulus_to_Dmatrix(self,E):
-
         if self.dof == 1:
             D = np.zeros([2,2])
             D[0,0],D[0,1] = E[0,1,0,1],E[0,1,1,2]
@@ -121,7 +136,9 @@ class EP:
         G0,K0 = self.model.elastic_modulus(self.e,p)
         return G0, K0 - G0*2/3
 
-    def elastic_modulus_ep(self,e,p):
+    def elastic_modulus_ep(self,e=None,p=None):
+        if e is None:
+            e = self.e0
         G0,K0 = self.model.elastic_modulus(e,p)
         return G0, K0 - G0*2/3
 
@@ -243,6 +260,172 @@ class EP:
         # print(np.min(p_stress),np.max(p_stress))
 
         return self.matrix_to_FEMstress(self.stress)
+
+
+class EP_DL1d(EP):
+    '''
+    Args:
+        `style (string)`: 'ep_DL1d'
+        `param (tuple)`: Tuple of `(nu,rho,info)`
+        `info (dict)`: Dictionary that contains material parameters. Keys are 'H', 'P0', 'N', 'G0', 'sand', 'silt', 'clay', 'wL' and 'wP'. The first four are in SI units and the last five are in percent(%).
+    '''
+    def __init__(self,dof,style,param):
+        super().__init__(dof,style,param)
+
+    def set_model(self,param):
+        self.rho,self.nu,self.info = param
+        self.G0 = self.info['G0']
+        self.G = self.G0
+        self.K = 2*self.G*(1+self.nu)/3/(1-2*self.nu)
+        # print(self.info)
+        self.p0 = self.info['P0']
+        self.model = DL1d.DL1d(self.info)
+
+    def elastic_modulus(self,G=None):
+        # p = np.trace(self.stress)/3
+        if G is None:
+            G = self.G
+        # K = 2*G*(1+self.nu)/3/(1-2*self.nu)
+        K = self.K
+        return G,K-G*2/3
+
+    def elastic_modulus_ep(self, e=None, p=None):
+        return self.elastic_modulus()
+
+    def initial_state(self, init_stress, last=False):
+        init_stress_mat = self.FEMstress_to_matrix(init_stress)
+        init_stress_vec = self.matrix_to_vector(init_stress_mat)
+
+        p = init_stress_vec[:3].mean() * 1e-3  # N -> kN
+        print(f'\t\tp/p0:{p/self.p0}')
+        self.G = self.G0 * np.sqrt(p/self.p0)
+        self.K = 2*self.G*(1+self.nu)/3/(1-2*self.nu)
+        # self.G = self.G0
+
+        E_inv = 1/(2*self.G*(1+self.nu))
+        nu_by_E = -self.nu*E_inv
+        mu_inv = 1/(2*self.G)
+        S_mat = np.array([
+            [E_inv,nu_by_E,nu_by_E,0,0,0],
+            [nu_by_E,E_inv,nu_by_E,0,0,0],
+            [nu_by_E,nu_by_E,E_inv,0,0,0],
+            [0,0,0,mu_inv,0,0],
+            [0,0,0,0,mu_inv,0],
+            [0,0,0,0,0,mu_inv]
+        ])
+
+        init_strain_vec = S_mat@init_stress_vec
+        self.stress = init_stress_mat
+        self.strain = self.vector_to_matrix(init_strain_vec)
+        self.gamma_list,self.tau_list = [0],[0]
+        self.elastic_flag = True
+        self.elastic_limit = 1e-7
+
+        if last:
+            h = p*1e3 / (9.8*self.rho)
+            info_update = {'G0':self.G,'P0':p,'H':h}
+            # info_update = {}
+            self.model.initial_state(info_update)
+
+    def set_Dp_matrix(self, FEMdstrain):
+        def get_Dp(rmu,rlambda):
+            if self.dof == 1:
+                print('1-dof not set yet')
+            elif self.dof == 2:
+                # try:
+                E = rmu*(3*rlambda+2*rmu)/(rlambda+rmu)
+                # except RuntimeWarning:
+                #     print('rlambda',rlambda)
+                #     print('rmu',rmu)
+                #     print('self.G',self.G)
+                Dp = E/(1-self.nu**2) * np.array([
+                    [1,self.nu,0],
+                    [self.nu,1,0],
+                    [0,0,(1-self.nu)/2]
+                ])
+                # Dp = np.array([
+                #     [1,self.nu,0],
+                #     [self.nu,1,0],
+                #     [0,0,(1-self.nu)/2]
+                # ])
+            elif self.dof == 3:
+                Dp = np.array([
+                    [rlambda+2*rmu,rlambda,rlambda,0,0,0],
+                    [rlambda,rlambda+2*rmu,rlambda,0,0,0],
+                    [rlambda,rlambda,rlambda+2*rmu,0,0,0],
+                    [0,0,0,rmu,0,0],
+                    [0,0,0,0,rmu,0],
+                    [0,0,0,0,0,rmu]
+                ])
+            Dp_half = np.array([
+                [rlambda+2*rmu,rlambda,rlambda,0,0,0],
+                [rlambda,rlambda+2*rmu,rlambda,0,0,0],
+                [rlambda,rlambda,rlambda+2*rmu,0,0,0],
+                [0,0,0,2*rmu,0,0],
+                [0,0,0,0,2*rmu,0],
+                [0,0,0,0,0,2*rmu]
+            ])
+            return Dp,Dp_half
+
+        dstrain = self.FEMstrain_to_matrix(FEMdstrain)
+        dgamma = 2*dstrain[0,2]
+        if np.abs(dgamma)>1e-10:
+            dtau,gamma = self.model.shear_d(dgamma)
+            if self.elastic_flag:
+                if np.abs(gamma)<self.elastic_limit:
+                    self.G = self.G0
+                else:
+                    self.G = np.min([np.abs(dtau/dgamma),self.G0])
+                    self.elastic_flag = False
+            else:
+                self.G = np.min([np.abs(dtau/dgamma),self.G0])
+        else:
+            dtau = 0.0
+        self.gamma_list.append(self.gamma_list[-1]+dgamma)
+        self.tau_list.append(self.tau_list[-1]+dtau)
+        rmu,rlambda = self.elastic_modulus(self.G)
+        Dp,Dp_half = get_Dp(rmu,rlambda)
+        dstrain_vec = self.matrix_to_vector(dstrain)
+        dstress_vec = Dp_half@dstrain_vec
+
+        self.strain += dstrain
+        self.stress += self.vector_to_matrix(dstress_vec)
+
+        stress_yy = -self.stress[1,1]
+
+        return Dp,self.matrix_to_FEMstress(self.stress),stress_yy
+
+    def plot(self,fname='result/constitution_ep.png'):
+        gamma = 100*np.array(self.gamma_list)
+        tau = 1/1000*np.array(self.tau_list)
+        fig,ax = plt.subplots(figsize=[5,5])
+        ax.set_xlabel('gamma')
+        ax.set_ylabel('tau', labelpad=4.0)
+        ax.plot(gamma,tau) #label
+        fig.savefig(fname)
+        plt.close(fig)
+
+
+class Light_DL(EP_DL1d):
+    def set_model(self,param):
+        super().set_model(param)
+        self.model = DL1d.DL1d(self.info,maxlen=300)
+
+    def plot(self,fname='result/constitution_ep_light.png'):
+        super().plot(fname)
+
+
+class GHE_NN(EP_DL1d):
+    def set_model(self,param):
+        super().set_model(param)
+        self.model = DL1d.GHE_mix(self.info)
+
+    def plot(self,fname='result/constitution_ep_ghe.png'):
+        super().plot(fname)
+
+
+
+
 
 # --------------------------------#
 if __name__ == "__main__":
