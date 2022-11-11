@@ -12,7 +12,6 @@ start = time.time()
 
 ## --- Input FEM Mesh --- ##
 fem = io_data.input_mesh("input/mesh.in")
-# fem = io_data.input_mesh("input/mesh_elastic.in")
 outputs = io_data.input_outputs("input/output.in")
 output_dir = "result/"
 
@@ -22,34 +21,32 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-# Set amplitude #
-vs0,rho0 = 300.0,1700.0  # basement
-vs1,rho1 = 150.0,1700.0  # ground
-h = 10.0    # thickness
-fp = vs1/(4*h)
-
-R = (vs1*rho1)/(vs0*rho0)
-omega = 2*np.pi*fp
-c,s = np.cos(omega*h/vs1),np.sin(omega*h/vs1)
-H = 2/np.sqrt(c**2+R**2*s**2)
-
-amp = 0.3*9.8 / H
-print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
+# # Set amplitude #
+# vs0,rho0 = 300.0,1700.0  # basement
+# vs1,rho1 = 150.0,1700.0  # ground
+# h = 10.0    # thickness
+# fp = vs1/(4*h)
+#
+# R = (vs1*rho1)/(vs0*rho0)
+# omega = 2*np.pi*fp
+# c,s = np.cos(omega*h/vs1),np.sin(omega*h/vs1)
+# H = 2/np.sqrt(c**2+R**2*s**2)
+#
+# amp = 0.3*9.8 / H
+fp = 3.0
+amp = 1.0
+print("Input frequency(Hz):",fp,", Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
 # fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
-fsamp = 10000
-# duration = 5.0/fp + 1.0/fp
-# duration = 8.0/fp + 1.0/fp
-duration = 14.0/fp + 1.0/fp
+fsamp = 2000
+duration = 5.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
-wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
-# wave_acc = input_wave.simple_sin(tim,fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
 ntim = len(tim)
 
 # plt.figure()
@@ -66,6 +63,8 @@ output_element_stress_zz = np.zeros((ntim,fem.output_nelem))
 output_element_stress_xz = np.zeros((ntim,fem.output_nelem))
 output_element_stress_yy = np.zeros((ntim,fem.output_nelem))
 
+output_element_strain_xz = np.zeros((ntim,fem.output_nelem))
+
 output_accx = np.zeros((ntim,fem.output_nnode))
 output_dispx = np.zeros((ntim,fem.output_nnode))
 output_dispz = np.zeros((ntim,fem.output_nnode))
@@ -78,8 +77,7 @@ for it in range(ntim):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
 
-    fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
-    # fem.update_time(acc0,self_gravity=True)
+    fem.update_time(acc0,vel0,input_wave=True)
 
     output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
     output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
@@ -90,9 +88,12 @@ for it in range(ntim):
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
     output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
 
+    output_element_strain_xz[it,:] = [element.strain[2] for element in fem.output_elements]
+
     if it%50 == 0:
-        plot_model.plot_mesh_update(ax,fem,200.)
+        plot_model.plot_mesh_update(ax,fem,50.)
         print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
+        # print(it,"t=",it*dt,output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0])
 
 
 elapsed_time = time.time() - start
@@ -125,3 +126,8 @@ output_line = tim[:ntim]
 for ielem in range(fem.output_nelem):
     output_line = np.vstack([output_line,output_element_stress_xz[:,ielem]])
 np.savetxt(output_dir+"output_element.stress_xz",output_line.T)
+
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_strain_xz[:,ielem]])
+np.savetxt(output_dir+"output_element.strain_xz",output_line.T)

@@ -127,11 +127,26 @@ class EP:
 
 
     # -------------------------------------------------------------------------------------- #
+    def initial_state_isotropic(self,init_stress):
+        compression_stress = max([-init_stress[0],-init_stress[1]])
+        self.model.isotropic_compression(self.e0,compression_stress)
+        self.model.e0 = np.copy(self.e0)
+        self.model.e = np.copy(self.e0)
+
+        # set initial parameters
+        self.stress = self.model.stress
+        self.strain = self.model.strain
+        self.e = self.model.e
+
+        p,_ = self.model.set_stress_variable(self.stress)
+        self.model.beta,self.model.H2 = p,p
+
+
     def initial_state(self,init_stress):
         init_stress_mat = self.FEMstress_to_matrix(init_stress)
 
         # isotropic_compression
-        compression_stress = init_stress_mat[0,0]
+        compression_stress = max([-init_stress[0],-init_stress[1]])
         self.model.isotropic_compression(self.e0,compression_stress)
         self.model.e0 = np.copy(self.e0)
         self.model.e = np.copy(self.e0)
@@ -148,7 +163,9 @@ class EP:
         dstrain_vec = np.zeros(6,dtype=np.float64)
         dstress_vec = np.zeros(6,dtype=np.float64)
 
-        dstress_vec[2] = (init_stress_mat[2,2]-init_stress_mat[0,0])/nstep
+        dstress_vec[0] = (init_stress_mat[0,0]-compression_stress)/nstep
+        dstress_vec[1] = (init_stress_mat[1,1]-compression_stress)/nstep
+        dstress_vec[2] = (init_stress_mat[2,2]-compression_stress)/nstep
         deformation_vec = np.array([True,True,True,True,True,True],dtype=bool)
 
         dstrain_input = self.vector_to_matrix(dstrain_vec)
@@ -178,6 +195,8 @@ class EP:
         # FEMstrain = self.matrix_to_FEMstrain(self.strain)
         # print("strain: ",FEMstrain)
         # print("stress: ",FEMstress)
+        # print(self.model.alpha)
+        # print(self.model.H1,self.model.H2)
         # print("strain: ",self.strain.diagonal())
         # print("stress: ",self.stress.diagonal())
 
@@ -193,9 +212,9 @@ class EP:
         sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
         ef1,ef2 = self.model.check_unload(sp0)
 
+        # print(self.stress)
         # print(ef1,self.model.alpha)
         # print(ef2,sp0.p,self.model.beta)
-
 
         sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1,ef2=ef2)
         Ep = self.model.plastic_stiffness(sp)
@@ -217,6 +236,8 @@ class EP:
 
         Dp = self.modulus_to_Dmatrix(Ep)
         stress_yy = -self.stress[1,1]
+
+        # print(stress_yy)
 
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
 

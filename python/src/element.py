@@ -324,25 +324,15 @@ class Element:
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
 
-    # ---------------------------------------------------------
-    def ep_init_all(self):
-        pass
+    def clear_strain(self):
+        self.strain = clear_stress_strain(self.dof)
 
+    # ---------------------------------------------------------
     def ep_init_calc_stress_all(self):
         for gp in self.gauss_points:
-            _,dnj = mk_dnj(self.xnT,gp.dn)
-            B = mk_b(self.dof,self.nnode,dnj)
-            gp.strain = B @ np.hstack(self.u)
-            gp.stress = self.De @ gp.strain
-
-        dn = self.estyle.shape_function_dn(0.0,0.0)
-        _,dnj = mk_dnj(self.xnT,dn)
-        B = mk_b(self.dof,self.nnode,dnj)
-        self.strain = B @ np.hstack(self.u)
-        self.stress = self.De @ self.strain
-        self.ep.initial_state(self.stress)
+            gp.strain = clear_stress_strain(self.dof)
+            gp.stress = clear_stress_strain(self.dof)
         self.stress_yy = self.stress[0]
-
 
     def calc_ep_stress(self):
         pass
@@ -359,6 +349,8 @@ class Element:
             Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
             self.strain = np.copy(strain)
             self.stress_yy = stress_yy
+
+            # print(self.id,self.strain,self.stress)
 
             for gp in self.gauss_points:
                 det,dnj = mk_dnj(self.xnT,gp.dn)
@@ -462,6 +454,17 @@ def mk_b_T(dof,nnode,dnj):
         B[2::3,4] = dnj[:,1]
 
     return B
+
+# ---------------------------------------------------------
+def clear_stress_strain(dof):
+    if dof == 1:
+        s = np.zeros(2,dtype=np.float64)
+    elif dof == 2:
+        s = np.zeros(3,dtype=np.float64)
+    elif dof == 3:
+        s = np.zeros(5,dtype=np.float64)
+
+    return s
 
 # ---------------------------------------------------------
 def Hencky_stress(dof,nnode,D,dnj,u):

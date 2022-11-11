@@ -33,7 +33,7 @@ element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        im = 1              # 地盤の材料パラメータ
+        im = 1             
 
         n0,n1,n2,n3 = node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2]
         n4,n5,n6,n7 = node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1]
@@ -76,13 +76,9 @@ nelem = ielem       #number of elements
 material_lines = []
 material_lines += ["{} {} {} {} {} \n".format(0,"nu_E_rho",0.2,100.0e9,850.0)]
 # material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
-# material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,202,0.97,0.6975,0.957,0.0)]
-material_lines += ["{} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.97,0.7148,0.957,0.0)]
-                                                     # rho, nu, G0, M, e0, eg, d1
+material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.97,0.7148,0.957,0.0,4.e3)]
+                                                     # rho, nu, G0, M, e0, eg, d1, cohesion
 material_lines += ["{} {} {} {} {} \n".format(2,"nu_vs_rho",0.33,350.0,1800.0)]
-
-# material_lines += ["{} {} {} {} \n".format(3,"slider_normal",1.0,0.0)] # 側面バネ（法線ベクトル：(1,0)）
-# material_lines += ["{} {} {} {} \n".format(4,"slider_normal",0.0,1.0)] # 下面バネ（法線ベクトル：(0,1)）
 
 
 nmaterial = len(material_lines)
@@ -113,11 +109,3 @@ with open("output.in","w") as f:
     f.write("{} {} \n".format(output_nnode,output_nelem))
     f.writelines(output_node_lines)
     f.writelines(output_element_lines)
-
-# with open("var.in","w") as f:       #save var, depend on target area
-#     f.write("{} {}\n".format(modelid,"modelid"))
-#     f.write("{} {} {} {}\n".format(area_x,area_z,"area_x","area_z"))
-#     f.write("{} {} {} {}\n".format(nx,nz,"nx","nz"))
-#     if modelid == 1:
-#         f.write("{} {} {} {}\n".format(nx1,nx2,"nx1","nx2"))
-#         f.write("{} {} {} {}\n".format(nz1,nz2,"nz1","nz2"))

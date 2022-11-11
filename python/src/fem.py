@@ -95,7 +95,6 @@ class Fem():
 
     # ---------------------------------------
     def _set_initial_matrix(self):
-        # for element in self.element_set:
         for element in self.elements:
             element.set_xn()
             element.mk_local_matrix_init(self.dof)
@@ -110,9 +109,6 @@ class Fem():
                     node.k[i] += element.K_diag[id]
                     node.static_force[i] += element.force[id]
                     id += 1
-
-        # for element in self.ep_elements:
-        #     element.ep_init_all()
 
     # ======================================================================= #
     def set_output(self,outputs):
@@ -180,7 +176,7 @@ class Fem():
             node.um = np.copy(node.u)
 
     # ---------------------------------------
-    def _self_gravity_cg(self,full=True):
+    def _self_gravity_cg(self,full=True,print_flag=True):
         if full:    # Calculate both components
             id = 0
         else:       # Calculate only vertical component
@@ -257,7 +253,8 @@ class Fem():
                 rr1 += node._ur @ node._ur
 
             if rr1 < 1.e-10:
-                print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
+                if print_flag:
+                    print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
                 break
 
             ## p = r + beta*p
@@ -269,37 +266,24 @@ class Fem():
                     else:
                         node._up[i] = node._ur[i] + beta*node._up[i]
 
-            if it%100 == 0:
+            if it%100 == 0 and print_flag:
                 print(" (self gravity process .. )",it,self.nodes[0].u[1],rr1)
 
     # ======================================================================= #
     def set_ep_initial_state(self):
-        u0 = self.nodes[0].u[1]
+        self._self_gravity_cg(full=False,print_flag=False)
+        for element in self.ep_elements:
+            element.calc_stress()
+            element.ep.initial_state_isotropic(element.stress)
+            # element.ep.initial_state(element.stress)
+            element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
+            element.clear_strain()
 
-        for i in range(20):
-            if i == 0:
-                self.self_gravity()
-            else:
-                self._self_gravity_cg(full=True)
-                for node in self.node_set:
-                    node.u0 = np.copy(node.u)
-                    node.um = np.copy(node.u)
+        self._set_ep_initial_state_node_clear()
+        self._set_initial_matrix()
 
-            for element in self.ep_elements:
-                element.calc_stress()
-                element.ep.initial_state(element.stress)
-                element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
-                # print(np.sqrt(element.material.rmu/element.rho),element.stress)
-                # print(np.sqrt(element.material.rmu/element.rho))
-
-            self._set_ep_initial_state_node_clear()
-            self._set_initial_matrix()
-            print(self.nodes[0].u[1])
-
-            if (u0 - self.nodes[0].u[1])**2 < 1.e-10:
-                break
-            else:
-                u0 = np.copy(self.nodes[0].u[1])
+        for node in self.nodes:
+            node.u[:] = np.zeros(self.dof,dtype=np.float64)
 
         for element in self.ep_elements:
             element.ep_init_calc_stress_all()
