@@ -33,7 +33,7 @@ fem.set_output(outputs)
 # H = 2/np.sqrt(c**2+R**2*s**2)
 #
 # amp = 0.3*9.8 / H
-fp = 3.0
+fp = 2.0
 amp = 1.0
 print("Input frequency(Hz):",fp,", Input amplitude(m/s2):",amp)
 
@@ -42,7 +42,7 @@ fem.set_ep_initial_state()
 # fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
-fsamp = 2000
+fsamp = 10000
 duration = 5.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -62,6 +62,7 @@ output_element_stress_xx = np.zeros((ntim,fem.output_nelem))
 output_element_stress_zz = np.zeros((ntim,fem.output_nelem))
 output_element_stress_xz = np.zeros((ntim,fem.output_nelem))
 output_element_stress_yy = np.zeros((ntim,fem.output_nelem))
+output_element_pore_pressure = np.zeros((ntim,fem.output_nelem))
 
 output_element_strain_xz = np.zeros((ntim,fem.output_nelem))
 
@@ -87,13 +88,15 @@ for it in range(ntim):
     output_element_stress_zz[it,:] = [element.stress[1] for element in fem.output_elements]
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
     output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
+    output_element_pore_pressure[it,:] = [element.pore_pressure for element in fem.output_elements]
 
     output_element_strain_xz[it,:] = [element.strain[2] for element in fem.output_elements]
 
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,50.)
-        print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
+        # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
         # print(it,"t=",it*dt,output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0])
+        print(it,"t=",it*dt,output_dispx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_pore_pressure[it,0])
 
 
 elapsed_time = time.time() - start
@@ -126,6 +129,11 @@ output_line = tim[:ntim]
 for ielem in range(fem.output_nelem):
     output_line = np.vstack([output_line,output_element_stress_xz[:,ielem]])
 np.savetxt(output_dir+"output_element.stress_xz",output_line.T)
+
+output_line = tim[:ntim]
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([output_line,output_element_pore_pressure[:,ielem]])
+np.savetxt(output_dir+"output_element.pore_pressure",output_line.T)
 
 output_line = tim[:ntim]
 for ielem in range(fem.output_nelem):

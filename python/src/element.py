@@ -29,14 +29,12 @@ class Element:
 
     def set_nodes(self,nodes):
         self.nodes = nodes
-        self.node_set = set(nodes)
 
     def set_material(self,dof,m):
         if m is None:
             self.material = None
             self.rho = None
         else:
-            # self.material = material
             self.material = material.Material(m.id,m.style,m.param)
             self.rho = m.rho
 
@@ -94,6 +92,8 @@ class Element:
                     V += detJ
 
             self.mass = self.rho*V
+            if "eff_" in self.material.style:
+                self.mass_d = (self.rho - self.material.rho_w)*V
 
         elif self.dim == 1:
             self.gauss_points = set()
@@ -180,7 +180,10 @@ class Element:
                 V += detJ
                 self.force += gp.N[1,:]*detJ * self.gravity
 
-            self.force = self.force * self.mass/V
+            if "eff_" in self.material.style:
+                self.force = self.force * self.mass_d/V
+            else:
+                self.force = self.force * self.mass/V
 
     # ---------------------------------------------------------
     def mk_local_update(self):
@@ -324,6 +327,27 @@ class Element:
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
 
+    def calc_total_stress(self):
+        self.calc_eff_stress()
+        self.calc_pore_pressure()
+        self.stress = self.eff_stress - np.array([self.pore_pressure,self.pore_pressure,0])
+
+    def calc_eff_stress(self):
+        dn = self.estyle.shape_function_dn(0.0,0.0)
+        _,dnj = mk_dnj(self.xnT,dn)
+        B = mk_b(self.dof,self.nnode,dnj)
+        self.strain = B @ np.hstack(self.u)
+        self.eff_stress = self.De @ self.strain
+
+    def calc_pore_pressure(self):
+        dn = self.estyle.shape_function_dn(0.0,0.0)
+        _,dnj = mk_dnj(self.xnT,dn)
+        B = mk_b(self.dof,self.nnode,dnj)
+        strain = B @ np.hstack(self.u)
+
+        self.ep.n = self.ep.e / (1+self.ep.e)
+        self.pore_pressure = -self.material.Kw / self.ep.n * (strain[0] + strain[1])
+
     def clear_strain(self):
         self.strain = clear_stress_strain(self.dof)
 
@@ -333,6 +357,14 @@ class Element:
             gp.strain = clear_stress_strain(self.dof)
             gp.stress = clear_stress_strain(self.dof)
         self.stress_yy = self.stress[0]
+
+    def ep_eff_init_calc_stress_all(self):
+        for gp in self.gauss_points:
+            gp.strain = clear_stress_strain(self.dof)
+            gp.eff_stress = clear_stress_strain(self.dof)
+            gp.pore_pressure = 0.0
+        self.pore_pressure = 0.0
+        self.eff_stress_yy = self.stress[0]
 
     def calc_ep_stress(self):
         pass
@@ -368,6 +400,44 @@ class Element:
             for i in range(self.nnode):
                 i0 = self.dof*i
                 self.nodes[i].force[:] += force[i0:i0+self.dof]
+
+    def mk_ep_eff_B_stress(self):
+        force = np.zeros(self.ndof,dtype=np.float64)
+
+        dn = self.estyle.shape_function_dn(0.0,0.0)
+        _,dnj = mk_dnj(self.xnT,dn)
+        B = mk_b(self.dof,self.nnode,dnj)
+        strain = B @ np.hstack(self.u)
+        dstrain = strain - self.strain
+        Dp,self.eff_stress,eff_stress_yy = self.ep.set_Dp_matrix(dstrain)
+        self.eff_stress_yy = eff_stress_yy
+
+        self.ep.n = self.ep.e / (1+self.ep.e)
+        self.pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
+        self.stress = self.eff_stress - np.array([self.pore_pressure,self.pore_pressure,0])
+        self.stress_yy = self.eff_stress_yy - self.pore_pressure
+
+        self.strain = np.copy(strain)
+
+        for gp in self.gauss_points:
+            det,dnj = mk_dnj(self.xnT,gp.dn)
+            B = mk_b(self.dof,self.nnode,dnj)
+            strain = B @ np.hstack(self.u)
+            dstrain = strain - gp.strain
+            eff_dstress = Dp @ dstrain
+            gp.eff_stress += eff_dstress
+            gp.pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
+            gp.stress = gp.eff_stress - np.array([gp.pore_pressure,gp.pore_pressure,0])
+
+            gp.strain = np.copy(strain)
+
+            detJ = gp.w*det
+            force += B.T @ gp.stress * detJ
+            # print(gp.stress)
+
+        for i in range(self.nnode):
+            i0 = self.dof*i
+            self.nodes[i].force[:] += force[i0:i0+self.dof]
 
 
 # ---------------------------------------------------------

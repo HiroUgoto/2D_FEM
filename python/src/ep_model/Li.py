@@ -4,8 +4,6 @@ import scipy.optimize
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-import sys
-
 class Li2002:
     # Defalt parameters are for Toyoura sand (Li2002)
     def __init__(self,G0=125,nu=0.25,M=1.25,c=0.75,eg=0.934,rlambdac=0.019,xi=0.7, \
@@ -246,8 +244,8 @@ class Li2002:
             try:
                 t = scipy.optimize.brenth(F1_boundary_surface,t0,t1,args=(rij,alpha))
             except ValueError:
-                print(t0,t1,F1_t0,F1_t1)
-                sys.exit()
+                print("ValueError",t0,t1,F1_t0,F1_t1)
+                exit()
 
             return t
 

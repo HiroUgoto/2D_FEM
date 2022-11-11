@@ -63,6 +63,13 @@ class Material:
             self.rho = param[0]
             self.param = param[1:]
 
+        elif self.style == "ep_eff_Li":
+            self.rho = param[0]
+            self.param = param[1:]
+
+            self.rho_w = 1000.0
+            self.Kw = 2.25e9
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:
