@@ -325,9 +325,7 @@ class EP_DL1d(EP):
 
         if last:
             h = p*1e3 / (9.8*self.rho)  # elementから直接与える
-            h *= 1.5
             info_update = {'G0':self.G,'P0':p,'H':h}
-            # info_update = {}
             self.model.initial_state(info_update)
 
     def set_Dp_matrix(self, FEMdstrain):
