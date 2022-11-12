@@ -31,9 +31,11 @@ class Net_param(nn.Module):
             seq_list += [f,a,d]
         self.full = nn.Sequential(*seq_list)
 
+    @t.jit.script_if_tracing
     def decode(self,output):
         return output
 
+    @t.jit.script_if_tracing
     def forward(self,info):
         # info.shape: batch, feature
         output = self.full(info)
@@ -46,9 +48,11 @@ class DL_gr(Net_param):
         self.load_state_dict(loadpath(name))
         self.eval()
 
+    @t.jit.script_if_tracing
     def decode(self,output):
         return 10**(output-3)
 
+    @t.jit.script_if_tracing
     def forward(self,info):
         with t.no_grad():
             output = super().forward(info)
@@ -59,6 +63,7 @@ class DL_h(DL_gr):
     def __init__(self,name='dl_param-h.pth'):
         super().__init__(name)
 
+    @t.jit.script_if_tracing
     def decode(self, output):
         return output*2+1
 
@@ -86,6 +91,7 @@ class Net_s2s(nn.Module):
         self.decoder = TCN.TemporalConvNet(**dec_args)
         self.outnet = nn.Linear(dec_args['num_channels'][-1],1)
 
+    @t.jit.script_if_tracing
     def forward(self,info,gamma,taumodel,dev='cpu'):
         # info.shape: feature
         # gamma.shape: seq
@@ -110,6 +116,7 @@ class DL_s2s(Net_s2s):
         self.load_state_dict(loadpath(name))
         self.eval()
 
+    @t.jit.script_if_tracing
     def forward(self,info,gamma,taumodel):
         with t.no_grad():
             return super().forward(info,gamma,taumodel,dev='cpu')

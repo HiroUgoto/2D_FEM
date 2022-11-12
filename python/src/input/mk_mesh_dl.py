@@ -3,9 +3,9 @@ import os,sys
 
 plastic = True
 # plastic,ep = False,None
-# ep = 'ep_DL1d'
-ep = 'ep_lightDL'
-# ep = 'ep_GHE_NN'
+ep = 'ep_DL1d'
+# ep = 'ep_DL1d_light'
+# ep = 'ep_DL1d_ghe'
 
 # area_x = 10.0
 # area_z = 10.0

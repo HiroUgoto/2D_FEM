@@ -24,21 +24,9 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-# Set amplitude #
-vs0,rho0 = 300.0,1700.0  # basement
-vs1,rho1 = 150.0,1700.0  # ground
-h = 10.0    # thickness
-fp = vs1/(4*h)
-print('fp',fp)
 # fp = 2.0  # Hz
 fp = 0.5  # Hz
 
-R = (vs1*rho1)/(vs0*rho0)
-omega = 2*np.pi*fp
-c,s = np.cos(omega*h/vs1),np.sin(omega*h/vs1)
-H = 2/np.sqrt(c**2+R**2*s**2)
-
-# amp = 0.3*9.8 / H
 amp = 0.1
 # amp = 2.0  # m
 # amp = 1.45
@@ -52,16 +40,17 @@ fem.set_ep_initial_state()
 ## --- Define input wave --- ##
 # fsamp = 10000
 # fsamp = 2000
-# fsamp = 1000
-fsamp = 50
-# duration = 5.0/fp + 1.0/fp
+fsamp = 1000
+# fsamp = 500
+duration = 5.0/fp + 1.0/fp
+# duration = 1.0/fp + 1.0/fp
 # duration = 8.0/fp + 1.0/fp
-duration = 14.0/fp + 1.0/fp
+# duration = 14.0/fp + 1.0/fp
 print('duration,fp',duration,fp)
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
-wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
+# wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
 # wave_acc = input_wave.simple_sin(tim,fp,amp)
 ntim = len(tim)
 
@@ -115,23 +104,6 @@ print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 for i,element in enumerate(fem.output_elements):
     fname = f'result/constitution{i}.png'
     element.ep.model.plot(fname)
-# for element in fem.output_elements:
-#     element.ep.model.plot()
-#     element.ep.plot()
-#     info = {  # soil 10 of cycle data
-#         'H':17.23,  # m
-#         'P0':280.0,  # kN/m2
-#         'N':4.6,  # times
-#         'G0':48.3e6,  # N/m2
-#         'sand':3.0,  # %
-#         'silt':46.0,  # %
-#         'clay':51.0,  # %
-#         'wL':47.3,  # negative number instead of np.nan
-#         'wP':22.0,  # negative number instead of np.nan
-#     }
-#     dl = DL1d.DL1d(info)
-#     dl.cyclic_shear_test(element.ep.model.gamma_list)
-#     dl.plot('result/constitution_check.png')
 
 
 # plot_model.plot_mesh_update(ax,fem,100.,fin=True)

@@ -6,16 +6,19 @@ from ep_model import Li
 from ep_model.DL1d import constitution as DL1d
 
 import sys
+import warnings
+import traceback
+warnings.filterwarnings('error')
 
 def instantiateEP(dof,style,param):
     if style == 'ep_Li':
         return EP(dof,style,param)
     elif style == 'ep_DL1d':
         return EP_DL1d(dof,style,param)
-    elif style == 'ep_lightDL':
-        return Light_DL(dof,style,param)
-    elif style == 'ep_GHE_NN':
-        return GHE_NN(dof,style,param)
+    elif style == 'ep_DL1d_light':
+        return EP_DL1d_Light(dof,style,param)
+    elif style == 'ep_DL1d_ghe':
+        return EP_DL1d_GHE(dof,style,param)
     else:
         print('Element style does not exist.')
         return
@@ -144,7 +147,7 @@ class EP:
 
 
     # -------------------------------------------------------------------------------------- #
-    def initial_state(self,init_stress):
+    def initial_state(self,init_stress,last=None):
         init_stress_mat = self.FEMstress_to_matrix(init_stress)
 
         # isotropic_compression
@@ -277,17 +280,16 @@ class EP_DL1d(EP):
         self.G0 = self.info['G0']
         self.G = self.G0
         self.K = 2*self.G*(1+self.nu)/3/(1-2*self.nu)
-        # print(self.info)
         self.p0 = self.info['P0']
         self.model = DL1d.DL1d(self.info)
 
     def elastic_modulus(self,G=None):
-        # p = np.trace(self.stress)/3
         if G is None:
             G = self.G
-        # K = 2*G*(1+self.nu)/3/(1-2*self.nu)
         K = self.K
-        return G,K-G*2/3
+        rlambda = K-G*2/3
+        # rlambda = 2*G*self.nu/(1+self.nu)
+        return G,rlambda
 
     def elastic_modulus_ep(self, e=None, p=None):
         return self.elastic_modulus()
@@ -315,14 +317,15 @@ class EP_DL1d(EP):
         ])
 
         init_strain_vec = S_mat@init_stress_vec
-        self.stress = init_stress_mat
         self.strain = self.vector_to_matrix(init_strain_vec)
+        self.stress = init_stress_mat
         self.gamma_list,self.tau_list = [0],[0]
         self.elastic_flag = True
         self.elastic_limit = 1e-7
 
         if last:
-            h = p*1e3 / (9.8*self.rho)
+            h = p*1e3 / (9.8*self.rho)  # elementから直接与える
+            h *= 1.5
             info_update = {'G0':self.G,'P0':p,'H':h}
             # info_update = {}
             self.model.initial_state(info_update)
@@ -332,22 +335,11 @@ class EP_DL1d(EP):
             if self.dof == 1:
                 print('1-dof not set yet')
             elif self.dof == 2:
-                # try:
-                E = rmu*(3*rlambda+2*rmu)/(rlambda+rmu)
-                # except RuntimeWarning:
-                #     print('rlambda',rlambda)
-                #     print('rmu',rmu)
-                #     print('self.G',self.G)
-                Dp = E/(1-self.nu**2) * np.array([
-                    [1,self.nu,0],
-                    [self.nu,1,0],
-                    [0,0,(1-self.nu)/2]
+                Dp = np.array([
+                    [rlambda+2*rmu,rlambda,0],
+                    [rlambda,rlambda+2*rmu,0],
+                    [0,0,rmu]
                 ])
-                # Dp = np.array([
-                #     [1,self.nu,0],
-                #     [self.nu,1,0],
-                #     [0,0,(1-self.nu)/2]
-                # ])
             elif self.dof == 3:
                 Dp = np.array([
                     [rlambda+2*rmu,rlambda,rlambda,0,0,0],
@@ -406,16 +398,16 @@ class EP_DL1d(EP):
         plt.close(fig)
 
 
-class Light_DL(EP_DL1d):
+class EP_DL1d_Light(EP_DL1d):
     def set_model(self,param):
         super().set_model(param)
-        self.model = DL1d.DL1d(self.info,maxlen=300)
+        self.model = DL1d.DL1d(self.info,maxlen=1000)
 
     def plot(self,fname='result/constitution_ep_light.png'):
         super().plot(fname)
 
 
-class GHE_NN(EP_DL1d):
+class EP_DL1d_GHE(EP_DL1d):
     def set_model(self,param):
         super().set_model(param)
         self.model = DL1d.GHE_mix(self.info)

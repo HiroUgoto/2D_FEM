@@ -4,6 +4,8 @@ import os,pickle
 import matplotlib.pyplot as plt
 from collections import deque
 
+from pprint import pprint
+
 from ep_model.DL1d import numerical_model as nm
 from ep_model.DL1d import Net
 
@@ -30,12 +32,13 @@ class DL1d:
             self.enc_gamma = deque([0]*100,maxlen)
             self.enc_nmtau1 = deque([0]*100,maxlen)
             self.enc_nmtau2 = deque([0]*100,maxlen)
-        if savelen is None:
-            self.gamma_list = []
-            self.tau_list = []
-        else:
-            self.gamma_list = deque([],savelen)
-            self.tau_list = deque([],savelen)
+        # if savelen is None:
+        self.gamma_list = []
+        self.tau_list = []
+        self.nmtau_list = []
+        # else:
+        #     self.gamma_list = deque([],savelen)
+        #     self.tau_list = deque([],savelen)
         self.gamma = 0.0
         self.tau = 0.0
 
@@ -60,9 +63,11 @@ class DL1d:
 
     def initial_state(self,info_update):
         self.info_dict.update(info_update)
+        pprint(self.info_dict)
         info = np.array([self.info_dict[key] for key in self.f_name])
         self.info_enc = self._encode_info(info)
         self._init_soil()
+        self._init_numerical_models()
 
     def _init_soil(self):
         '''
@@ -83,7 +88,6 @@ class DL1d:
             'alpha': 2.860,
             'beta': 3.229,
         }
-        self._init_numerical_models()
 
     def _init_numerical_models(self):
         self.nm1 = nm.mod_GHE(**self.ghe_param)
@@ -129,6 +133,7 @@ class DL1d:
         self.tau = self._decode_tau(enc_tau[-1])
         self.gamma_list.append(self.gamma)
         self.tau_list.append(self.tau)
+        self.nmtau_list.append((nmtau1+nmtau2)/2)
         return self.tau
 
     def shear_d(self,dgamma):
@@ -197,48 +202,27 @@ class DL1d:
     def plot(self,fname='result/constitution.png'):
         gamma = 100*np.array(self.gamma_list)
         tau = 1/1000*np.array(self.tau_list)
+        nmtau = 1/1000*np.array(self.nmtau_list)
         fig,ax = plt.subplots(figsize=[5,5])
         ax.set_xlabel('gamma [%]')
         ax.set_ylabel('tau [kN/m2]', labelpad=4.0)
-        ax.plot(gamma,tau) #label
+        ax.plot(gamma,tau,label='dl') #label
+        ax.plot(gamma[len(gamma)-len(nmtau):],nmtau,label='nm') #label
+        ax.legend()
         fig.savefig(fname)
         plt.close(fig)
 
 
-class Light_DL1d(DL1d):
-    def __init__(self, info, maxlen=500):
-        '''
-        Args:
-            `info (dict)`: Dictionary that contains material parameters. Keys are 'H', 'P0', 'N', 'G0', 'sand', 'silt', 'clay', 'wL' and 'wP'. The first four are in SI units and the last five are in percent(%).
-        '''
-        self.G0 = info['G0']
-        self.enc_gamma = deque([0]*100,maxlen)
-        self.enc_nmtau1 = deque([0]*100,maxlen)
-        self.enc_nmtau2 = deque([0]*100,maxlen)
-        self.gamma_list = []
-        self.tau_list = []
-        self.gamma = 0.0
-        self.tau = 0.0
-
-        self._init_encode(info)
-        self._init_dl_models()
-        self._init_soil()
-        self._init_numerical_models()
-
-
 class GHE_mix(DL1d):
     def __init__(self,info):
-        self.G0 = info['G0']
+        self.info_dict = info
         self.gamma_list = []
         self.tau_list = []
         self.gamma = 0.0
         self.tau = 0.0
 
-        print(11,info)
-        self._init_encode(info)
+        self._init_encode()
         self._init_dl_models()
-        self._init_soil()
-        self._init_numerical_models()
 
     def _init_dl_models(self):
         self.dl_gr = Net.DL_gr()
@@ -264,9 +248,15 @@ class GHE_mix(DL1d):
         self.tau_list.append(self.tau)
         return self.tau,tau1,tau2
 
-    def plot(self,fname='result/constitution_ghe.png'):
-        pass
-
+    def plot(self,fname='result/constitution.png'):
+        gamma = 100*np.array(self.gamma_list)
+        tau = 1/1000*np.array(self.tau_list)
+        fig,ax = plt.subplots(figsize=[5,5])
+        ax.set_xlabel('gamma [%]')
+        ax.set_ylabel('tau [kN/m2]', labelpad=4.0)
+        ax.plot(gamma,tau,label='dl') #label
+        fig.savefig(fname)
+        plt.close(fig)
 
 if __name__ == "__main__":
     # Using soil 10 of tabdata for an example.
