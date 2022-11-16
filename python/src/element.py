@@ -417,6 +417,9 @@ class Element:
         self.stress = self.eff_stress - np.array([self.excess_pore_pressure,self.excess_pore_pressure,0])
         self.stress_yy = self.eff_stress_yy - self.excess_pore_pressure
 
+        # if self.id == 1:
+        #     print(dstrain[0] + dstrain[1], self.excess_pore_pressure, self.eff_stress[1], self.stress[1])
+
         self.strain = np.copy(strain)
 
         for gp in self.gauss_points:
@@ -433,7 +436,6 @@ class Element:
 
             detJ = gp.w*det
             force += B.T @ gp.stress * detJ
-            # print(gp.stress)
 
         for i in range(self.nnode):
             i0 = self.dof*i

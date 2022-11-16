@@ -269,13 +269,12 @@ class EP:
 # --------------------------------#
 if __name__ == "__main__":
     dof = 2
-    param = [0.33,202,0.97,0.6975,0.957,0.0] # nu, G0, M, e0, eg, d1
-    ep = EP(dof,"ep_Li",param)
-
+    param = [0.33,420,0.97,0.88,0.957,0.41,4.e3] # nu, G0, M, e0, eg, d1
+    ep = EP(dof,"ep_eff_Li",param)
 
     K0 = 0.5
     rho = 1700.0
-    z = 5.0
+    z = 2.0
 
     sx = -rho*9.8*z*K0
     sz = -rho*9.8*z

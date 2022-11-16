@@ -33,17 +33,18 @@ fem.set_output(outputs)
 # H = 2/np.sqrt(c**2+R**2*s**2)
 #
 # amp = 0.3*9.8 / H
-fp = 2.0
-amp = 2.0
+fp = 1.0
+amp = 0.5
 print("Input frequency(Hz):",fp,", Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-# fem.set_rayleigh_damping(fp,10*fp,0.002)
+fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
 fsamp = 5000
-duration = 14.0/fp + 1.0/fp
+# duration = 5.0/fp + 1.0/fp
+duration = 10.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
@@ -93,10 +94,10 @@ for it in range(ntim):
     output_element_strain_xz[it,:] = [element.strain[2] for element in fem.output_elements]
 
     if it%50 == 0:
-        plot_model.plot_mesh_update(ax,fem,20.,margin=1.0)
+        plot_model.plot_mesh_update(ax,fem,10.,margin=1.0)
         # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
         print(it,"t=",it*dt,output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0],output_element_excess_pore_pressure[it,0])
-        # print(it,"t=",it*dt,output_dispx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_excess_pore_pressure[it,0])
+        print(" ",output_element_excess_pore_pressure[it,0],output_element_stress_zz[it,0])
 
 
 elapsed_time = time.time() - start
