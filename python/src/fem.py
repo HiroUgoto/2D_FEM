@@ -267,6 +267,7 @@ class Fem():
 
         for element in self.ep_eff_elements:
             element.calc_eff_stress()
+            # element.eff_stress = [-20.e3,-20.e3,0]    #等方圧密
             # element.ep.initial_state_isotropic(element.eff_stress)
             element.ep.initial_state(element.eff_stress)
             element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()

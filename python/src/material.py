@@ -70,6 +70,11 @@ class Material:
             self.rho_w = 1000.0
             self.Kw = 2.25e9
 
+            e0 = param[4]
+            n0 = e0/(1 + e0)   #初期間隙率
+            self.rho = (1-n0)*param[0] + n0*self.rho_w
+            # print("rho_t:",self.rho)
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:
