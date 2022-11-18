@@ -6,7 +6,7 @@ import io_data
 import input_wave
 import plot_model
 import datetime
-import sys
+import sys,os
 
 from ep_model.DL1d import constitution as DL1d
 
@@ -14,7 +14,6 @@ start = time.time()
 
 ## --- Input FEM Mesh --- ##
 fem = io_data.input_mesh("input/mesh.in")
-# fem = io_data.input_mesh("input/mesh_elastic.in")
 outputs = io_data.input_outputs("input/output.in")
 output_dir = "result/"
 
@@ -24,13 +23,9 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-# fp = 2.0  # Hz
-fp = 0.5  # Hz
-
-amp = 0.1
-# amp = 2.0  # m
-# amp = 1.45
-# amp = 10.0
+# fp = 0.5  # Hz
+fp = 1  # Hz
+amp = 1.0 # m/s
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
@@ -38,20 +33,11 @@ fem.set_ep_initial_state()
 # fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
-# fsamp = 10000
-# fsamp = 2000
-fsamp = 1000
-# fsamp = 500
-duration = 5.0/fp + 1.0/fp
-# duration = 1.0/fp + 1.0/fp
-# duration = 8.0/fp + 1.0/fp
-# duration = 14.0/fp + 1.0/fp
-print('duration,fp',duration,fp)
+fsamp = 2000
+duration = 10.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
-# wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
-# wave_acc = input_wave.simple_sin(tim,fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
 ntim = len(tim)
 
 # plt.figure()
@@ -63,76 +49,48 @@ ax = plot_model.plot_mesh_update_init()
 fem.update_init(dt)
 
 ## Iteration ##
-output_element_stress_xx = np.zeros((ntim,fem.output_nelem))
-output_element_stress_zz = np.zeros((ntim,fem.output_nelem))
-output_element_stress_xz = np.zeros((ntim,fem.output_nelem))
-# output_element_stress_yy = np.zeros((ntim,fem.output_nelem))
-
 output_accx = np.zeros((ntim,fem.output_nnode))
-output_dispx = np.zeros((ntim,fem.output_nnode))
-output_dispz = np.zeros((ntim,fem.output_nnode))
+output_element_strain_xz = np.zeros((ntim,fem.output_nelem))
+output_element_stress_xz = np.zeros((ntim,fem.output_nelem))
 
 acc0 = np.array([0.0,0.0])
 vel0 = np.array([0.0,0.0])
-
 
 for it in range(ntim):
     acc0 = np.array([wave_acc[it],0.0])
     vel0 += acc0*dt
 
     fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
-    # fem.update_time(acc0,self_gravity=True)
 
-    output_accx[it,:] = [node.a[0] for node in fem.output_nodes] + acc0[0]
-    output_dispx[it,:] = [node.u[0] for node in fem.output_nodes]
-    output_dispz[it,:] = [node.u[1] for node in fem.output_nodes]
+    output_accx[it,:] = [node.a[0] for node in fem.output_nodes]
 
-    output_element_stress_xx[it,:] = [element.stress[0] for element in fem.output_elements]
-    output_element_stress_zz[it,:] = [element.stress[1] for element in fem.output_elements]
+    output_element_strain_xz[it,:] = [element.strain[2] for element in fem.output_elements]
     output_element_stress_xz[it,:] = [element.stress[2] for element in fem.output_elements]
-    # output_element_stress_yy[it,:] = [element.stress_yy for element in fem.output_elements]
 
-    # if it%50 == 0:
-    if it%200 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.)
-        # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
-        print(f'{it} t={it*dt:.3f} {output_accx[it,0]} {output_element_stress_xx[it,0]} {output_element_stress_zz[it,0]}')
+    if it%50 == 0:
+        plot_model.plot_mesh_update(ax,fem,10.,margin=2)
+        print(it,"t=",tim[it],output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0])
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
 
-for i,element in enumerate(fem.output_elements):
-    fname = f'result/constitution{i}.png'
-    element.ep.model.plot(fname)
-
-
-# plot_model.plot_mesh_update(ax,fem,100.,fin=True)
+# plot_model.plot_mesh_update(ax,fem,10.,fin=True,margin=0.5)
 
 ## --- Write output file --- ##
 output_line = np.vstack([tim[:ntim],wave_acc[:ntim]]).T
 np.savetxt(output_dir+"input.acc",output_line)
 
-# output_line = np.vstack([tim[:ntim],output_dispx[:,0],output_dispx[:,int(fem.output_nnode//2)]]).T
-# np.savetxt(output_dir+"result.disp",output_line)
-
 output_line = np.vstack([tim[:ntim],output_accx[:,0]]).T
 np.savetxt(output_dir+"result.acc",output_line)
 
-#
-output_line = np.vstack([element.xnT[:,8] for element in fem.output_elements])
-np.savetxt(output_dir+"output_element_list.dat",output_line)
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([tim[:ntim],output_element_strain_xz[:,ielem]])
+np.savetxt(output_dir+"output_element.strain_xz",output_line.T)
 
-# output_line = tim[:ntim]
-# for ielem in range(fem.output_nelem):
-#     output_line = np.vstack([output_line,output_element_stress_xx[:,ielem]])
-# np.savetxt(output_dir+"output_element.stress_xx",output_line.T)
+for ielem in range(fem.output_nelem):
+    output_line = np.vstack([tim[:ntim],output_element_stress_xz[:,ielem]])
+np.savetxt(output_dir+"output_element.stress_xz",output_line.T)
 
-# output_line = tim[:ntim]
-# for ielem in range(fem.output_nelem):
-#     output_line = np.vstack([output_line,output_element_stress_zz[:,ielem]])
-# np.savetxt(output_dir+"output_element.stress_zz",output_line.T)
-
-# output_line = tim[:ntim]
-# for ielem in range(fem.output_nelem):
-#     output_line = np.vstack([output_line,output_element_stress_xz[:,ielem]])
-# np.savetxt(output_dir+"output_element.stress_xz",output_line.T)
+for i,element in enumerate(fem.output_elements):
+    fname = "result/fig/gamma_tau_{:0>2}.png".format(i)
+    element.ep.model.plot(fname)

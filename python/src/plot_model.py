@@ -5,7 +5,7 @@ def plot_mesh(fem,amp=1.0,margin=0.1,margin_bottom=0.1,margin_top=0.25):
     pc = ["gray","yellow","green","pink","lightblue"]
     lc = ["chocolate","darkgreen","darkmagenta","red","blue"]
 
-    fig,ax = plt.subplots(figsize=(12,4))
+    fig,ax = plt.subplots(figsize=(6,6))
 
     x = [node.xyz[0] for node in fem.nodes]
     z = [node.xyz[1] for node in fem.nodes]
@@ -67,7 +67,7 @@ def plot_mesh(fem,amp=1.0,margin=0.1,margin_bottom=0.1,margin_top=0.25):
 
 #--------------------------------------------------------#
 def plot_mesh_update_init():
-    _,ax = plt.subplots(figsize=(12,4))
+    _,ax = plt.subplots(figsize=(6,6))
     ax.set_axisbelow(True)
     return ax
 

@@ -26,7 +26,6 @@ class Fem():
     def set_init(self):
         self._set_mesh()
         self._set_initial_condition()
-        self._set_set()
         self._set_initial_matrix()
 
     # ---------------------------------------
@@ -53,8 +52,6 @@ class Fem():
                         if m.id == element.material_id:
                             material = m
                             break
-                # print(material.style)
-                # print(material.style,material.param)
                 element.set_material(self.dof,material)
                 if "ep_" in material.style:
                     self.ep_elements += [element]
@@ -82,22 +79,7 @@ class Fem():
             element.set_pointer_list()
 
     # ---------------------------------------
-    def _set_set(self):
-        self.node_set = set(self.nodes)
-        self.free_node_set = set(self.free_nodes)
-        self.fixed_node_set = set(self.fixed_nodes)
-
-        self.element_set = set(self.elements)
-        self.input_element_set = set(self.input_elements)
-        self.connected_element_set = set(self.connected_elements)
-
-        self.e_element_set = set(self.e_elements)
-        self.ep_element_set = set(self.ep_elements)
-
-
-    # ---------------------------------------
     def _set_initial_matrix(self):
-        # for element in self.element_set:
         for element in self.elements:
             element.set_xn()
             element.mk_local_matrix_init(self.dof)
@@ -113,9 +95,6 @@ class Fem():
                     node.static_force[i] += element.force[id]
                     id += 1
 
-        # for element in self.ep_elements:
-        #     element.ep_init_all()
-
     # ======================================================================= #
     def set_output(self,outputs):
         output_node_list,output_element_list = outputs
@@ -127,18 +106,13 @@ class Fem():
 
         self.output_nelem = len(output_element_list)
         self.output_elements = [None] * self.output_nelem
-        output_e_elements,output_ep_elements = [],[]
+        self.output_e_elements,self.output_ep_elements = [],[]
         for id,ielem in enumerate(output_element_list):
             self.output_elements[id] = self.elements[ielem]
             if "ep_" in self.elements[ielem].material.style:
-                output_ep_elements += [self.elements[ielem]]
+                self.output_ep_elements += [self.elements[ielem]]
             else:
-                output_e_elements += [self.elements[ielem]]
-
-        self.output_node_set = set(self.output_nodes)
-        self.output_element_set = set(self.output_elements)
-        self.output_e_element_set = set(output_e_elements)
-        self.output_ep_element_set = set(output_ep_elements)
+                self.output_e_elements += [self.elements[ielem]]
 
     # ======================================================================= #
     def set_rayleigh_damping(self,f0,f1,h):
@@ -169,7 +143,7 @@ class Fem():
                 H = node.xyz[1]
 
         g,vp = 9.8,1500.0
-        for node in self.node_set:
+        for node in self.nodes:
             node.u[0] = 0.0
             node.u[1] = g/(2*vp**2) * (H**2 - node.xyz[1]**2)
             node.um = np.copy(node.u)
@@ -177,7 +151,7 @@ class Fem():
         self._self_gravity_cg(full=False)
         self._self_gravity_cg(full=True)
 
-        for node in self.node_set:
+        for node in self.nodes:
             node.u0 = np.copy(node.u)
             node.um = np.copy(node.u)
 
@@ -189,67 +163,67 @@ class Fem():
             id = 1
 
         ### CG Method ###
-        for node in self.node_set:
+        for node in self.nodes:
             node.force = np.zeros(node.dof,dtype=np.float64)
-        for element in self.element_set:
+        for element in self.elements:
             element.mk_ku()
-        for node in self.node_set:
+        for node in self.nodes:
             for i in range(id,node.dof):
                 if node.freedom[i] == 0:
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
-        for element in self.connected_element_set:
+        for element in self.connected_elements:
             u = np.zeros(element.nodes[0].dof,dtype=np.float64)
-            for node in element.node_set:
+            for node in element.nodes:
                 u += node._ur
-            for node in element.node_set:
+            for node in element.nodes:
                 node._ur = u/element.nnode
         for element in self.input_elements:
-            for node in element.node_set:
+            for node in element.nodes:
                 node._ur = np.zeros(element.nodes[0].dof,dtype=np.float64)
-        for node in self.node_set:
+        for node in self.nodes:
             node._up = np.copy(node._ur)
-        for element in self.element_set:
+        for element in self.elements:
             element._up = ()
             for node in element.nodes:
                 element._up += (node._up.view(),)
 
         for it in range(10*self.nnode):
             ## y = Ap
-            for node in self.node_set:
+            for node in self.nodes:
                 node.force = np.zeros(node.dof,dtype=np.float64)
-            for element in self.element_set:
+            for element in self.elements:
                 element.mk_ku_u(element._up)
-            for node in self.node_set:
+            for node in self.nodes:
                 node._uy = node.force
 
             ## correction boundary condition
-            for node in self.node_set:
+            for node in self.nodes:
                 for i in range(id,node.dof):
                     if node.freedom[i] == 0:
                         node._uy[i] = 0.0
-            for element in self.connected_element_set:
+            for element in self.connected_elements:
                 u = np.zeros(element.nodes[0].dof,dtype=np.float64)
-                for node in element.node_set:
+                for node in element.nodes:
                     u += node._uy
-                for node in element.node_set:
+                for node in element.nodes:
                     node._uy = u/element.nnode
             for element in self.input_elements:
-                for node in element.node_set:
+                for node in element.nodes:
                     node._uy = np.zeros(element.nodes[0].dof,dtype=np.float64)
 
 
             ## alpha = rr/py
             rr,py = 0.0,0.0
-            for node in self.node_set:
+            for node in self.nodes:
                 rr += node._ur @ node._ur
                 py += node._up @ node._uy
             alpha = rr/py
 
             ## x = x + alpha*p
             rr1 = 0.0
-            for node in self.node_set:
+            for node in self.nodes:
                 for i in range(id,node.dof):
                     if node.freedom[i] == 0:
                         pass
@@ -264,7 +238,7 @@ class Fem():
 
             ## p = r + beta*p
             beta = rr1/rr
-            for node in self.node_set:
+            for node in self.nodes:
                 for i in range(id,node.dof):
                     if node.freedom[i] == 0:
                         pass
@@ -283,7 +257,7 @@ class Fem():
                 self.self_gravity()
             else:
                 self._self_gravity_cg(full=True)
-                for node in self.node_set:
+                for node in self.nodes:
                     node.u0 = np.copy(node.u)
                     node.um = np.copy(node.u)
 
@@ -291,12 +265,10 @@ class Fem():
                 element.calc_stress()
                 element.ep.initial_state(element.stress)
                 element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
-                # print(np.sqrt(element.material.rmu/element.rho),element.stress)
-                # print(np.sqrt(element.material.rmu/element.rho))
 
             self._set_ep_initial_state_node_clear()
             self._set_initial_matrix()
-            print(self.nodes[0].u[1])
+            # print(self.nodes[0].u[1])
 
             if (u0 - self.nodes[0].u[1])**2 < 1.e-10:
                 break
@@ -308,7 +280,7 @@ class Fem():
 
     # ---------------------------------------
     def _set_ep_initial_state_node_clear(self):
-        for node in self.node_set:
+        for node in self.nodes:
             node.mass = np.zeros(self.dof,dtype=np.float64)
             node.c    = np.zeros(self.dof,dtype=np.float64)
             node.k      = np.zeros(self.dof,dtype=np.float64)
@@ -318,7 +290,7 @@ class Fem():
 
     # ======================================================================= #
     def update_init(self,dt):
-        for node in self.node_set:
+        for node in self.nodes:
             node.inv_mc = 1.0 / (node.mass[:] + 0.5*dt*node.c[:])
             node.mass_inv_mc = node.mass[:]*node.inv_mc[:]
             node.c_inv_mc = node.c[:]*node.inv_mc[:]*0.5*dt
@@ -330,9 +302,9 @@ class Fem():
 
     # ======================================================================= #
     def update_matrix(self):
-        for node in self.node_set:
+        for node in self.nodes:
             self._update_matrix_node_init(node)
-        for element in self.element_set:
+        for element in self.elements:
             self._update_matrix_set_elements(element)
 
     # ---------------------------------------
@@ -365,28 +337,28 @@ class Fem():
             self.update_matrix()
         else:
             if self_gravity:
-                for node in self.node_set:
+                for node in self.nodes:
                     node.dynamic_force = np.copy(node.static_force)
             else:
-                for node in self.node_set:
+                for node in self.nodes:
                     node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
-        for node in self.node_set:
+        for node in self.nodes:
             self._update_time_node_init(node)
 
         if input_wave:
-            for element in self.input_element_set:
+            for element in self.input_elements:
                 self._update_time_input_wave(element,vel0)
         else:
-            for element in self.element_set:
+            for element in self.elements:
                 self._update_bodyforce(element,acc0)
 
         if FD:
-            for element in self.element_set:
+            for element in self.elements:
                 element.mk_B_stress()
                 element.mk_cv()
         else:
-            for element in self.e_element_set:
+            for element in self.e_elements:
                 element.mk_ku_cv()
             for element in self.ep_elements:
                 element.mk_ep_B_stress()
@@ -394,36 +366,36 @@ class Fem():
         # self._multi_update_time_set_nodes_all()
         self._update_time_set_nodes_all()
 
-        for element in self.connected_element_set:
+        for element in self.connected_elements:
             self._update_time_set_connected_elements_(element)
         for element in self.spring_elements:
             self._update_time_set_spring_elements_(element)
 
-        for element in self.output_e_element_set:
+        for element in self.output_e_elements:
             element.calc_stress()
-        for element in self.output_ep_element_set:
+        for element in self.output_ep_elements:
             element.calc_ep_stress()
 
     # ======================================================================= #
     def update_time_input(self,vel0):
-        for node in self.node_set:
+        for node in self.nodes:
             node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
             node.force = np.zeros(self.dof,dtype=np.float64)
 
-        for element in self.input_element_set:
+        for element in self.input_elements:
             self._update_time_input_wave(element,vel0)
 
         self._update_mk_internal_force()
         self._update_time_set_nodes_all()
 
-        for element in self.connected_element_set:
+        for element in self.connected_elements:
             self._update_time_set_connected_elements_(element)
         for element in self.spring_elements:
             self._update_time_set_spring_elements_(element)
 
-        for element in self.output_e_element_set:
+        for element in self.output_e_elements:
             element.calc_stress()
-        for element in self.output_ep_element_set:
+        for element in self.output_ep_elements:
             element.calc_ep_stress()
 
     # ---------------------------------------
@@ -473,10 +445,10 @@ class Fem():
     def _update_time_set_connected_elements_(self,element):
         u = np.zeros_like(element.nodes[0].u)
         a = np.zeros_like(element.nodes[0].a)
-        for node in element.node_set:
+        for node in element.nodes:
             u[:] += node.u[:]
             a[:] += node.a[:]
-        for node in element.node_set:
+        for node in element.nodes:
             node.u[:] = u[:]/element.nnode
             node.a[:] = a[:]/element.nnode
 
@@ -495,7 +467,7 @@ class Fem():
     def _multi_update_time_set_nodes_all(self):
         with concurrent.futures.ProcessPoolExecutor() as executor:
             executor.map(self._update_time_set_free_nodes,self.free_nodes)
-        for node in self.fixed_node_set:
+        for node in self.fixed_nodes:
             self._update_time_set_fixed_nodes(node)
 
     # ======================================================================= #

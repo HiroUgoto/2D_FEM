@@ -29,7 +29,6 @@ class Element:
 
     def set_nodes(self,nodes):
         self.nodes = nodes
-        self.node_set = set(nodes)
 
     def set_material(self,dof,m):
         if m is None:

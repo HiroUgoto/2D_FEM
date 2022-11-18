@@ -188,34 +188,17 @@ class EP:
             self.stress += dstress
             self.strain += dstrain
 
-            # print(self.stress)
-
             ev,gamma = self.model.set_strain_variable(self.strain)
             self.e = self.e0 - ev*(1+self.e0)
-            # print(p,R,gamma)
-
-        # FEMstress = self.matrix_to_FEMstress(self.stress)
-        # FEMstrain = self.matrix_to_FEMstrain(self.strain)
-        # print("strain: ",FEMstrain)
-        # print("stress: ",FEMstress)
-        # print("strain: ",self.strain.diagonal())
-        # print("stress: ",self.stress.diagonal())
 
     # -------------------------------------------------------------------------------------- #
     def set_Dp_matrix(self,FEMdstrain):
         dstrain = self.FEMstrain_to_matrix(FEMdstrain)
-
-        # print(" ")
-
         dstress_vec = np.zeros(6,dtype=np.float64)
         dstress_input = self.vector_to_matrix(dstress_vec)
 
         sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
         ef1,ef2 = self.model.check_unload(sp0)
-
-        # print(ef1,self.model.alpha)
-        # print(ef2,sp0.p,self.model.beta)
-
 
         sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1,ef2=ef2)
         Ep = self.model.plastic_stiffness(sp)
@@ -231,9 +214,6 @@ class EP:
 
         self.strain += dstrain
         self.stress += dstress
-
-        # print(self.strain)
-        # print(self.stress)
 
         Dp = self.modulus_to_Dmatrix(Ep)
         stress_yy = -self.stress[1,1]
@@ -259,9 +239,6 @@ class EP:
         self.strain += dstrain
         self.stress += dstress
 
-        # p_stress,_ = np.linalg.eig(self.stress)
-        # print(np.min(p_stress),np.max(p_stress))
-
         return self.matrix_to_FEMstress(self.stress)
 
 
@@ -286,8 +263,7 @@ class EP_DL1d(EP):
     def elastic_modulus(self,G=None):
         if G is None:
             G = self.G
-        K = self.K
-        rlambda = K-G*2/3
+        rlambda = self.K-G*2/3
         # rlambda = 2*G*self.nu/(1+self.nu)
         return G,rlambda
 
@@ -299,10 +275,9 @@ class EP_DL1d(EP):
         init_stress_vec = self.matrix_to_vector(init_stress_mat)
 
         p = init_stress_vec[:3].mean() * 1e-3  # N -> kN
-        print(f'\t\tp/p0:{p/self.p0}')
+        # print(f'\t\tp/p0:{p/self.p0}')
         self.G = self.G0 * np.sqrt(p/self.p0)
         self.K = 2*self.G*(1+self.nu)/3/(1-2*self.nu)
-        # self.G = self.G0
 
         E_inv = 1/(2*self.G*(1+self.nu))
         nu_by_E = -self.nu*E_inv

@@ -32,13 +32,10 @@ class DL1d:
             self.enc_gamma = deque([0]*100,maxlen)
             self.enc_nmtau1 = deque([0]*100,maxlen)
             self.enc_nmtau2 = deque([0]*100,maxlen)
-        # if savelen is None:
+
         self.gamma_list = []
         self.tau_list = []
         self.nmtau_list = []
-        # else:
-        #     self.gamma_list = deque([],savelen)
-        #     self.tau_list = deque([],savelen)
         self.gamma = 0.0
         self.tau = 0.0
 
@@ -63,7 +60,7 @@ class DL1d:
 
     def initial_state(self,info_update):
         self.info_dict.update(info_update)
-        pprint(self.info_dict)
+        # pprint(self.info_dict)
         info = np.array([self.info_dict[key] for key in self.f_name])
         self.info_enc = self._encode_info(info)
         self._init_soil()
