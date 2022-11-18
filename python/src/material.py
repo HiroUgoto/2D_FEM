@@ -63,6 +63,18 @@ class Material:
             self.rho = param[0]
             self.param = param[1:]
 
+        elif "ep_DL1d" in self.style:
+            self.rho = param[0]
+            nu = param[1]
+
+            if type(param[2]) is dict:
+                info = param[2]
+            else:
+                key = ['H','P0','N','G0','sand','silt','clay','wL','wP']
+                value = [(p if p>=0 else np.nan) for p in param[2:]]
+                info = dict(zip(key,value))
+            self.param = self.rho,nu,info
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:

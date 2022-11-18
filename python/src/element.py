@@ -37,13 +37,16 @@ class Element:
             self.rho = None
         else:
             # self.material = material
+            # print('not ep',m.param)
             self.material = material.Material(m.id,m.style,m.param)
             self.rho = m.rho
 
             if "ep_" in m.style:
-                self.ep = elasto_plastic.EP(dof,m.style,m.param)
+                # print('ep',m.param)
+                self.ep = elasto_plastic.instantiateEP(dof,m.style,m.param)
                 p = 9.8*self.rho
-                self.material.rmu,self.material.rlambda = self.ep.elastic_modulus_ep(self.ep.e0,p)
+                # self.material.rmu,self.material.rlambda = self.ep.elastic_modulus_ep(self.ep.e0,p)
+                self.material.rmu,self.material.rlambda = self.ep.elastic_modulus_ep(None,p)
 
     # ---------------------------------------------------------
     def set_pointer_list(self):
@@ -340,7 +343,7 @@ class Element:
         B = mk_b(self.dof,self.nnode,dnj)
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
-        self.ep.initial_state(self.stress)
+        self.ep.initial_state(self.stress,last=True)
         self.stress_yy = self.stress[0]
 
 
