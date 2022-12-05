@@ -21,9 +21,14 @@ for k in range(len(zg)):
         dofx,dofz = 1,1
         if k == len(zg)-1:
             dofz = 0
+            dofx = 0
+        # if i == 0:
+        #     dofx = 0
+        # if i == len(xg)-1:
+        #     dofx = 0
 
         node[i,k] = inode
-        node_lines += [ "{} {} {} {} {} \n".format(inode,xg[i],zg[k],dofx,dofz)]
+        node_lines += [ "{} {} {} {} {}\n".format(inode,xg[i],zg[k],dofx,dofz)]
         inode += 1
 
 

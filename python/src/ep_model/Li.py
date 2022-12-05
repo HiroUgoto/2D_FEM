@@ -7,8 +7,15 @@ import matplotlib.patches as patches
 class Li2002:
     # Defalt parameters are for Toyoura sand (Li2002)
     def __init__(self,G0=125,nu=0.25,M=1.25,c=0.75,eg=0.934,rlambdac=0.019,xi=0.7, \
-                 d1=0.41,m=3.5,h1=2.3,h2=2.23,h3=2.2,n=1.1, \
-                 d2=1,h4=3.5,a=1,b1=0.005,b2=2,b3=0.01,cohesion=0.0):
+                 d1=0.35,m=3.5,h1=2.5,h2=2.03,h3=2.2,n=1.1, \
+                 d2=0.8,h4=3.5,a=1,b1=0.005,b2=1.6,b3=0.05,cohesion=0.0,e0=False):
+
+        #parameter backup
+        with open("./result/param.txt","w",newline="\n") as f:
+            saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
+            f.write(saveparam)
+            f.close()
+
         # Elastic parameters
         self.G0,self.nu = G0,nu
         # Critical state parameters
@@ -55,14 +62,17 @@ class Li2002:
         self.sqrt2_3 = math.sqrt(2/3)
         self.fn = 2*(1+self.nu)/(3*(1-2*self.nu))
         self.rlambda_coeff = 2*self.nu/(1-2*self.nu)
-        self.G2_coeff = self.fn*self.h4 / (self.h4 + np.sqrt(2/3)*self.fn*self.d2) / self.fn
+        # self.G2_coeff = self.fn*self.h4 / (self.h4 + np.sqrt(2/3)*self.fn*self.d2) / self.fn
+        self.G2_coeff = self.fn*self.h4 / (self.h4 + np.sqrt(2/3)*self.fn*self.d2)
         
         self.g0 = self.c*(1+self.c) / (1+self.c**2)
         self.dg0 = (-self.c**2*(1-self.c)*(1+self.c)**2) / (1+self.c**2)**3
 
         #CUtest
         self.epstress = 0.0
-        self.fL = 0.0
+        self.fL = 1.0
+        self.h = 0.0
+        self.psi = 0.0
     # -------------------------------------------------------------------------------------- #
     class StateParameters:
         def __init__(self,strain,stress,dstrain,dstress,stress_shift,ef1=False,ef2=False):
@@ -186,6 +196,7 @@ class Li2002:
     # -------------------------------------------------------------------------------------- #
     def state_parameter(self,e,p):
         psi = e - (self.eg-self.rlambdac*(max(p+self.stress_shift,self.pmin)/self.pr)**self.xi)  # Eq.(18)
+        self.psi = psi
         return psi
 
     # -------------------------------------------------------------------------------------- #
@@ -297,6 +308,7 @@ class Li2002:
             fL = accumulated_load_index(self.L1)
             r1 = (1.0/rho1_ratio)**10
             h = (self.h1-self.h2*self.e)*(r1+self.h3*fL*(1-r1))
+            self.h = h
             return h
 
         def plastic_modulus1(G,R_bar,g_bar,rho1_ratio,h,psi):    # Eq.(19)
@@ -604,8 +616,8 @@ class Li2002:
                 dstrain_ep,dstress_ep,depstress = self.solve_strain_with_consttain_CU(dstrain_given,dstress_given,Ep,deformation)
             else:
                 dstrain_ep,dstress_ep = self.solve_strain_with_consttain(dstrain_given,dstress_given,Ep,deformation)
-        
-        self.epstress += depstress
+        if CU:
+            self.epstress += depstress
 
         # print("after ef1,ef2",ef1_check,ef2_check)
         # print("p",sp.p,"R",sp.R)
@@ -832,8 +844,10 @@ class Li2002:
         strain_d = []
         epstress_list = []
         epstress_ratio = []
-        stressxx,stressyy,stresszz = [],[],[]
-        stresszz_all = []
+        stressxx,stressyy,stresszz,stresszz_all = [],[],[],[]
+        fL_list,h_list,psi_list = [],[],[]
+        DA_list = []
+        
         flag1,flag2,flag5,flag10 = True,True,True,True
         print("sigma_d=",2*sr*p0/1000,"kPa")
 
@@ -860,117 +874,163 @@ class Li2002:
                 self.strain += dstrain
 
 
-                if i%50==0:
+                # if i%50==0:
                 #     print("stress",self.stress)
                     # print("strain",self.strain)
                     # print("dstress",dstress)
                     # print("strain",dstrain)
-                    print("fL",self.fL)
+                    # print("fL",self.fL)
 
                 ev,gamma = self.set_strain_variable(self.strain)
                 self.e = self.e0 - ev*(1+self.e0)
                 dev_strain = self.strain - ev/3.0 * self.I3
 
                 ###---for plot---###
-                gamma_list += [gamma*100]
-                ev_list += [ev*100] #体積ひずみ
-                p_list += [p/1000]  #平均有効拘束圧
-                q_list += [(self.stress[2,2]-self.stress[0,0])/1000]     #軸差応力
-                stressxx += [self.stress[0,0]/1000]
-                stressyy += [self.stress[1,1]/1000]
-                stresszz += [self.stress[2,2]/1000]
-                stresszz_all += [(self.stress[2,2]+self.epstress+dtau)/1000]    #全応力
-                epstress_list += [self.epstress/1000]   #過剰間隙水圧
+                gamma_list += [gamma]
+                ev_list += [ev] #体積ひずみ
+                p_list += [p]  #平均有効拘束圧
+                q_list += [(self.stress[2,2]-self.stress[0,0])]     #軸差応力
+                stressxx += [self.stress[0,0]]
+                stressyy += [self.stress[1,1]]
+                stresszz += [self.stress[2,2]]
+                stresszz_all += [(self.stress[2,2]+self.epstress+dtau)]    #全応力
+                epstress_list += [self.epstress]   #過剰間隙水圧
                 epstress_ratio += [self.epstress/compression_stress]
-                strain_d += [self.strain[2,2]*100]
+                strain_d += [self.strain[2,2]]
+                fL_list += [self.fL]
+                h_list += [self.h]
+                psi_list += [self.psi]
 
                 # if i==0:
                 #     exit()
             DA = max(strain_d[-nstep:-1]) - min(strain_d[-nstep:-1])    #各サイクルでの軸ひずみ両振幅
-            print("DA",DA)
-            if (1 <= DA < 2) and flag1==True:
+            print("DA",DA*100)
+            DA_list += [DA]
+            if (1 <= DA*100 < 2) and flag1==True:
                 print("1% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
                 flag1=False
-            elif (2 <= DA < 5) and flag2==True:
+            elif (2 <= DA*100 < 5) and flag2==True:
                 print("2% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
                 flag2=False
-            elif (5 <= DA < 10) and flag5==True:
+            elif (5 <= DA*100 < 10) and flag5==True:
                 print("5% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
                 flag5=False
-            elif (10 <= DA) and flag10==True:
+            elif (10 <= DA*100) and flag10==True:
                 print("10% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
                 flag10=False
             # print("strain",self.strain)
             # print("stress",self.stress)
-
         step_list = np.linspace(0,cycle,nstep*ncycle)
+        
+        gamma_list = np.array(gamma_list)
+        ev_list = np.array(ev_list)
+        p_list = np.array(p_list)
+        q_list = np.array(q_list)
+        stressxx = np.array(stressxx)
+        stressyy = np.array(stressyy)
+        stresszz = np.array(stresszz)
+        stresszz_all = np.array(stresszz_all)
+        epstress_list = np.array(epstress_list)
+        strain_d = np.array(strain_d)
+        
+                
+        np.savetxt("./data/step.dat",step_list)
+        np.savetxt("./data/p.dat",p_list)
+        np.savetxt("./data/q.dat",q_list)
+        np.savetxt("./data/ev.dat",ev_list)
+        np.savetxt("./data/epstress.dat",epstress_list)
+        np.savetxt("./data/epstrassratio.dat",epstress_ratio)
+        np.savetxt("./data/strain_d.dat",strain_d)
+        np.savetxt("./data/DA.dat",DA_list)
+        np.savetxt("./data/fL.dat",fL_list)
+        np.savetxt("./data/psi.dat",psi_list)
+        np.savetxt("./data/h.dat",h_list)
+
         if plot:
             plt.figure(figsize=(6,3),tight_layout=True)
             plt.grid()
-            plt.plot(step_list,strain_d)
+            plt.plot(step_list,strain_d*100)
             plt.xlabel("step")
             plt.ylabel("strain_d[%]")
             plt.savefig("./fig/t-strain_d.png")
             plt.cla()
             # plt.show()
-            plt.plot(step_list,q_list)
+            plt.plot(step_list,q_list/1000)
             plt.grid()
             plt.xlabel("step")
             plt.ylabel("q[KPa]")
             plt.savefig("./fig/t-q.png")
             plt.cla()
             # plt.show()
-            plt.plot(p_list,q_list)
+            plt.plot(p_list/1000,q_list/1000)
             plt.grid()
             plt.xlabel("p[kPa]")
             plt.ylabel("q[KPa]")
             plt.savefig("./fig/p-q.png")
             plt.cla()
             # plt.show()
-            plt.plot(strain_d,q_list)
+            plt.plot(strain_d*100,q_list/1000)
             plt.grid()
             plt.xlabel("strain_d[kPa]")
             plt.ylabel("q[KPa]")
             plt.savefig("./fig/strain-q.png")
             plt.cla()
             # plt.show()
-            plt.plot(step_list,ev_list)
+            plt.plot(step_list,ev_list*100)
             plt.grid()
             plt.xlabel("step")
             plt.ylabel("ev[%]")
             plt.savefig("./fig/t-ev.png")
             plt.cla()
             # plt.show()
-            plt.plot(step_list,epstress_list)
+            plt.plot(step_list,epstress_list/1000)
             plt.grid()
             plt.xlabel("step")
             plt.ylabel("epstress[KPa]")
             plt.savefig("./fig/t-epstress.png")
             plt.cla()
             # plt.show()
-            # plt.plot(step_list,epstress_ratio)
-            plt.plot(step_list,np.array(epstress_list)*1000/compression_stress)
+            plt.plot(step_list,epstress_ratio)
             plt.grid()
             plt.xlabel("step")
             plt.ylabel("epstress ratio")
             plt.savefig("./fig/t-epstressratio.png")
             plt.cla()
             # plt.show()
-            plt.plot(step_list,stressxx,label="xx")
-            plt.plot(step_list,stressyy,label="yy",ls=":")
-            plt.plot(step_list,stresszz,label="zz")
-            plt.plot(step_list,stresszz_all,label="zz_all")
+            plt.plot(step_list,stressxx/1000,label="xx")
+            plt.plot(step_list,stressyy/1000,label="yy",ls=":")
+            plt.plot(step_list,stresszz/1000,label="zz")
+            plt.plot(step_list,stresszz_all/1000,label="zz_all")
             plt.grid()
             plt.xlabel("step")
             plt.ylabel("stress")
             plt.legend()
-            plt.savefig("./fig/t-A.png")
+            plt.savefig("./fig/t-stress.png")
+            plt.cla()
+            # plt.show()
+            plt.plot(step_list,fL_list,label="fL")
+            plt.plot(step_list,h_list,label="h")
+            plt.grid()
+            plt.legend()
+            plt.xlabel("step")
+            plt.ylabel("fL,h")
+            plt.savefig("./fig/t-fLh.png")
+            plt.cla()
+            # plt.show()
+            plt.plot(step_list,psi_list,label="psi")
+            plt.grid()
+            plt.legend()
+            plt.xlabel("step")
+            plt.ylabel("psi")
+            plt.savefig("./fig/t-psi.png")
             plt.cla()
 
 
+            
+
 
     # -------------------------------------------------------------------------------------- #
-    def cyclic_pure_shear_test(self,e0,compression_stress,gmax=0.01,cycle=10,print_result=False,plot=False):
+    def cyclic_pure_shear_test(self,e0,compression_stress,gmax=0.01,cycle=30,print_result=False,plot=False):
         def cycle_load(nstep,amp,i):
             tau = amp*np.sin((i+1)/nstep*2*np.pi)
             tau0 = amp*np.sin((i+0)/nstep*2*np.pi)

@@ -8,6 +8,8 @@ import plot_model
 import datetime
 import sys
 
+np.set_printoptions(precision=2,suppress=True)
+
 start = time.time()
 
 ## --- Input FEM Mesh --- ##
@@ -81,6 +83,13 @@ output_accx = np.zeros(fem.output_nnode+1)
 output_dispx = np.zeros(fem.output_nnode+1)
 output_dispz = np.zeros(fem.output_nnode+1)
 
+fL_list = np.zeros(fem.output_nelem+1)
+psi_list = np.zeros(fem.output_nelem+1)
+e_list = np.zeros(fem.output_nelem+1)
+n_list = np.zeros(fem.output_nelem+1)
+h_list = np.zeros(fem.output_nelem+1)
+h12_list = np.zeros(fem.output_nelem+1) #h1-h2*e
+
 with open(output_dir+"disp.x","w") as dispx, \
      open(output_dir+"disp.z","w") as dispz, \
      open(output_dir+"acc.x","w") as accx, \
@@ -91,7 +100,13 @@ with open(output_dir+"disp.x","w") as dispx, \
      open(output_dir+"stresspw","w") as stresspw, \
      open(output_dir+"strainxx","w") as strainxx, \
      open(output_dir+"strainzz","w") as strainzz, \
-     open(output_dir+"strainxz","w") as strainxz:   
+     open(output_dir+"strainxz","w") as strainxz, \
+     open(output_dir+"fL","w") as fL, \
+     open(output_dir+"psi","w") as psi, \
+     open(output_dir+"e","w") as out_e, \
+     open(output_dir+"n","w") as out_n, \
+     open(output_dir+"h12","w") as h12, \
+     open(output_dir+"h","w") as out_h:
 
 
     acc0 = np.zeros([2])
@@ -101,8 +116,9 @@ with open(output_dir+"disp.x","w") as dispx, \
         acc0 = np.array([wave_acc[it],0.0])
         vel0 += acc0*dt
 
-        fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
-        # fem.update_time(acc0,self_gravity=True)
+        # fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
+        # fem.update_time(acc0)
+        fem.update_time(acc0,FD=True)
 
         if it%(fsamp/100) == 0:  #sampling rate 100Hz
             writef(output_accx, accx, tim[it], [node.a[0] for node in fem.output_nodes] + acc0[0])
@@ -117,8 +133,17 @@ with open(output_dir+"disp.x","w") as dispx, \
             writef(output_element_strain_zz, strainzz, tim[it], [element.strain[1] for element in fem.output_elements])
             writef(output_element_strain_xz, strainxz, tim[it], [element.strain[2] for element in fem.output_elements])
 
+            writef(fL_list, fL, tim[it], [element.ep.model.fL for element in fem.output_elements])
+            writef(psi_list, psi, tim[it], [element.ep.model.psi for element in fem.output_elements])
+            writef(e_list, out_e, tim[it], [element.ep.e for element in fem.output_elements])
+            writef(n_list, out_n, tim[it], [element.ep.n for element in fem.output_elements])
+            writef(h_list, out_h, tim[it], [element.ep.model.h for element in fem.output_elements])
+            writef(h12_list, h12, tim[it], [(element.ep.model.h1-element.ep.model.h1*element.ep.e) for element in fem.output_elements])
+            
+
             # plot_model.plot_mesh_update(ax,fem,100.)
-            print("t=",it*dt,output_element_stress_xx[-1],output_element_stress_yy[-1],output_element_stress_zz[-1],output_element_pw[-1])
+            print("t=",np.array([it*dt,output_element_stress_xx[-1],output_element_stress_yy[-1],output_element_stress_zz[-1],output_element_stress_zz[-1]-output_element_pw[-1],output_element_pw[-1]]))
+
 
 
     elapsed_time = time.time() - start
@@ -130,5 +155,3 @@ with open(output_dir+"disp.x","w") as dispx, \
     ## --- Write output file --- ##
     # output_line = np.vstack([element.xnT[:,8] for element in fem.output_elements])
     # np.savetxt(output_dir+"output_element_list.dat",output_line)
-
-    a = 100
