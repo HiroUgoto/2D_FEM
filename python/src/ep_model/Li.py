@@ -847,6 +847,7 @@ class Li2002:
         stressxx,stressyy,stresszz,stresszz_all = [],[],[],[]
         fL_list,h_list,psi_list = [],[],[]
         DA_list = []
+        h1_list = []
         
         flag1,flag2,flag5,flag10 = True,True,True,True
         print("sigma_d=",2*sr*p0/1000,"kPa")
@@ -900,6 +901,7 @@ class Li2002:
                 fL_list += [self.fL]
                 h_list += [self.h]
                 psi_list += [self.psi]
+                h1_list += [self.h1-self.h2*self.e]
 
                 # if i==0:
                 #     exit()
@@ -932,6 +934,7 @@ class Li2002:
         stresszz_all = np.array(stresszz_all)
         epstress_list = np.array(epstress_list)
         strain_d = np.array(strain_d)
+        h1_list =  np.array(h1_list)
         
                 
         np.savetxt("./data/step.dat",step_list)
@@ -945,6 +948,7 @@ class Li2002:
         np.savetxt("./data/fL.dat",fL_list)
         np.savetxt("./data/psi.dat",psi_list)
         np.savetxt("./data/h.dat",h_list)
+        np.savetxt("./data/h1.dat",h1_list)
 
         if plot:
             plt.figure(figsize=(6,3),tight_layout=True)
@@ -1181,7 +1185,12 @@ if __name__ == "__main__":
                  d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=1.8,n=1.1, \
                  d2=1,h4=3.5,a=1,b1=0.01,b2=2.0,b3=0.02,cohesion=0.0)
     compression_stress = 70e3
-    Li_model.cyclic_shear_test_CU(0.7,compression_stress,sr=0.25,cycle=30,print_result=True,plot=True)
+    Li_model.cyclic_shear_test_CU(0.7,compression_stress,sr=0.25,cycle=30,print_result=True,plot=False)
+    #parameter backup
+    with open("./data/param.txt","w",newline="\n") as f:
+        saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(Li_model.G0,Li_model.nu,Li_model.M,Li_model.c,Li_model.eg,Li_model.rlambdac,Li_model.xi,Li_model.d1,Li_model.m,Li_model.h1,Li_model.h2,Li_model.h3,Li_model.n,Li_model.d2,Li_model.h4,Li_model.a,Li_model.b1,Li_model.b2,Li_model.b3,Li_model.cohesion,Li_model.e0)
+        f.write(saveparam)
+        f.close()
     exit()
 
     Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.41,cohesion=0.e3)
