@@ -7,8 +7,8 @@ import matplotlib.patches as patches
 class Li2002:
     # Defalt parameters are for Toyoura sand (Li2002)
     def __init__(self,G0=125,nu=0.25,M=1.25,c=0.75,eg=0.934,rlambdac=0.019,xi=0.7, \
-                 d1=0.35,m=3.5,h1=2.5,h2=2.03,h3=2.2,n=1.1, \
-                 d2=0.8,h4=3.5,a=1,b1=0.005,b2=1.6,b3=0.05,cohesion=0.0,e0=False):
+                 d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=2.2,n=1.1, \
+                 d2=1.0,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.01,cohesion=0.0,e0=False):
 
         #parameter backup
         with open("./result/param.txt","w",newline="\n") as f:

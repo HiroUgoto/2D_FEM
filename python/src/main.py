@@ -82,6 +82,8 @@ output_element_pw = np.zeros(fem.output_nelem+1)
 output_accx = np.zeros(fem.output_nnode+1)
 output_dispx = np.zeros(fem.output_nnode+1)
 output_dispz = np.zeros(fem.output_nnode+1)
+output_velx = np.zeros(fem.output_nnode+1)
+output_velz = np.zeros(fem.output_nnode+1)
 
 fL_list = np.zeros(fem.output_nelem+1)
 psi_list = np.zeros(fem.output_nelem+1)
@@ -92,15 +94,17 @@ h12_list = np.zeros(fem.output_nelem+1) #h1-h2*e
 
 with open(output_dir+"disp.x","w") as dispx, \
      open(output_dir+"disp.z","w") as dispz, \
+     open(output_dir+"vel.x","w") as velx, \
+     open(output_dir+"vel.z","w") as velz, \
      open(output_dir+"acc.x","w") as accx, \
      open(output_dir+"stressxx","w") as stressxx, \
      open(output_dir+"stresszz","w") as stresszz, \
      open(output_dir+"stressxz","w") as stressxz, \
-     open(output_dir+"stressyy","w") as stressyy, \
-     open(output_dir+"stresspw","w") as stresspw, \
      open(output_dir+"strainxx","w") as strainxx, \
      open(output_dir+"strainzz","w") as strainzz, \
      open(output_dir+"strainxz","w") as strainxz, \
+     open(output_dir+"stressyy","w") as stressyy, \
+     open(output_dir+"stresspw","w") as stresspw, \
      open(output_dir+"fL","w") as fL, \
      open(output_dir+"psi","w") as psi, \
      open(output_dir+"e","w") as out_e, \
@@ -117,21 +121,23 @@ with open(output_dir+"disp.x","w") as dispx, \
         vel0 += acc0*dt
 
         # fem.update_time(acc0,vel0,input_wave=True,self_gravity=True)
-        # fem.update_time(acc0)
-        fem.update_time(acc0,FD=True)
+        fem.update_time(acc0)
+        # fem.update_time(acc0,FD=True)
 
         if it%(fsamp/100) == 0:  #sampling rate 100Hz
             writef(output_accx, accx, tim[it], [node.a[0] for node in fem.output_nodes] + acc0[0])
             writef(output_dispx, dispx, tim[it], [node.u[0] for node in fem.output_nodes])
             writef(output_dispz, dispz, tim[it], [node.u[1] for node in fem.output_nodes])
+            writef(output_velx, velx, tim[it], [node.v[0] for node in fem.output_nodes])
+            writef(output_velz, velz, tim[it], [node.v[1] for node in fem.output_nodes])
             writef(output_element_stress_xx, stressxx, tim[it], [element.eff_stress[0] for element in fem.output_elements])
             writef(output_element_stress_zz, stresszz, tim[it], [element.eff_stress[1] for element in fem.output_elements])
             writef(output_element_stress_xz, stressxz, tim[it], [element.eff_stress[2] for element in fem.output_elements])
-            writef(output_element_stress_yy, stressyy, tim[it], [element.eff_stress_yy for element in fem.output_elements])
-            writef(output_element_pw, stresspw, tim[it], [element.excess_pore_pressure for element in fem.output_elements])
             writef(output_element_strain_xx, strainxx, tim[it], [element.strain[0] for element in fem.output_elements])
             writef(output_element_strain_zz, strainzz, tim[it], [element.strain[1] for element in fem.output_elements])
             writef(output_element_strain_xz, strainxz, tim[it], [element.strain[2] for element in fem.output_elements])
+            writef(output_element_stress_yy, stressyy, tim[it], [element.eff_stress_yy for element in fem.output_elements])
+            writef(output_element_pw, stresspw, tim[it], [element.excess_pore_pressure for element in fem.output_elements])
 
             writef(fL_list, fL, tim[it], [element.ep.model.fL for element in fem.output_elements])
             writef(psi_list, psi, tim[it], [element.ep.model.psi for element in fem.output_elements])
