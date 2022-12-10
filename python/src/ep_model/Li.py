@@ -839,16 +839,15 @@ class Li2002:
 
         sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.stress_shift)
 
-        gamma_list,ev_list = [],[]
+        gamma_list,ev_list,tau_list,ep_list = [],[],[],[]
         p_list,q_list = [],[]
-        strain_d = []
-        epstress_list = []
-        epstress_ratio = []
+        strain_d, DA_list = [],[]
+        epstress_list, epstress_ratio = [],[]
         stressxx,stressyy,stresszz,stresszz_all = [],[],[],[]
         fL_list,h_list,psi_list = [],[],[]
-        DA_list = []
-        h1_list = []
-        
+        h1_h2e_list, e_list = [],[]
+        H1_list, H2_list, L1_list = [],[],[]
+
         flag1,flag2,flag5,flag10 = True,True,True,True
         print("sigma_d=",2*sr*p0/1000,"kPa")
 
@@ -887,7 +886,9 @@ class Li2002:
                 dev_strain = self.strain - ev/3.0 * self.I3
 
                 ###---for plot---###
+                ep_list += [self.strain[2,2]]
                 gamma_list += [gamma]
+                tau_list += [self.stress[0,2]]
                 ev_list += [ev] #体積ひずみ
                 p_list += [p]  #平均有効拘束圧
                 q_list += [(self.stress[2,2]-self.stress[0,0])]     #軸差応力
@@ -901,7 +902,11 @@ class Li2002:
                 fL_list += [self.fL]
                 h_list += [self.h]
                 psi_list += [self.psi]
-                h1_list += [self.h1-self.h2*self.e]
+                h1_h2e_list += [self.h1-self.h2*self.e]
+                e_list += [self.e]
+                H1_list += [self.H1]
+                H2_list += [self.H2]
+                L1_list += [self.L1]
 
                 # if i==0:
                 #     exit()
@@ -925,6 +930,7 @@ class Li2002:
         step_list = np.linspace(0,cycle,nstep*ncycle)
         
         gamma_list = np.array(gamma_list)
+        tau_list = np.array(tau_list)
         ev_list = np.array(ev_list)
         p_list = np.array(p_list)
         q_list = np.array(q_list)
@@ -933,101 +939,54 @@ class Li2002:
         stresszz = np.array(stresszz)
         stresszz_all = np.array(stresszz_all)
         epstress_list = np.array(epstress_list)
+        epstress_ratio = np.array(epstress_ratio)
         strain_d = np.array(strain_d)
-        h1_list =  np.array(h1_list)
+        DA_list = np.array(DA_list)
+        fL_list =  np.array(fL_list)
+        h_list =  np.array(h_list)
+        psi_list =  np.array(psi_list)
+        h1_h2e_list =  np.array(h1_h2e_list)
+        e_list =  np.array(e_list)
+        H1_list =  np.array(H1_list)
+        H2_list =  np.array(H2_list)
+        L1_list =  np.array(L1_list)
         
                 
-        np.savetxt("./data/step.dat",step_list)
-        np.savetxt("./data/p.dat",p_list)
-        np.savetxt("./data/q.dat",q_list)
-        np.savetxt("./data/ev.dat",ev_list)
-        np.savetxt("./data/epstress.dat",epstress_list)
-        np.savetxt("./data/epstrassratio.dat",epstress_ratio)
-        np.savetxt("./data/strain_d.dat",strain_d)
-        np.savetxt("./data/DA.dat",DA_list)
-        np.savetxt("./data/fL.dat",fL_list)
-        np.savetxt("./data/psi.dat",psi_list)
-        np.savetxt("./data/h.dat",h_list)
-        np.savetxt("./data/h1.dat",h1_list)
+        np.savetxt("./result/step.dat",step_list)
+        np.savetxt("./result/gamma.dat",gamma_list)
+        np.savetxt("./result/tau.dat",tau_list)
+        np.savetxt("./result/ev.dat",ev_list)
+        np.savetxt("./result/p.dat",p_list)
+        np.savetxt("./result/q.dat",q_list)
+        np.savetxt("./result/stressxx.dat",stressxx)
+        np.savetxt("./result/stressyy.dat",stressyy)
+        np.savetxt("./result/stresszz.dat",stresszz)
+        np.savetxt("./result/stresszz_all.dat",stresszz_all)
+        np.savetxt("./result/epstress.dat",epstress_list)
+        np.savetxt("./result/epstrassratio.dat",epstress_ratio)
+        np.savetxt("./result/strain_d.dat",strain_d)
+        np.savetxt("./result/DA.dat",DA_list)
+        np.savetxt("./result/fL.dat",fL_list)
+        np.savetxt("./result/h.dat",h_list)
+        np.savetxt("./result/psi.dat",psi_list)
+        np.savetxt("./result/h1-h2e.dat",h1_h2e_list)
+        np.savetxt("./result/e.dat",e_list)
+        np.savetxt("./result/H1.dat",H1_list)
+        np.savetxt("./result/H2.dat",H2_list)
+        np.savetxt("./result/L1.dat",L1_list)
 
         if plot:
-            plt.figure(figsize=(6,3),tight_layout=True)
-            plt.grid()
-            plt.plot(step_list,strain_d*100)
-            plt.xlabel("step")
-            plt.ylabel("strain_d[%]")
-            plt.savefig("./fig/t-strain_d.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,q_list/1000)
-            plt.grid()
-            plt.xlabel("step")
-            plt.ylabel("q[KPa]")
-            plt.savefig("./fig/t-q.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(p_list/1000,q_list/1000)
-            plt.grid()
-            plt.xlabel("p[kPa]")
-            plt.ylabel("q[KPa]")
-            plt.savefig("./fig/p-q.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(strain_d*100,q_list/1000)
-            plt.grid()
-            plt.xlabel("strain_d[kPa]")
-            plt.ylabel("q[KPa]")
-            plt.savefig("./fig/strain-q.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,ev_list*100)
-            plt.grid()
-            plt.xlabel("step")
-            plt.ylabel("ev[%]")
-            plt.savefig("./fig/t-ev.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,epstress_list/1000)
-            plt.grid()
-            plt.xlabel("step")
-            plt.ylabel("epstress[KPa]")
-            plt.savefig("./fig/t-epstress.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,epstress_ratio)
-            plt.grid()
-            plt.xlabel("step")
-            plt.ylabel("epstress ratio")
-            plt.savefig("./fig/t-epstressratio.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,stressxx/1000,label="xx")
-            plt.plot(step_list,stressyy/1000,label="yy",ls=":")
-            plt.plot(step_list,stresszz/1000,label="zz")
-            plt.plot(step_list,stresszz_all/1000,label="zz_all")
-            plt.grid()
-            plt.xlabel("step")
-            plt.ylabel("stress")
-            plt.legend()
-            plt.savefig("./fig/t-stress.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,fL_list,label="fL")
-            plt.plot(step_list,h_list,label="h")
-            plt.grid()
-            plt.legend()
-            plt.xlabel("step")
-            plt.ylabel("fL,h")
-            plt.savefig("./fig/t-fLh.png")
-            plt.cla()
-            # plt.show()
-            plt.plot(step_list,psi_list,label="psi")
-            plt.grid()
-            plt.legend()
-            plt.xlabel("step")
-            plt.ylabel("psi")
-            plt.savefig("./fig/t-psi.png")
-            plt.cla()
+            plt.figure()
+            plt.plot(gamma_list,tau_list)
+            plt.xlabel("gamma")
+            plt.ylabel("tau")
+            plt.show()
+            plt.plot(p_list,tau_list)
+            plt.xlabel("p")
+            plt.ylabel("tau")
+            plt.show()
+            plt.plot(gamma_list,ep_list)
+            plt.show()
 
 
             
@@ -1180,17 +1139,12 @@ if __name__ == "__main__":
     # compression_stress = 40.e3
     # Li_model.cyclic_pure_shear_test(e0,compression_stress,gmax=0.01,cycle=20,print_result=True,plot=True)
     # exit()
-
-    Li_model = Li2002(G0=110,nu=0.33,M=1.61,c=0.75,eg=0.99,rlambdac=0.0019,xi=0.7, \
-                 d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=1.8,n=1.1, \
-                 d2=1,h4=3.5,a=1,b1=0.01,b2=2.0,b3=0.02,cohesion=0.0)
+    e0 = 0.85
+    Li_model = Li2002(G0=60,nu=0.33,M=1.61,c=0.75,eg=0.99,rlambdac=0.0019,xi=0.7, \
+                 d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=2.2,n=1.1, \
+                 d2=1,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.05,cohesion=0.0,e0=e0)
     compression_stress = 70e3
-    Li_model.cyclic_shear_test_CU(0.7,compression_stress,sr=0.25,cycle=30,print_result=True,plot=False)
-    #parameter backup
-    with open("./data/param.txt","w",newline="\n") as f:
-        saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(Li_model.G0,Li_model.nu,Li_model.M,Li_model.c,Li_model.eg,Li_model.rlambdac,Li_model.xi,Li_model.d1,Li_model.m,Li_model.h1,Li_model.h2,Li_model.h3,Li_model.n,Li_model.d2,Li_model.h4,Li_model.a,Li_model.b1,Li_model.b2,Li_model.b3,Li_model.cohesion,Li_model.e0)
-        f.write(saveparam)
-        f.close()
+    Li_model.cyclic_shear_test_CU(e0,compression_stress,sr=0.25,cycle=30,print_result=True,plot=False)
     exit()
 
     Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.41,cohesion=0.e3)
