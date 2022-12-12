@@ -1,10 +1,10 @@
 import numpy as np
 import os,sys
 
-area_x = 4.0
+area_x = 20.0
 area_z = 4.0
 
-nx = 1
+nx = 5
 nz = 1
 dof = 2
 
@@ -33,7 +33,10 @@ element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        im = 1
+        if 1 <= i <= 3:
+            im = 1
+        else:
+            im = 2
 
         n0,n1,n2,n3 = node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2]
         n4,n5,n6,n7 = node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1]
@@ -95,7 +98,8 @@ output_element_lines = []
 ielem = 0
 for k in range(nz):
     for i in range(nx):
-        output_element_lines += ["{} \n".format(ielem)]
+        if 1 <= i <= 3:
+            output_element_lines += ["{} \n".format(ielem)]
         ielem += 1
 
 output_nnode = len(output_node_lines)

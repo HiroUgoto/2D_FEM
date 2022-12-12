@@ -33,8 +33,8 @@ fem.set_output(outputs)
 # H = 2/np.sqrt(c**2+R**2*s**2)
 #
 # amp = 0.3*9.8 / H
-fp = 1.0
-amp = 0.5
+fp = 2.0
+amp = 1.0
 print("Input frequency(Hz):",fp,", Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
@@ -93,11 +93,12 @@ for it in range(ntim):
 
     output_element_strain_xz[it,:] = [element.strain[2] for element in fem.output_elements]
 
-    if it%50 == 0:
-        plot_model.plot_mesh_update(ax,fem,10.,margin=1.0)
-        # print(it,"t=",it*dt,output_accx[it,0],output_element_stress_xx[it,0],output_element_stress_zz[it,0],output_element_stress_yy[it,0])
-        print(it,"t=",it*dt,output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0],output_element_excess_pore_pressure[it,0])
-        print(" ",output_element_excess_pore_pressure[it,0],output_element_stress_zz[it,0])
+    if it%100 == 0:
+        plot_model.plot_mesh_update(ax,fem,10.,margin=0.1)
+        # print(it,"t=",it*dt,output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0],output_element_excess_pore_pressure[it,0])
+        # print(" ",output_element_stress_xx[it,0],output_element_stress_zz[it,0])
+        print(it,"t=",it*dt,output_accx[it,5],output_element_strain_xz[it,1],output_element_stress_xz[it,1])
+        print(" ",output_element_stress_xx[it,1],output_element_stress_zz[it,1],output_element_excess_pore_pressure[it,1])
 
 
 elapsed_time = time.time() - start
