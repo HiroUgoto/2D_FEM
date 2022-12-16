@@ -428,8 +428,10 @@ class Element:
         self.stress = self.eff_stress - np.array([self.excess_pore_pressure,self.excess_pore_pressure,0])
         self.stress_yy = self.eff_stress_yy - self.excess_pore_pressure
 
-        # if self.id == 1:
-        #     print(dstrain[0] + dstrain[1], self.excess_pore_pressure, self.eff_stress[1], self.stress[1])
+
+        # p = (self.stress[0] + self.stress[1] + self.stress_yy)/3.0
+        # eff_p = (self.eff_stress[0] + self.eff_stress[1] + self.eff_stress_yy)/3.0
+        # print(p,eff_p,self.excess_pore_pressure)
 
         self.strain = np.copy(strain)
 

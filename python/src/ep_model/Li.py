@@ -64,7 +64,7 @@ class Li2002:
         self.rlambda_coeff = 2*self.nu/(1-2*self.nu)
         # self.G2_coeff = self.fn*self.h4 / (self.h4 + np.sqrt(2/3)*self.fn*self.d2) / self.fn
         self.G2_coeff = self.fn*self.h4 / (self.h4 + np.sqrt(2/3)*self.fn*self.d2)
-        
+
         self.g0 = self.c*(1+self.c) / (1+self.c**2)
         self.dg0 = (-self.c**2*(1-self.c)*(1+self.c)**2) / (1+self.c**2)**3
 
@@ -75,11 +75,12 @@ class Li2002:
         self.psi = 0.0
     # -------------------------------------------------------------------------------------- #
     class StateParameters:
-        def __init__(self,strain,stress,dstrain,dstress,stress_shift,ef1=False,ef2=False):
+        def __init__(self,strain,stress,dstrain,dstress,stress_shift,pore_pressure=0.0,ef1=False,ef2=False):
             self.strain = np.copy(strain)
             self.stress = np.copy(stress)
             self.dstress = np.copy(dstress)
             self.dstrain = np.copy(dstrain)
+            self.pore_pressure = pore_pressure
             self.pmin = 1.0
 
             self.set_stress_variable(stress_shift)
@@ -536,7 +537,7 @@ class Li2002:
         strain_mat = np.reshape(x,(3,3))
         return strain_mat
 
-    def solve_strain_with_consttain(self,strain_given,stress_given,E,deformation):
+    def solve_strain_with_constrain(self,strain_given,stress_given,E,deformation):
         # deformation: True => deform (stress given), False => constrain (strain given)
         d = deformation.flatten()
         A = np.reshape(E,(9,9))
@@ -556,12 +557,12 @@ class Li2002:
         stress = np.dot(A,strain)
         return np.reshape(strain,(3,3)), np.reshape(stress,(3,3))
 
-    def solve_strain_with_consttain_CU(self,strain_given,stress_given,E,deformation):
+    def solve_strain_with_constrain_CU(self,strain_given,stress_given,E,deformation):
         # deformation: True => deform (stress given), False => constrain (strain given)
         n = self.e/(1+self.e)
         Kw = 2.19e9
         Eeps = Kw / n*self.Dijkl
-        
+
         d = deformation.flatten()
         A = np.reshape(E+Eeps,(9,9))
 
@@ -584,57 +585,71 @@ class Li2002:
         depstress = Kw/n*(strain[0]+strain[4]+strain[8])
         stress -= depstress*np.array([1,0,0,0,1,0,0,0,1])
 
-        return np.reshape(strain,(3,3)), np.reshape(stress,(3,3)),depstress
+        return np.reshape(strain,(3,3)), np.reshape(stress,(3,3)), depstress
 
     # -------------------------------------------------------------------------------------- #
     def elastic_deformation(self,dstrain,dstress,Ge,deformation):
         Ee = self.elastic_stiffness(Ge)
-        dstrain_elastic,dstress_elastic = self.solve_strain_with_consttain(dstrain,dstress,Ee,deformation)
+        dstrain_elastic,dstress_elastic = self.solve_strain_with_constrain(dstrain,dstress,Ee,deformation)
         return dstrain_elastic,dstress_elastic
 
-    def plastic_deformation(self,dstrain_given,dstress_given,deformation,sp0,CU=False):
+    def plastic_deformation(self,dstrain_given,dstress_given,deformation,sp0,pore_dpressure=0.0,CU=False):
+        # sp0 :            stress state defined by EFFECTIVE stress
+        # dstress_given :  TOTAL stress
+
+        # extract stress state from sp0
         ef1,ef2 = self.check_unload(sp0)
-        strain,stress = sp0.strain,sp0.stress
+        strain,eff_stress = sp0.strain,sp0.stress
+        pore_pressure     = sp0.pore_pressure
+        eff_p = np.trace(eff_stress)/3.0
 
-        p = np.trace(stress)/3
-        # print("p",p)
-        # print("ef1,ef2",ef1,ef2)
-
-        sp = self.StateParameters(strain,stress,dstrain_given,dstress_given,self.stress_shift,ef1=ef1,ef2=ef2)
+        # set elasto-plastic tensor in dry condition
+        eff_dstress_given = dstress_given - pore_dpressure*np.eye(3)
+        sp = self.StateParameters(strain,eff_stress,dstrain_given,eff_dstress_given,self.stress_shift,ef1=ef1,ef2=ef2)
         Ep = self.plastic_stiffness(sp)
-        if CU:
-            dstrain_ep,dstress_ep,depstress = self.solve_strain_with_consttain_CU(dstrain_given,dstress_given,Ep,deformation)
-        else:
-            dstrain_ep,dstress_ep = self.solve_strain_with_consttain(dstrain_given,dstress_given,Ep,deformation)
 
-        sp_check = self.StateParameters(strain,stress,dstrain_ep,dstress_ep,self.stress_shift,ef1=ef1,ef2=ef2)
+        # set Ep tensor in CU condition
+        if CU:
+            n = self.e/(1+self.e)
+            Kw = 2.19e9
+            Eeps = Kw / n*self.Dijkl
+            Ep += Eeps
+
+        # solve strain and stress increment under the given boundary condition (deformation)
+        dstrain_ep,dstress_ep = self.solve_strain_with_constrain(dstrain_given,dstress_given,Ep,deformation)
+        if CU:
+            pore_dpressure = Kw / n*np.trace(dstrain_ep)
+        eff_dstress_ep = dstress_ep - pore_dpressure*np.eye(3)
+
+        # check loading or unloading
+        sp_check = self.StateParameters(strain,eff_stress,dstrain_ep,eff_dstress_ep,self.stress_shift,ef1=ef1,ef2=ef2)
         ef1_check,ef2_check = self.check_unload(sp_check)
+
         if (ef1 != ef1_check) or (ef2 != ef2_check):
-            sp = self.StateParameters(strain,stress,dstrain_given,dstress_given,self.stress_shift,ef1=ef1_check,ef2=ef2_check)
+            eff_dstress_given = dstress_given - pore_dpressure*np.eye(3)
+            sp = self.StateParameters(strain,eff_stress,dstrain_given,eff_dstress_given,self.stress_shift,ef1=ef1_check,ef2=ef2_check)
             Ep = self.plastic_stiffness(sp)
             if CU:
-                dstrain_ep,dstress_ep,depstress = self.solve_strain_with_consttain_CU(dstrain_given,dstress_given,Ep,deformation)
-            else:
-                dstrain_ep,dstress_ep = self.solve_strain_with_consttain(dstrain_given,dstress_given,Ep,deformation)
-        if CU:
-            self.epstress += depstress
+                Ep += Eeps
+            dstrain_ep,dstress_ep = self.solve_strain_with_constrain(dstrain_given,dstress_given,Ep,deformation)
+            if CU:
+                pore_dpressure = Kw / n*np.trace(dstrain_ep)
+            eff_dstress_ep = dstress_ep - pore_dpressure*np.eye(3)
 
-        # print("after ef1,ef2",ef1_check,ef2_check)
-        # print("p",sp.p,"R",sp.R)
+        eff_stress_p = eff_stress + eff_dstress_ep
+        eff_p_p = np.trace(eff_stress_p)/3
+        if eff_p_p + self.stress_shift < self.pmin:
+            eff_p_correction = eff_p_p - (self.pmin-self.stress_shift)
+            eff_dstress_ep += -eff_p_correction*np.eye(3)
+            pore_dpressure += eff_p_correction
 
-        stress_p = stress + dstress_ep
-        p_p = np.trace(stress_p)/3
-        if p_p + self.stress_shift < self.pmin:
-            p_correction = p_p - (self.pmin-self.stress_shift)
-            dstress_ep += -p_correction*np.eye(3)
-            # print("pp",p_p)
+        pore_pressure = sp0.pore_pressure + pore_dpressure
 
-        sp2 = self.StateParameters(strain,stress,dstrain_ep,dstress_ep,self.stress_shift,ef1=ef1,ef2=ef2)
+        sp2 = self.StateParameters(strain,eff_stress,dstrain_ep,eff_dstress_ep,self.stress_shift,pore_pressure,ef1=ef1_check,ef2=ef2_check)
         self.update_parameters(sp2)
 
         dstrain = np.copy(dstrain_ep)
         dstress = np.copy(dstress_ep)
-
 
         return dstrain,dstress,sp2
 
@@ -833,7 +848,7 @@ class Li2002:
 
         dstress_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
         dstress_input = self.vector_to_matrix(dstress_vec)
-# 
+#
         deformation_vec = np.array([True,True,True,True,True,True],dtype=bool)
         deformation = self.vector_to_matrix(deformation_vec)
 
@@ -851,6 +866,11 @@ class Li2002:
         flag1,flag2,flag5,flag10 = True,True,True,True
         print("sigma_d=",2*sr*p0/1000,"kPa")
 
+        # init effective stress
+        self.eff_stress = np.copy(self.stress)
+        self.pore_pressure = 0.0
+        self.pore_dpressure = 0.0
+
         for ic in range(ncycle):
             print("###--------------------###")
             print("+ N :",ic+1)
@@ -864,15 +884,33 @@ class Li2002:
                 # dstress_vec = np.array([-eps,-eps,dtau-eps,0.0,0.0,0.0])
                 dstress_input = self.vector_to_matrix(dstress_vec)
 
-                sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.stress_shift)
+                # set effective stress
+                pore_dpressure = self.pore_dpressure
+                eff_dstress_input = dstress_input - pore_dpressure*np.eye(3)
 
-                p,R = self.set_stress_variable(self.stress)
+                # sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.stress_shift)
+                sp = self.StateParameters(self.strain,self.eff_stress,sp0.dstrain,eff_dstress_input,self.stress_shift,self.pore_pressure)
+
+                # p,R = self.set_stress_variable(self.stress)
+                eff_p,R = self.set_stress_variable(self.eff_stress)
+
+                # dstress: total stress
                 dstrain,dstress,sp0 = \
-                    self.plastic_deformation(dstrain_input,dstress_input,deformation,sp,CU=True)
+                    self.plastic_deformation(dstrain_input,dstress_input,deformation,sp,pore_dpressure,CU=True)
 
                 self.stress += dstress
                 self.strain += dstrain
 
+                self.pore_dpressure = sp0.pore_pressure - self.pore_pressure
+                self.pore_pressure = sp0.pore_pressure
+                self.eff_stress = self.stress - self.pore_pressure*np.eye(3)
+                eff_p = np.trace(self.eff_stress)/3.0
+                p = np.trace(self.stress)/3.0
+
+                # print("")
+                # print(eff_p,self.eff_stress[2,2]-self.eff_stress[0,0],self.pore_pressure)
+                # print(" stress:",self.stress.diagonal())
+                # print(" eff_stress:",self.eff_stress.diagonal())
 
                 # if i%50==0:
                 #     print("stress",self.stress)
@@ -890,14 +928,14 @@ class Li2002:
                 gamma_list += [gamma]
                 tau_list += [self.stress[0,2]]
                 ev_list += [ev] #体積ひずみ
-                p_list += [p]  #平均有効拘束圧
-                q_list += [(self.stress[2,2]-self.stress[0,0])]     #軸差応力
-                stressxx += [self.stress[0,0]]
-                stressyy += [self.stress[1,1]]
-                stresszz += [self.stress[2,2]]
-                stresszz_all += [(self.stress[2,2]+self.epstress+dtau)]    #全応力
-                epstress_list += [self.epstress]   #過剰間隙水圧
-                epstress_ratio += [self.epstress/compression_stress]
+                p_list += [eff_p]  #平均有効拘束圧
+                q_list += [(self.eff_stress[2,2]-self.eff_stress[0,0])]     #軸差応力
+                stressxx += [self.eff_stress[0,0]]
+                stressyy += [self.eff_stress[1,1]]
+                stresszz += [self.eff_stress[2,2]]
+                stresszz_all += [self.stress[2,2]]    #全応力
+                epstress_list += [self.pore_pressure]   #過剰間隙水圧
+                epstress_ratio += [self.pore_pressure/p]
                 strain_d += [self.strain[2,2]]
                 fL_list += [self.fL]
                 h_list += [self.h]
@@ -928,7 +966,7 @@ class Li2002:
             # print("strain",self.strain)
             # print("stress",self.stress)
         step_list = np.linspace(0,cycle,nstep*ncycle)
-        
+
         gamma_list = np.array(gamma_list)
         tau_list = np.array(tau_list)
         ev_list = np.array(ev_list)
@@ -950,8 +988,8 @@ class Li2002:
         H1_list =  np.array(H1_list)
         H2_list =  np.array(H2_list)
         L1_list =  np.array(L1_list)
-        
-                
+
+
         np.savetxt("./result/step.dat",step_list)
         np.savetxt("./result/gamma.dat",gamma_list)
         np.savetxt("./result/tau.dat",tau_list)
@@ -989,7 +1027,7 @@ class Li2002:
             plt.show()
 
 
-            
+
 
 
     # -------------------------------------------------------------------------------------- #
@@ -1121,41 +1159,24 @@ class Li2002:
 
 # --------------------------------#
 if __name__ == "__main__":
-    # emax = 0.977    # Li(2002)
-    # emin = 0.597    # Li(2002)
-    # Dr = 0.70
-    # Dr = 0.30
-    # Dr = 0.10
-    # e0 = emax-Dr*(emax-emin)
-    # print(e0)
 
-    # Li_model = Li2002(G0=202,nu=0.33,M=0.97,eg=0.957,d1=0.05)
-    # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.41,cohesion=4.e3)
-    # compression_stress = 40.e3
-    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.2,cycle=5,print_result=True,plot=True)
-    # exit()
+    # e0 = 0.83
+    # Li_model = Li2002(G0=60,nu=0.33,M=1.61,c=0.75,eg=0.99,rlambdac=0.019,xi=0.7, \
+    #              d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=2.2,n=1.1, \
+    #              d2=1,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.01,cohesion=0.0,e0=e0)
 
-    # Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.41,cohesion=0.e3)
-    # compression_stress = 40.e3
-    # Li_model.cyclic_pure_shear_test(e0,compression_stress,gmax=0.01,cycle=20,print_result=True,plot=True)
-    # exit()
     e0 = 0.85
-    Li_model = Li2002(G0=60,nu=0.33,M=1.61,c=0.75,eg=0.99,rlambdac=0.0019,xi=0.7, \
+    Li_model = Li2002(G0=60,nu=0.33,M=1.61,c=0.75,eg=0.99,rlambdac=0.019,xi=0.7, \
                  d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=2.2,n=1.1, \
-                 d2=1,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.05,cohesion=0.0,e0=e0)
+                 d2=1,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.01,cohesion=0.0,e0=e0)
+
+
     compression_stress = 70e3
-    Li_model.cyclic_shear_test_CU(e0,compression_stress,sr=0.25,cycle=30,print_result=True,plot=False)
+    # Li_model.cyclic_shear_test_CU(e0,compression_stress,sr=0.25,cycle=30,print_result=True,plot=False)
+    Li_model.cyclic_shear_test_CU(e0,compression_stress,sr=0.1,cycle=30,print_result=True,plot=False)
     exit()
 
-    Li_model = Li2002(G0=420,nu=0.33,M=0.97,eg=0.957,d1=0.41,cohesion=0.e3)
-    compression_stress = 40.e3
-    Li_model.cyclic_pure_shear_test(e0,compression_stress,gmax=0.01,cycle=20,print_result=True,plot=True)
-    exit()
 
-    # Li_model = Li2002()
-    # compression_stress = 300.e3
-    # Li_model.cyclic_shear_test(e0,compression_stress,sr=0.2,cycle=10,print_result=True,plot=True)
-    # exit()
 
     cs_list = [1.e3,2.5e3,5.e3,10.e3,20.e3,40.e3,300.e3]
     sigma1_list, sigma3_list = [],[]

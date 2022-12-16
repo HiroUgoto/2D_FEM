@@ -3,8 +3,6 @@ import matplotlib.pyplot as plt
 
 from ep_model import Li
 
-import sys
-
 class EP:
     def __init__(self,dof,style,param):
         self.dof = dof
@@ -221,9 +219,17 @@ class EP:
         Ep = self.model.plastic_stiffness(sp)
 
         dstrain,dstress = \
-            self.model.solve_strain_with_consttain(dstrain,dstress_input,Ep,self.deformation)
+            self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
 
-        sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1,ef2=ef2)
+        sp_check = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1,ef2=ef2)
+        ef1_check,ef2_check = self.model.check_unload(sp_check)
+
+        # if (ef1 != ef1_check) or (ef2 != ef2_check):
+        #     sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1_check,ef2=ef2_check)
+        #     Ep = self.model.plastic_stiffness(sp)
+        #     dstrain,dstress = self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
+
+        sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1_check,ef2=ef2_check)
         self.model.update_parameters(sp2)
 
         ev,gamma = self.model.set_strain_variable(self.strain)
@@ -232,13 +238,15 @@ class EP:
         self.strain += dstrain
         self.stress += dstress
 
-        # print(self.strain)
-        # print(self.stress)
-
         Dp = self.modulus_to_Dmatrix(Ep)
         stress_yy = -self.stress[1,1]
 
+        # print(self.strain)
+        # print(self.stress)
         # print(stress_yy)
+
+        # eff_p = np.trace(self.stress)/3.0
+        # print(eff_p)
 
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
 

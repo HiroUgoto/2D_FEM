@@ -260,8 +260,8 @@ class Fem():
 
         for element in self.ep_elements:
             element.calc_stress()
-            # element.ep.initial_state_isotropic(element.stress)
-            element.ep.initial_state(element.stress)
+            element.ep.initial_state_isotropic(element.stress)
+            # element.ep.initial_state(element.stress)
             element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
             element.clear_strain()
 
