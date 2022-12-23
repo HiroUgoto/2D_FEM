@@ -35,6 +35,7 @@ fem.set_output(outputs)
 
 fp = 3.0
 amp = 2.0
+printmesh = 2
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
@@ -42,11 +43,12 @@ fem.set_ep_initial_state()
 # fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
-fsamp = 10000
+fsamp = 8000
+datasamplerate = 1000  #sampling rate[Hz]
 # duration = 5.0/fp + 1.0/fp
 # duration = 8.0/fp + 1.0/fp
 # duration = 14.0/fp + 1.0/fp
-duration = 30
+duration = 15
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
@@ -97,17 +99,17 @@ L1_list = np.zeros(fem.output_nelem+1)
 
 
 
-dispx = open(output_dir+"disp.x","w") 
-dispz = open(output_dir+"disp.z","w") 
-velx = open(output_dir+"vel.x","w") 
-velz = open(output_dir+"vel.z","w") 
-accx = open(output_dir+"acc.x","w") 
+dispx = open(output_dir+"x.disp","w") 
+dispz = open(output_dir+"z.disp","w") 
+velx = open(output_dir+"x.vel","w") 
+velz = open(output_dir+"z.vel","w") 
+accx = open(output_dir+"x.acc","w") 
 stressxx = open(output_dir+"stressxx","w")
 stresszz = open(output_dir+"stresszz","w")
 stressxz = open(output_dir+"stressxz","w")
-strainxx = open(output_dir+"strainxx","w")
-strainzz = open(output_dir+"strainzz","w")
-strainxz = open(output_dir+"strainxz","w")
+strainxx = open(output_dir+"xx.str","w")
+strainzz = open(output_dir+"zz.str","w")
+strainxz = open(output_dir+"xz.str","w")
 stressyy = open(output_dir+"stressyy","w")
 stresspw = open(output_dir+"stresspw","w")
 fL = open(output_dir+"fL.out","w")
@@ -133,7 +135,7 @@ for it in range(ntim):
     fem.update_time(acc0)
     # fem.update_time(acc0,FD=True)
 
-    if it%(fsamp/100) == 0:  #sampling rate 100Hz
+    if it%(fsamp/datasamplerate) == 0:
         writef(output_accx, accx, tim[it], [node.a[0] for node in fem.output_nodes] + acc0[0])
         writef(output_dispx, dispx, tim[it], [node.u[0] for node in fem.output_nodes])
         writef(output_dispz, dispz, tim[it], [node.u[1] for node in fem.output_nodes])
@@ -160,7 +162,7 @@ for it in range(ntim):
         
 
         # plot_model.plot_mesh_update(ax,fem,100.)
-        print("t=",np.array([it*dt,output_element_stress_xx[-1],output_element_stress_yy[-1],output_element_stress_zz[-1],output_element_stress_zz[-1]-output_element_pw[-1],output_element_pw[-1]]))
+        print("t=",np.array([it*dt,output_element_stress_xx[printmesh+1],output_element_stress_yy[printmesh+1],output_element_stress_zz[printmesh+1],output_element_stress_zz[printmesh+1]-output_element_pw[printmesh+1],output_element_pw[printmesh+1]]))
 
 
 dispx.close()
