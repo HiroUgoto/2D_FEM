@@ -112,7 +112,11 @@ void Element::mk_local_matrix_init(const size_t dof){
         auto [det, jacobi] = mk_jacobi(this->xnT, this->dn_list[i]);
         V += det * this->w_list[i];
       }
+
       this->mass = this->rho * V;
+      if (this->material.style.find("eff_") != std::string::npos) {
+        this->mass_d = (this->rho - this->material.rho_w)* V;
+        }
 
     } else if (this->dim == 1) {
       this->imp = this->material.mk_imp(this->dof);
@@ -221,7 +225,11 @@ void Element::mk_local_vector() {
         this->force += N.row(1)*detJ * this->gravity;
       }
 
-      this->force *= this->mass / V;
+      if (this->material.style.find("eff_") != std::string::npos) {
+        this->force *= this->mass_d / V;
+      } else {
+        this->force *= this->mass / V;
+      }
     }
   }
 
@@ -525,29 +533,72 @@ void Element::calc_stress() {
     this->stress = this->De * this->strain;
   }
 
+void Element::calc_FD_stress() {
+    EV u;
+    EV strain_vector(3);
+
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+    u = this->mk_u_hstack();
+
+    auto [J, strain] = Euler_log_strain(dnj, u);
+    strain_vector << strain(0,0), strain(1,1), strain(0,1)+strain(1,0);
+    this->stress = this->De * strain_vector / J;
+  }
+
+void Element::calc_total_stress() {
+    this->calc_eff_stress();
+    this->calc_pore_pressure();
+    // this->stress = this->eff_stress - 
+
+  }
+
+void Element::calc_eff_stress() {
+    EV u;
+    EM B;
+
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+    B = mk_b(this->dof, this->nnode, dnj);
+    u = this->mk_u_hstack();
+
+    this->strain = B * u;
+    this->eff_stress = this->De * this->strain;
+  }
+
+void Element::calc_pore_pressure() {
+    EV u;
+    EM B;
+    EV strain;
+
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+    B = mk_b(this->dof, this->nnode, dnj);
+    u = this->mk_u_hstack();
+    strain = B * u;
+    this->ep_p->n = this->ep_p->e / (1 + this->ep_p->e);  //e,n変かも
+    this->excess_pore_pressure = -1*this->material.Kw / this->ep_p->n * (strain(0) + strain(1)); //e,n変かも
+  }
+
+void Element::clear_strain() {
+    this->strain = clear_stress_strain(this->dof);
+  }
+
 // ------------------------------------------------------------------- //
-void Element::ep_init_all() {
-  return;
+void Element::ep_init_calc_stress_all() {
+  for (size_t i = 0 ; i < this->ng_all ; i++){
+    this->strain_list.push_back(clear_stress_strain(this->dof));
+    this->stress_list.push_back(clear_stress_strain(this->dof));
+  }
+  this->stress_yy = this->stress(0);
 }
 
-void Element::ep_init_calc_stress_all() {
-  EV u = this->mk_u_hstack();
+void Element::ep_eff_init_calc_stress_all() {
   for (size_t i = 0 ; i < this->ng_all ; i++){
-    auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
-    EM B = mk_b(this->dof, this->nnode, dnj);
-    EV strain = B * u;
-    EV stress = this->De * strain;
-    this->strain_list.push_back(strain);
-    this->stress_list.push_back(stress);
+    this->strain_list.push_back(clear_stress_strain(this->dof));
+    this->eff_stress_list.push_back(clear_stress_strain(this->dof));
+    this->stress_list.push_back(clear_stress_strain(this->dof));
+    this->excess_pore_pressure_list.push_back(0.0);
   }
-  auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
-  EM B = mk_b(this->dof, this->nnode, dnj);
-  EV strain = B * u;
-  EV stress = this->De * strain;
-  this->ep_p->initial_state(stress);
-  this->stress = stress;
-  this->strain = strain;
-  this->stress_yy = stress(0);
+  this->excess_pore_pressure = 0.0;
+  this->eff_stress_yy = this->stress(0);
 }
 
 void Element::calc_ep_stress() {
@@ -587,6 +638,121 @@ void Element::mk_ep_B_stress() {
 
       double detJ = det * this->w_list[i];
       force += B.transpose() * stress * detJ;
+    }
+
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += force(i0+i);
+      }
+    }
+  }
+}
+
+void Element::mk_ep_eff_B_stress() {
+  if (this->dim == 2) {
+    EV force = EV::Zero(this->ndof);
+    EM u = this->mk_u_hstack();
+
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+    EM B = mk_b(this->dof, this->nnode, dnj);
+    EV strain = B * u;
+    EV dstrain = strain - this->strain;
+    auto [Dp,eff_stress,eff_stress_yy] = this->ep_p->set_Dp_matrix(dstrain);
+    this->eff_stress = eff_stress;
+    this->eff_stress_yy = eff_stress_yy;
+
+    this->ep_p->n = this->ep_p->e / (1 + this->ep_p->e);  //e,n変かも
+    this->excess_pore_pressure += -1*this->material.Kw / this->ep_p->n * (dstrain(0) + dstrain(1)); //e,n変かも
+    this->stress(0) = this->eff_stress(0) - this->excess_pore_pressure;
+    this->stress(1) = this->eff_stress(1) - this->excess_pore_pressure;
+    this->stress(2) = this->eff_stress(2);
+    this->stress_yy = this->eff_stress_yy - this->excess_pore_pressure;
+
+    this->strain = strain;
+
+    for (size_t i = 0 ; i < this->ng_all ; i++){
+      EV stress(3);
+      auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
+      EM B = mk_b(this->dof, this->nnode, dnj);
+      EV strain = B * u;
+      EV dstrain = strain - this->strain_list[i];
+      EV eff_dstress = Dp * dstrain;
+
+      EV eff_stress = this->eff_stress_list[i] + eff_dstress;
+      double excess_pore_pressure = this->excess_pore_pressure_list[i] + -1*this->material.Kw / this->ep_p->n * (dstrain(0) + dstrain(1)); //e,n変かも
+      stress(0) = eff_stress(0) - excess_pore_pressure;
+      stress(1) = eff_stress(1) - excess_pore_pressure;
+      stress(2) = eff_stress(2);
+
+      this->strain_list[i] = strain;
+      this->stress_list[i] = stress;
+      this->eff_stress_list[i] = eff_stress;
+      this->excess_pore_pressure_list[i] = excess_pore_pressure;
+
+      double detJ = det * this->w_list[i];
+      force += B.transpose() * stress * detJ;
+    }
+
+    for (size_t inode = 0 ; inode < this->nnode ; inode++){
+      size_t i0 = inode*this->dof;
+      for (size_t i = 0 ; i < this->dof ; i++) {
+        this->nodes_p[inode]->force(i) += force(i0+i);
+      }
+    }
+  }
+}
+
+void Element::mk_ep_FD_eff_B_stress() {
+  if (this->dim == 2) {
+    EV force = EV::Zero(this->ndof);
+    EM u = this->mk_u_hstack();
+    EV strain_vector(3);
+
+    auto [det, dnj] = mk_dnj(this->xnT, this->dn_center);
+    auto [J, strain] = Euler_log_strain(dnj, u);
+    strain_vector << strain(0,0), strain(1,1), strain(0,1)+strain(1,0);
+
+    EV dstrain = strain_vector - this->strain;
+    auto [Dp,eff_stress,eff_stress_yy] = this->ep_p->set_Dp_matrix(dstrain);
+    this->eff_stress = eff_stress;
+    this->eff_stress_yy = eff_stress_yy;
+
+    this->ep_p->n = this->ep_p->e / (1 + this->ep_p->e);  //e,n変かも
+    this->excess_pore_pressure += -1*this->material.Kw / this->ep_p->n * (dstrain(0) + dstrain(1)); //e,n変かも
+    this->stress(0) = this->eff_stress(0) - this->excess_pore_pressure;
+    this->stress(1) = this->eff_stress(1) - this->excess_pore_pressure;
+    this->stress(2) = this->eff_stress(2);
+    this->stress_yy = this->eff_stress_yy - this->excess_pore_pressure;
+
+    this->strain = strain_vector;
+
+    for (size_t i = 0 ; i < this->ng_all ; i++){
+      EV stress(3);
+      EV strain_vector(3);
+      EV u = this->mk_u_hstack();
+
+      auto [det, dnj] = mk_dnj(this->xnT, this->dn_list[i]);
+      EM BT = mk_b_T(this->dof, this->nnode, dnj);
+      auto [J, strain] = Euler_log_strain(dnj, u);
+      strain_vector << strain(0,0), strain(1,1), strain(0,1)+strain(1,0);
+
+      EV dstrain = strain_vector - this->strain_list[i];
+      EV eff_dstress = Dp * dstrain / J;
+
+      EV eff_stress = this->eff_stress_list[i] + eff_dstress;
+      double excess_pore_pressure = this->excess_pore_pressure_list[i] + -1*this->material.Kw / this->ep_p->n * (dstrain(0) + dstrain(1)) / J; //e,n変かも
+      stress(0) = eff_stress(0) - excess_pore_pressure;
+      stress(1) = eff_stress(1) - excess_pore_pressure;
+      stress(2) = eff_stress(2);
+
+      this->strain_list[i] = strain_vector;
+      this->stress_list[i] = stress;
+      this->eff_stress_list[i] = eff_stress;
+      this->excess_pore_pressure_list[i] = excess_pore_pressure;
+
+      double detJ = det * this->w_list[i];
+      force += BT * stress * detJ;
     }
 
     for (size_t inode = 0 ; inode < this->nnode ; inode++){
@@ -764,6 +930,20 @@ EM mk_b_T(const size_t dof, const size_t nnode, const EM dnj) {
     }
 
     return B;
+  }
+
+// ------------------------------------------------------------------- //
+EV clear_stress_strain(const size_t dof) {
+    EV s;
+    if (dof == 1) {
+      s = EV::Zero(2);
+    } else if (dof == 2) {
+      s = EV::Zero(3);
+    } else if (dof == 3) {
+      s = EV::Zero(5);
+      }
+
+      return s;
   }
 
 // ------------------------------------------------------------------- //

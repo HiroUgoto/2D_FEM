@@ -34,25 +34,25 @@ fem.set_output(outputs)
 # H = 2/np.sqrt(c**2+R**2*s**2)
 
 fp = 3.0
-amp = 2.0
-printmesh = 2
+amp = 1.0
+printmesh = 0
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-# fem.set_rayleigh_damping(fp,10*fp,0.002)
+fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
-fsamp = 8000
-datasamplerate = 1000  #sampling rate[Hz]
+fsamp = 20000
+datasamplerate = 100  #sampling rate[Hz]
 # duration = 5.0/fp + 1.0/fp
 # duration = 8.0/fp + 1.0/fp
 # duration = 14.0/fp + 1.0/fp
-duration = 15
+duration = 5
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
-wave_acc = input_wave.tapered_sin(tim,fp,3.0,duration+3,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,1.0,duration+3,amp)
 # wave_acc = input_wave.simple_sin(tim,fp,amp)
 # wave_acc = np.zeros(len(tim))
 ntim = len(tim)
@@ -162,7 +162,7 @@ for it in range(ntim):
         
 
         # plot_model.plot_mesh_update(ax,fem,100.)
-        print("t=",np.array([it*dt,output_element_stress_xx[printmesh+1],output_element_stress_yy[printmesh+1],output_element_stress_zz[printmesh+1],output_element_stress_zz[printmesh+1]-output_element_pw[printmesh+1],output_element_pw[printmesh+1]]))
+        print("t=",np.array([it*dt,output_element_stress_xx[printmesh+1],output_element_stress_yy[printmesh+1],output_element_stress_zz[printmesh+1],output_element_pw[printmesh+1]]))
 
 
 dispx.close()

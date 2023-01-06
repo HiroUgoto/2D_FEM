@@ -13,7 +13,7 @@ class Element {
     std::vector<Node*> nodes_p;
 
     Material material;
-    double rho, mass;
+    double rho, mass, mass_d;
 
     size_t nnode, dim, ng, ng_all, dof, ndof;
     EV xi, w;
@@ -22,7 +22,8 @@ class Element {
     std::vector<EM> dn_list;
     std::vector<double> w_list;
     std::vector<EP*> ep_list;
-    std::vector<EV> strain_list, stress_list;
+    std::vector<EV> strain_list, stress_list, eff_stress_list;
+    std::vector<double> excess_pore_pressure_list;
     EM dn_center;
     EP* ep_p;
 
@@ -30,8 +31,9 @@ class Element {
     EM M, K, K_off_diag, C, C_off_diag;
     EM De, Dv, imp;
     EV force;
-    EV strain, stress;
-    double stress_yy;
+    EV strain, stress, eff_stress;
+    double stress_yy, eff_stress_yy;
+    double excess_pore_pressure;
 
     EV f;
     EM R;
@@ -73,11 +75,19 @@ class Element {
     void mk_bodyforce(const EV acc0);
     void update_inputwave(const EV vel0);
     void calc_stress();
+    void calc_FD_stress();
+    void calc_total_stress();
+    void calc_eff_stress();
+    void calc_pore_pressure();
+    void clear_strain();
 
     void ep_init_all();
     void ep_init_calc_stress_all();
+    void ep_eff_init_calc_stress_all();
     void calc_ep_stress();
     void mk_ep_B_stress();
+    void mk_ep_eff_B_stress();
+    void mk_ep_FD_eff_B_stress();
 };
 
 EM mk_m(const EM N);
@@ -89,6 +99,8 @@ std::tuple<double, EM> mk_q(const size_t dof, const EM xnT, const EM dn);
 EM mk_k(const EM B, const EM D);
 EM mk_b(const size_t dof, const size_t nnode, const EM dnj);
 EM mk_b_T(const size_t dof, const size_t nnode, const EM dnj);
+
+EV clear_stress_strain(const size_t dof);
 
 EV Hencky_stress(const EM D, const EM dnj, const EM u);
 std::tuple<double, EM2> Euler_log_strain(const EM dnj, const EM u);
