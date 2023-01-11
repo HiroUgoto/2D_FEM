@@ -340,6 +340,10 @@ void Fem::_self_gravity_cg(const bool full, const bool print_flag) {
 void Fem::set_ep_initial_state() {
   this->_self_gravity_cg(false,false);
 
+    for (auto& element_p : this->e_elements_p) {
+    element_p->clear_strain();
+  }
+
   for (auto& element_p : this->ep_elements_p) {
     element_p->calc_stress();
     // element_p->ep_p->initial_state_isotropic(element_p->stress);
@@ -365,7 +369,6 @@ void Fem::set_ep_initial_state() {
   }
 
   this->_set_ep_initial_state_node_clear();
-  this->_set_initial_matrix();
   // std::cout << this->nodes[0].u[1] << std::endl;
 
   for (auto& node : this->nodes) {
@@ -374,8 +377,11 @@ void Fem::set_ep_initial_state() {
     }
   }
 
+  this->_set_initial_matrix();
+
   for (auto& element_p : this->ep_elements_p) {
     element_p->ep_init_calc_stress_all();
+    std::cout << "e: " << element_p->ep_p->e << std::endl;
   }
   for (auto& element_p : this->ep_eff_elements_p) {
     element_p->ep_eff_init_calc_stress_all();
@@ -445,6 +451,10 @@ void Fem::update_time_FD(const EV acc0) {
     for (auto& element_p : this->e_elements_p) {
       element_p->mk_B_stress();
       element_p->mk_cv();
+    }
+
+    for (auto& element_p : this->ep_elements_p) {
+      element_p->mk_ep_FD_B_stress();
     }
 
     for (auto& element_p : this->ep_eff_elements_p) {

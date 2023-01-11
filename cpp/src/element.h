@@ -86,6 +86,7 @@ class Element {
     void ep_eff_init_calc_stress_all();
     void calc_ep_stress();
     void mk_ep_B_stress();
+    void mk_ep_FD_B_stress();
     void mk_ep_eff_B_stress();
     void mk_ep_FD_eff_B_stress();
 };

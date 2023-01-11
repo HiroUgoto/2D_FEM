@@ -196,7 +196,7 @@ class Li2002:
     # -------------------------------------------------------------------------------------- #
     def state_parameter(self,e,p):
         psi = e - (self.eg-self.rlambdac*(max(p+self.stress_shift,self.pmin)/self.pr)**self.xi)  # Eq.(18)
-        self.psi = psi
+        # self.psi = psi
         return psi
 
     # -------------------------------------------------------------------------------------- #
@@ -520,6 +520,8 @@ class Li2002:
         if not sp.elastic_flag2:
             self.H2 = H2
 
+        self.psi = sp.psi
+
 
     # -------------------------------------------------------------------------------------- #
     def plastic_stiffness(self,sp):
@@ -562,7 +564,7 @@ class Li2002:
     def solve_strain_with_constrain_CU(self,strain_given,stress_given,E,deformation):
         # deformation: True => deform (stress given), False => constrain (strain given)
         n = self.e/(1+self.e)
-        Kw = 2.19e9
+        Kw = 2.25e9
         Eeps = Kw / n*self.Dijkl
 
         d = deformation.flatten()
@@ -612,7 +614,7 @@ class Li2002:
         # set Ep tensor in CU condition
         if CU:
             n = self.e/(1+self.e)
-            Kw = 2.19e9
+            Kw = 2.25e9
             Eeps = Kw / n*self.Dijkl
             Ep += Eeps
 

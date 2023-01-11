@@ -37,11 +37,11 @@ int main() {
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,10*fp,0.02);
+  // fem.set_rayleigh_damping(fp,10*fp,0.02);
 
   // ----------------------------- //
-  size_t fsamp = 20000;
-  double duration = 5;
+  size_t fsamp = 40000;
+  double duration = 3;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
@@ -68,23 +68,25 @@ int main() {
   std::ofstream output_strainzz;
   std::ofstream output_strainxz;
   std::ofstream output_stressxx;
-  std::ofstream output_stressyy;
   std::ofstream output_stresszz;
   std::ofstream output_stressxz;
+  std::ofstream output_stressyy;
   std::ofstream output_pw;
   std::ofstream output_accin;
   std::ofstream output_velin;
   std::ofstream output_dispin;
 
-  // std::ofstream fL;
-  // std::ofstream psi;
-  // std::ofstream e;
-  // std::ofstream n;
-  // std::ofstream h;
-  // std::ofstream h1_h2e;
-  // std::ofstream H1;
-  // std::ofstream H2;
-  // std::ofstream L1;
+  std::ofstream fL;
+  std::ofstream psi;
+  std::ofstream e;
+  std::ofstream n;
+  std::ofstream h;
+  std::ofstream h1;
+  std::ofstream h2;
+  std::ofstream h1_h2e;
+  std::ofstream H1;
+  std::ofstream H2;
+  std::ofstream L1;
 
   output_dispx.open("result/x.disp");
   output_dispz.open("result/z.disp");
@@ -96,28 +98,31 @@ int main() {
   output_strainzz.open("result/zz.str");
   output_strainxz.open("result/xz.str");
   output_stressxx.open("result/stressxx");
-  output_stressyy.open("result/stressyy");
   output_stresszz.open("result/stresszz");
   output_stressxz.open("result/stressxz");  
+  output_stressyy.open("result/stressyy");
   output_pw.open("result/stresspw");
   output_accin.open("result/acc.in");
   output_velin.open("result/vel.in");
   output_dispin.open("result/disp.in");
 
-  // fL.open("result/fL_out");
-  // psi.open("result/psi_out");
-  // e.open("result/e_out");
-  // n.open("result/n_out");
-  // h.open("result/h_out");
-  // h1_h2e.open("result/h1_h2e_out");
-  // H1.open("result/H1_out");
-  // H2.open("result/H2_out");
-  // L1.open("result/L1_out");
+  fL.open("result/fL.out");
+  psi.open("result/psi.out");
+  e.open("result/e.out");
+  n.open("result/n.out");
+  h.open("result/h.out");
+  h1.open("result/h1_.out");
+  h2.open("result/h2_.out");
+  h1_h2e.open("result/h1-h2e.out");
+  H1.open("result/H1.out");
+  H2.open("result/H2.out");
+  L1.open("result/L1.out");
+
 
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
-
+    dis0[0] += vel0[0]*dt;
 
     fem.update_time_MD(acc0);
     // fem.update_time_FD(acc0);
@@ -144,6 +149,18 @@ int main() {
       output_velin << vel0[0] << std::endl;
       output_dispin << dis0[0] << std::endl;
 
+      fL << tim(it);
+      psi << tim(it);
+      e << tim(it);
+      n << tim(it);
+      h << tim(it);
+      h1 << tim(it);
+      h2 << tim(it);
+      h1_h2e << tim(it);
+      H1 << tim(it);
+      H2 << tim(it);
+      L1 << tim(it);
+
       for (size_t i = 0 ; i < fem.output_nnode ; i++) {
         Node* node_p = fem.output_nodes_p[i];
         output_dispx << " " << node_p->u(0);
@@ -160,11 +177,28 @@ int main() {
         output_strainxx << " " << element_p->strain(0);
         output_strainzz << " " << element_p->strain(1);
         output_strainxz << " " << element_p->strain(2);
+
+        // output_stressxx << " " << element_p->stress(0);
+        // output_stresszz << " " << element_p->stress(1);
+        // output_stressxz << " " << element_p->stress(2);
+
         output_stressxx << " " << element_p->eff_stress(0);
         output_stresszz << " " << element_p->eff_stress(1);
-        output_stressyy << " " << element_p->eff_stress_yy;
         output_stressxz << " " << element_p->eff_stress(2);
+        output_stressyy << " " << element_p->eff_stress_yy;
         output_pw << " " << element_p->excess_pore_pressure;
+
+        fL << " " << element_p->ep_p->fL;
+        psi << " " << element_p->ep_p->psi;
+        e << " " << element_p->ep_p->e;
+        n << " " << element_p->ep_p->n_e;
+        h << " " << element_p->ep_p->h;
+        h1 << " " << element_p->ep_p->out_h1;
+        h2 << " " << element_p->ep_p->out_h2;
+        h1_h2e << " " << element_p->ep_p->out_h1 - element_p->ep_p->out_h2*element_p->ep_p->e;
+        H1 << " " << element_p->ep_p->out_H1;
+        H2 << " " << element_p->ep_p->out_H2;
+        L1 << " " << element_p->ep_p->out_L1;
       }
       
       output_dispx << std::endl;
@@ -178,11 +212,23 @@ int main() {
       output_strainxz << std::endl;
       output_stressxx << std::endl;
       output_stresszz << std::endl;
-      output_stressyy << std::endl;
       output_stressxz << std::endl;
+      output_stressyy << std::endl;
       output_pw << std::endl;
 
-      if (it%(fsamp/dsamp*1) == 0){
+      fL << std::endl;
+      psi << std::endl;
+      e << std::endl;
+      n << std::endl;
+      h << std::endl;
+      h1 << std::endl;
+      h2 << std::endl;
+      h1_h2e << std::endl;
+      H1 << std::endl;
+      H2 << std::endl;
+      L1 << std::endl;
+
+      if (it%(fsamp/dsamp*10) == 0){
         Element* out_element_p = &fem.elements[p];
         // std::cout << " t=" << it*dt << " e_id:" << p << " " << out_element_p->stress(0) << " " << out_element_p->stress(1) << std::endl;
         std::cout << " t=" << it*dt << " e_id:" << p << " " << out_element_p->eff_stress(0) << " " << out_element_p->eff_stress_yy << " " << out_element_p->eff_stress(1) << " " << out_element_p->excess_pore_pressure << std::endl;
@@ -202,14 +248,26 @@ int main() {
   output_strainxz.close();
 
   output_stressxx.close();
-  output_stressyy.close();
   output_stresszz.close();
   output_stressxz.close();
+  output_stressyy.close();
   output_pw.close();
 
   output_accin.close();
   output_velin.close();
   output_dispin.close();
+
+  fL.close();
+  psi.close();
+  e.close();
+  n.close();
+  h.close();
+  h1.close();
+  h2.close();
+  h1_h2e.close();
+  H1.close();
+  H2.close();
+  L1.close();
 
   clock_t end = clock();
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";

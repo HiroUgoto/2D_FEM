@@ -68,7 +68,7 @@ class Material:
             self.param = param[1:]
 
             self.rho_w = 1000.0
-            self.Kw = 2.19e9
+            self.Kw = 2.25e9
 
             e0 = param[4]
             n0 = e0/(1 + e0)   #初期間隙率

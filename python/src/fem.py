@@ -275,13 +275,15 @@ class Fem():
             element.stress = np.copy(element.eff_stress)
 
         self._set_ep_initial_state_node_clear()
-        self._set_initial_matrix()
 
         for node in self.nodes:
             node.u[:] = np.zeros(self.dof,dtype=np.float64)
 
+        self._set_initial_matrix()
+
         for element in self.ep_elements:
             element.ep_init_calc_stress_all()
+            print("e is",element.ep.e)
         for element in self.ep_eff_elements:
             element.ep_eff_init_calc_stress_all()
 
@@ -364,6 +366,8 @@ class Fem():
             for element in self.e_elements:
                 element.mk_B_stress()
                 element.mk_cv()
+            for element in self.ep_elements:
+                element.mk_ep_FD_B_stress()
             for element in self.ep_eff_elements:
                 element.mk_ep_FD_eff_B_stress()
         else:

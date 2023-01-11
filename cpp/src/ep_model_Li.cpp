@@ -17,8 +17,7 @@ StateParameters::StateParameters (EM strain, EM stress, EM dstrain, EM dstress, 
     this->stress = stress;
     this->dstrain = dstrain;
     this->dstress = dstress;
-    this->pmin = 1.0;
-    this->pore_pressure = pore_pressure;
+    this->pmin = 1.e2;
 
     this->elastic_flag1 = ef1;
     this->elastic_flag2 = ef2;
@@ -93,6 +92,8 @@ Li2002::Li2002 (double G0, double nu, double M, double eg, double d1, double coh
     this->G2_coeff = this->fn*this->h4 / (this->h4 + this->sqrt2_3*this->fn*this->d2);
     this->g0 = this->c*(1.0+this->c) / (1.0+this->c*this->c);
     this->dg0 = (-this->c*this->c*(1-this->c)* std::pow(1+this->c,2)) / std::pow(1+this->c*this->c,3);
+
+    this->psi = 0.0;
   }
 
 
@@ -178,7 +179,7 @@ std::tuple<EM, EV, double> Li2002::set_Dp_matrix(EV FEMdstrain) {
   StateParameters sp_check(this->strain,this->stress,dstrain,dstress,this->stress_shift,ef1,ef2);
   auto [ef1_check, ef2_check] = this->check_unload(sp_check);
 
-  StateParameters sp2(strain,stress,dstrain,dstress,this->stress_shift,ef1,ef2);
+  StateParameters sp2(strain,stress,dstrain,dstress,this->stress_shift,ef1_check,ef2_check);
   this->update_parameters(sp2);
 
   auto [ev, gamma] = this->set_strain_variable(this->strain);
@@ -250,7 +251,6 @@ std::tuple<EM, StateParameters>
     auto [ef1, ef2] = this->check_unload(sp0);
     EM strain = sp0.strain;
     EM eff_stress = sp0.stress;
-    double pore_pressure = sp0.pore_pressure;
 
     // std::cout << " " << std::endl;
     // std::cout << ef1 << " " << ef2 << std::endl;
@@ -479,6 +479,15 @@ void Li2002::update_parameters(StateParameters &sp) {
     // this->H2 += sp.Kp2_b*dL2;
     this->H2 = H2;
   }
+
+  //----output----
+  this->psi = sp.psi;
+  this->h = sp.h;
+  this->out_H1 = this->H1;
+  this->out_H2 = this->H2;
+  this->out_L1 = this->L1;
+  this->out_h1 = this->h1;
+  this->out_h2 = this->h2;
 }
 
 // ------------------------------------------------------------------- //
@@ -656,7 +665,6 @@ void Li2002::set_parameters(StateParameters &sp) {
 double Li2002::_accumulated_load_index(const double L1) {
   double fL = 1.0-this->b3;
   double fL2 = std::pow(1.0-L1/this->b1,2)+(L1/this->b1)/std::pow(this->b2,2) ;
-  this->fL = fL/std::sqrt(fL2) + this->b3;  //出力用
   return fL/std::sqrt(fL2) + this->b3 ;
 }
 
@@ -664,7 +672,7 @@ double Li2002::_scaling_factor(const double e, const double rho1_ratio) {
   double fL = this->_accumulated_load_index(this->L1);
   double r1 = std::pow(1.0/rho1_ratio,10);
   double h = (this->h1-this->h2*e)*(r1+this->h3*fL*(1.0-r1));
-  this->h = h;  //出力用
+  this->fL = fL;
   return h;
 }
 
@@ -867,7 +875,6 @@ Eigen::Tensor<double,4>
 // ------------------------------------------------------------------- //
 double Li2002::state_parameter(const double e, const double p) {
   double psi = e - (this->eg-this->rlambdac* std::pow(std::max(p + this->stress_shift,this->pmin)/this->pr,this->xi));
-  this->psi = psi;  //出力用
   return psi;
 }
 

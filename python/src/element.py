@@ -390,6 +390,7 @@ class Element:
             Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
             self.strain = np.copy(strain)
             self.stress_yy = stress_yy
+            self.ep.n = self.ep.e / (1+self.ep.e)
 
             # print(self.id,self.strain,self.stress)
 
@@ -410,6 +411,44 @@ class Element:
                 i0 = self.dof*i
                 self.nodes[i].force[:] += force[i0:i0+self.dof]
 
+    def mk_ep_FD_B_stress(self):
+            if self.dim == 2:
+                force = np.zeros(self.ndof,dtype=np.float64)
+
+                dn = self.estyle.shape_function_dn(0.0,0.0)
+                _,dnj = mk_dnj(self.xnT,dn)
+                # B = mk_b(self.dof,self.nnode,dnj)
+                # strain = B @ np.hstack(self.u)
+
+                J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+                strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+
+                dstrain = strain - self.strain
+                Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
+                self.strain = np.copy(strain)
+                self.stress_yy = stress_yy
+                self.ep.n = self.ep.e / (1+self.ep.e)
+
+                # print(self.id,self.strain,self.stress)
+
+                for gp in self.gauss_points:
+                    det,dnj = mk_dnj(self.xnT,gp.dn)
+                    BT = mk_b_T(self.dof,self.nnode,dnj)
+                    J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+                    strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+                    dstrain = strain - gp.strain
+                    dstress = Dp @ dstrain / J
+                    gp.stress += dstress
+                    gp.strain = np.copy(strain)
+
+                    detJ = gp.w*det
+                    force += BT @ gp.stress * detJ
+                    # print(gp.stress)
+
+                for i in range(self.nnode):
+                    i0 = self.dof*i
+                    self.nodes[i].force[:] += force[i0:i0+self.dof]
+
     def mk_ep_eff_B_stress(self):
         force = np.zeros(self.ndof,dtype=np.float64)
 
@@ -419,8 +458,6 @@ class Element:
         strain = B @ np.hstack(self.u)
         dstrain = strain - self.strain
         Dp,self.eff_stress,eff_stress_yy = self.ep.set_Dp_matrix(dstrain)
-        if Dp.any() < 0:
-            print("alart!! Dp < 0")
         self.eff_stress_yy = eff_stress_yy
 
         self.ep.n = self.ep.e / (1+self.ep.e)
@@ -467,8 +504,6 @@ class Element:
 
         dstrain = strain - self.strain
         Dp,self.eff_stress,eff_stress_yy = self.ep.set_Dp_matrix(dstrain)
-        if Dp.any() < 0:    #負剛性の確認
-            print("alart!! Dp < 0")
         self.eff_stress_yy = eff_stress_yy
 
         self.ep.n = self.ep.e / (1+self.ep.e)

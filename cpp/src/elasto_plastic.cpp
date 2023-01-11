@@ -28,6 +28,7 @@ EP* set_ep_style(double dof, std::string style, std::vector<double> param_ep) {
     ep_p->dof = dof;
     ep_p->style = style;
     ep_p->clear_strain();
+    // std::cout << ep_p->G0 << std::endl;
   }
 
   return ep_p;
