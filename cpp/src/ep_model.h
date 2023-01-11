@@ -8,6 +8,8 @@ class StateParameters {
   public:
     EM strain, stress;
     EM dstress, dstrain;
+  
+    double pore_pressure;
 
     double pmin;
     double p, R, dp;
@@ -45,6 +47,7 @@ class Li2002: public EP {
 
     double cohesion,stress_shift;
 
+
     EM alpha;
     double beta,H1,H2;
     double L1;
@@ -57,12 +60,13 @@ class Li2002: public EP {
     Li2002 (double G0=125, double nu=0.25, double M=1.25, double eg=0.934,
             double d1=0.41, double cohesion=0.0,
             double c=0.75, double rlambdac=0.019, double xi=0.7,
-            double m=3.5, double h1=3.15, double h2=3.05, double h3=2.2, double n=1.1,
-            double d2=1, double h4=3.5, double a=1, double b1=0.005, double b2=2, double b3=0.01);
+            double m=3.5, double h1=2.1, double h2=2.03, double h3=2.2, double n=1.1,
+            double d2=1.0, double h4=3.5, double a=1.0, double b1=0.005, double b2=2.0, double b3=0.05);
 
     void print();
     void clear_strain();
 
+    void initial_state_isotropic(EV init_stress);
     void initial_state(EV init_stress);
 
     std::tuple<EM, EV, double> set_Dp_matrix(EV FEMdstrain);

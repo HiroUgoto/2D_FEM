@@ -14,6 +14,7 @@ class Fem {
     std::vector<Element*> input_elements_p;
 
     std::vector<Element*> ep_elements_p;
+    std::vector<Element*> ep_eff_elements_p;
     std::vector<Element*> e_elements_p;
 
     size_t output_nnode, output_nelem;
@@ -46,7 +47,7 @@ class Fem {
     void self_gravity();
 
   private:
-    void _self_gravity_cg(const bool full=true);
+    void _self_gravity_cg(const bool full=true, const bool print_flag=true);
 
   public:
     void set_ep_initial_state();

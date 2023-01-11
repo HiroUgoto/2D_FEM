@@ -327,6 +327,15 @@ class Element:
         self.strain = B @ np.hstack(self.u)
         self.stress = self.De @ self.strain
 
+    def calc_FD_stress(self):
+        dn = self.estyle.shape_function_dn(0.0,0.0)
+        _,dnj = mk_dnj(self.xnT,dn)
+        # B = mk_b(self.dof,self.nnode,dnj)
+        # self.strain = B @ np.hstack(self.u)
+        J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+        self.strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+        self.stress = self.De @ self.strain / J
+
     def calc_total_stress(self):
         self.calc_eff_stress()
         self.calc_pore_pressure()
@@ -381,6 +390,7 @@ class Element:
             Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
             self.strain = np.copy(strain)
             self.stress_yy = stress_yy
+            self.ep.n = self.ep.e / (1+self.ep.e)
 
             # print(self.id,self.strain,self.stress)
 
@@ -400,6 +410,44 @@ class Element:
             for i in range(self.nnode):
                 i0 = self.dof*i
                 self.nodes[i].force[:] += force[i0:i0+self.dof]
+
+    def mk_ep_FD_B_stress(self):
+            if self.dim == 2:
+                force = np.zeros(self.ndof,dtype=np.float64)
+
+                dn = self.estyle.shape_function_dn(0.0,0.0)
+                _,dnj = mk_dnj(self.xnT,dn)
+                # B = mk_b(self.dof,self.nnode,dnj)
+                # strain = B @ np.hstack(self.u)
+
+                J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+                strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+
+                dstrain = strain - self.strain
+                Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
+                self.strain = np.copy(strain)
+                self.stress_yy = stress_yy
+                self.ep.n = self.ep.e / (1+self.ep.e)
+
+                # print(self.id,self.strain,self.stress)
+
+                for gp in self.gauss_points:
+                    det,dnj = mk_dnj(self.xnT,gp.dn)
+                    BT = mk_b_T(self.dof,self.nnode,dnj)
+                    J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+                    strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+                    dstrain = strain - gp.strain
+                    dstress = Dp @ dstrain / J
+                    gp.stress += dstress
+                    gp.strain = np.copy(strain)
+
+                    detJ = gp.w*det
+                    force += BT @ gp.stress * detJ
+                    # print(gp.stress)
+
+                for i in range(self.nnode):
+                    i0 = self.dof*i
+                    self.nodes[i].force[:] += force[i0:i0+self.dof]
 
     def mk_ep_eff_B_stress(self):
         force = np.zeros(self.ndof,dtype=np.float64)
@@ -443,6 +491,53 @@ class Element:
             i0 = self.dof*i
             self.nodes[i].force[:] += force[i0:i0+self.dof]
 
+    def mk_ep_FD_eff_B_stress(self):
+        force = np.zeros(self.ndof,dtype=np.float64)
+
+        dn = self.estyle.shape_function_dn(0.0,0.0)
+        _,dnj = mk_dnj(self.xnT,dn)
+        # B = mk_b(self.dof,self.nnode,dnj)
+        # strain = B @ np.hstack(self.u)
+
+        J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+        strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+
+        dstrain = strain - self.strain
+        Dp,self.eff_stress,eff_stress_yy = self.ep.set_Dp_matrix(dstrain)
+        self.eff_stress_yy = eff_stress_yy
+
+        self.ep.n = self.ep.e / (1+self.ep.e)
+        self.excess_pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1])
+        self.stress = self.eff_stress - np.array([self.excess_pore_pressure,self.excess_pore_pressure,0])
+        self.stress_yy = self.eff_stress_yy - self.excess_pore_pressure
+
+        # if self.id == 1:
+        #     print(dstrain[0] + dstrain[1], self.excess_pore_pressure, self.eff_stress[1], self.stress[1])
+        # self.fL = [self.ep.model.fL]
+        # self.psi = [self.ep.model.psi]
+        # self.h = [self.ep.model.h]
+
+        self.strain = np.copy(strain)
+
+        for gp in self.gauss_points:
+            det,dnj = mk_dnj(self.xnT,gp.dn)
+            BT = mk_b_T(self.dof,self.nnode,dnj)
+            J,Elog_strain = Euler_log_strain(self.nnode,dnj,self.u)
+            strain = [Elog_strain[0,0],Elog_strain[1,1],Elog_strain[0,1]+Elog_strain[1,0]]
+            dstrain = strain - gp.strain
+            eff_dstress = Dp @ dstrain / J
+            gp.eff_stress += eff_dstress
+            gp.excess_pore_pressure += -self.material.Kw / self.ep.n * (dstrain[0] + dstrain[1]) / J
+            gp.stress = gp.eff_stress - np.array([gp.excess_pore_pressure,gp.excess_pore_pressure,0])
+
+            gp.strain = np.copy(strain)
+
+            detJ = gp.w*det
+            force += BT @ gp.stress * detJ
+
+        for i in range(self.nnode):
+            i0 = self.dof*i
+            self.nodes[i].force[:] += force[i0:i0+self.dof]
 
 # ---------------------------------------------------------
 def mk_m(N):

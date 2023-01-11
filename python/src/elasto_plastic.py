@@ -15,7 +15,7 @@ class EP:
     def set_model(self,param):
         if self.style == "ep_Li" or self.style == "ep_eff_Li":
             nu,G0,M,self.e0,eg,d1,cohesion = param
-            self.model = Li.Li2002(G0=G0,nu=nu,M=M,eg=eg,d1=d1,cohesion=cohesion)
+            self.model = Li.Li2002(G0=G0,nu=nu,M=M,eg=eg,d1=d1,cohesion=cohesion,e0=self.e0)
             self.e = self.e0
 
         deformation_vec = np.array([False,False,False,False,False,False],dtype=bool)

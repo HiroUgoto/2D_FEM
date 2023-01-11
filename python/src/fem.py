@@ -260,27 +260,30 @@ class Fem():
 
         for element in self.ep_elements:
             element.calc_stress()
-            element.ep.initial_state_isotropic(element.stress)
-            # element.ep.initial_state(element.stress)
+            # element.ep.initial_state_isotropic(element.stress)
+            element.ep.initial_state(element.stress)
             element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
             element.clear_strain()
 
         for element in self.ep_eff_elements:
             element.calc_eff_stress()
-            element.ep.initial_state_isotropic(element.eff_stress)
-            # element.ep.initial_state(element.eff_stress)
+            # element.eff_stress = [-30.e3,-30.e3,0]    #等方圧密
+            # element.ep.initial_state_isotropic(element.eff_stress)
+            element.ep.initial_state(element.eff_stress)
             element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
             element.clear_strain()
             element.stress = np.copy(element.eff_stress)
 
         self._set_ep_initial_state_node_clear()
-        self._set_initial_matrix()
 
         for node in self.nodes:
             node.u[:] = np.zeros(self.dof,dtype=np.float64)
 
+        self._set_initial_matrix()
+
         for element in self.ep_elements:
             element.ep_init_calc_stress_all()
+            print("e is",element.ep.e)
         for element in self.ep_eff_elements:
             element.ep_eff_init_calc_stress_all()
 
@@ -308,9 +311,9 @@ class Fem():
 
     # ======================================================================= #
     def update_matrix(self):
-        for node in self.node_set:
+        for node in self.nodes:
             self._update_matrix_node_init(node)
-        for element in self.element_set:
+        for element in self.elements:
             self._update_matrix_set_elements(element)
 
     # ---------------------------------------
@@ -360,9 +363,13 @@ class Fem():
                 self._update_bodyforce(element,acc0)
 
         if FD:
-            for element in self.elements:
+            for element in self.e_elements:
                 element.mk_B_stress()
                 element.mk_cv()
+            for element in self.ep_elements:
+                element.mk_ep_FD_B_stress()
+            for element in self.ep_eff_elements:
+                element.mk_ep_FD_eff_B_stress()
         else:
             for element in self.e_elements:
                 element.mk_ku_cv()
@@ -378,8 +385,12 @@ class Fem():
         for element in self.spring_elements:
             self._update_time_set_spring_elements_(element)
 
-        for element in self.output_e_elements:
-            element.calc_stress()
+        if FD:
+            for element in self.output_e_elements:
+                element.calc_FD_stress()
+        else:
+            for element in self.output_e_elements:
+                element.calc_stress()
 
     # ======================================================================= #
     def update_time_input(self,vel0):

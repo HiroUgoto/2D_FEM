@@ -21,155 +21,254 @@ int main() {
   Fem fem = io_data::input_mesh("input/mesh.in");
   auto outputs = io_data::input_outputs("input/output.in");
   std::string output_dir = "result/";
+  int p = 0;  //標準出力の要素id
+  int dsamp = 100;  //出力サンプリングレート
 
   // ----- FEM Set up ----- //
   fem.set_init();
   fem.set_output(outputs);
 
   // ----- Define input wave ----- //
-  double vs0 = 300;
-  double rho0 = 1700;
-  double vs1 = 150;
-  double rho1 = 1700;
-  double h = 10;
-
-  double fp = vs1/(4*h);
-  double R = (vs1*rho1)/(vs0*rho0);
-  double omega = 2*M_PI*fp;
-  double H = 2/sqrt(pow(cos(omega*h/vs1),2) + R*R*pow(sin(omega*h/vs1),2));
-  double amp = 0.3*9.8 / H;
+  double fp = 3.0;
+  double amp = 1.0;
 
   std::cout << "Input frequency(Hz): " << fp << ", ";
   std::cout << "Input amplitude(m/s2): " << amp << "\n";
 
   // ----------------------------- //
   fem.set_ep_initial_state();
-  fem.set_rayleigh_damping(fp,10*fp,0.0001);
+  // fem.set_rayleigh_damping(fp,10*fp,0.02);
 
   // ----------------------------- //
-  size_t fsamp = 15000;
-  // amp = 0.75*1.5;
-  // fp = 3.75 ;
-  // double duration = 5.0/fp + 1.0/fp;
-  // double duration = 8.0/fp + 1.0/fp;
-  double duration = 14.0/fp + 1.0/fp;
+  size_t fsamp = 40000;
+  double duration = 3;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
   // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp);
   // wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
-  wave_acc = input_wave::tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp);
+  wave_acc = input_wave::tapered_sin(tim,fp,1.0,duration+3,amp);
   size_t ntim = tim.size();
-
-  std::ofstream f0(output_dir + "input.acc");
-  for (size_t it = 0 ; it < ntim ; it++) {
-    f0 << tim(it) ;
-    f0 << " " << wave_acc(it) ;
-    f0 << "\n";
-  }
-  f0.close();
 
   // ----- Prepare time solver ----- //
   fem.update_init(dt);
 
-  EM output_dispx = EM::Zero(ntim,fem.output_nnode);
-  EM output_dispz = EM::Zero(ntim,fem.output_nnode);
-  EM output_accx = EM::Zero(ntim,fem.output_nnode);
-  EM output_accz = EM::Zero(ntim,fem.output_nnode);
-
-  EM output_element_stress_xx = EM::Zero(ntim,fem.output_nelem);
-  EM output_element_stress_zz = EM::Zero(ntim,fem.output_nelem);
-  EM output_element_stress_xz = EM::Zero(ntim,fem.output_nelem);
-  EM output_element_stress_yy = EM::Zero(ntim,fem.output_nelem);
-
   // ----- time iteration ----- //
   EV acc0 = EV::Zero(fem.dof);
   EV vel0 = EV::Zero(fem.dof);
+  EV dis0 = EV::Zero(fem.dof);
+
+  std::ofstream output_dispx;
+  std::ofstream output_dispz;
+  std::ofstream output_velx;
+  std::ofstream output_velz;
+  std::ofstream output_accx;
+  std::ofstream output_accz;
+  std::ofstream output_strainxx;
+  std::ofstream output_strainzz;
+  std::ofstream output_strainxz;
+  std::ofstream output_stressxx;
+  std::ofstream output_stresszz;
+  std::ofstream output_stressxz;
+  std::ofstream output_stressyy;
+  std::ofstream output_pw;
+  std::ofstream output_accin;
+  std::ofstream output_velin;
+  std::ofstream output_dispin;
+
+  std::ofstream fL;
+  std::ofstream psi;
+  std::ofstream e;
+  std::ofstream n;
+  std::ofstream h;
+  std::ofstream h1;
+  std::ofstream h2;
+  std::ofstream h1_h2e;
+  std::ofstream H1;
+  std::ofstream H2;
+  std::ofstream L1;
+
+  output_dispx.open("result/x.disp");
+  output_dispz.open("result/z.disp");
+  output_velx.open("result/x.vel");
+  output_velz.open("result/z.vel");
+  output_accx.open("result/x.acc");
+  output_accz.open("result/z.acc");
+  output_strainxx.open("result/xx.str");
+  output_strainzz.open("result/zz.str");
+  output_strainxz.open("result/xz.str");
+  output_stressxx.open("result/stressxx");
+  output_stresszz.open("result/stresszz");
+  output_stressxz.open("result/stressxz");  
+  output_stressyy.open("result/stressyy");
+  output_pw.open("result/stresspw");
+  output_accin.open("result/acc.in");
+  output_velin.open("result/vel.in");
+  output_dispin.open("result/disp.in");
+
+  fL.open("result/fL.out");
+  psi.open("result/psi.out");
+  e.open("result/e.out");
+  n.open("result/n.out");
+  h.open("result/h.out");
+  h1.open("result/h1_.out");
+  h2.open("result/h2_.out");
+  h1_h2e.open("result/h1-h2e.out");
+  H1.open("result/H1.out");
+  H2.open("result/H2.out");
+  L1.open("result/L1.out");
+
 
   for (size_t it = 0 ; it < ntim ; it++) {
     acc0[0] = wave_acc[it];
     vel0[0] += wave_acc[it]*dt;
+    dis0[0] += vel0[0]*dt;
 
+    fem.update_time_MD(acc0);
+    // fem.update_time_FD(acc0);
     // fem.update_time_input_MD(vel0);
-    fem.update_time_input_MD_gravity(vel0);
-    // fem.update_time_MD_gravity(acc0);
+    // fem.update_time_input_FD(vel0);
 
-    for (size_t i = 0 ; i < fem.output_nnode ; i++) {
-      Node* node_p = fem.output_nodes_p[i];
-      output_dispx(it,i) = node_p->u(0);
-      output_dispz(it,i) = node_p->u(1);
-      output_accx(it,i) = node_p->a(0) + acc0[0];
-      output_accz(it,i) = node_p->a(1);
-    }
+  // --- Write output file --- //
+    if (it%(fsamp/dsamp) == 0){
+      output_dispx << tim(it);
+      output_dispz << tim(it);
+      output_velx << tim(it);
+      output_velz << tim(it);
+      output_accx << tim(it);
+      output_accz << tim(it);
+      output_strainxx << tim(it);
+      output_strainzz << tim(it);
+      output_strainxz << tim(it);
+      output_stressxx << tim(it);
+      output_stresszz << tim(it);
+      output_stressxz << tim(it);
+      output_stressyy << tim(it);
+      output_pw << tim(it);
+      output_accin << acc0[0] << std::endl;
+      output_velin << vel0[0] << std::endl;
+      output_dispin << dis0[0] << std::endl;
 
-    for (size_t i = 0 ; i < fem.output_nelem ; i++) {
-      Element* element_p = fem.output_elements_p[i];
-      output_element_stress_xx(it,i) = element_p->stress(0);
-      output_element_stress_zz(it,i) = element_p->stress(1);
-      output_element_stress_xz(it,i) = element_p->stress(2);
-      output_element_stress_yy(it,i) = element_p->stress_yy;
-    }
+      fL << tim(it);
+      psi << tim(it);
+      e << tim(it);
+      n << tim(it);
+      h << tim(it);
+      h1 << tim(it);
+      h2 << tim(it);
+      h1_h2e << tim(it);
+      H1 << tim(it);
+      H2 << tim(it);
+      L1 << tim(it);
 
-    if (it%100 == 0) {
-      std::cout << it << " t= " << it*dt << " ";
-      std::cout << output_accx(it,0) << " ";
-      std::cout << output_element_stress_xx(it,0) << " ";
-      std::cout << output_element_stress_zz(it,0) << " ";
-      std::cout << output_element_stress_yy(it,0) << std::endl;
-      // std::cout << output_element_stress_xx(it,1) << " ";
-      // std::cout << output_element_stress_zz(it,1) << " ";
-      // std::cout << output_element_stress_yy(it,1) << std::endl;
+      for (size_t i = 0 ; i < fem.output_nnode ; i++) {
+        Node* node_p = fem.output_nodes_p[i];
+        output_dispx << " " << node_p->u(0);
+        output_dispz << " " << node_p->u(1);
+        output_velx << " " << node_p->v(0);
+        output_velz << " " << node_p->v(1);
+        output_accx << " " << node_p->a(0) + acc0[0];   //慣性力入力
+        // output_accx << " " << node_p->a(0);   //input要素
+        output_accz << " " << node_p->a(1);
+      }
+
+      for (size_t i = 0 ; i < fem.output_nelem ; i++) {
+        Element* element_p = fem.output_elements_p[i];
+        output_strainxx << " " << element_p->strain(0);
+        output_strainzz << " " << element_p->strain(1);
+        output_strainxz << " " << element_p->strain(2);
+
+        // output_stressxx << " " << element_p->stress(0);
+        // output_stresszz << " " << element_p->stress(1);
+        // output_stressxz << " " << element_p->stress(2);
+
+        output_stressxx << " " << element_p->eff_stress(0);
+        output_stresszz << " " << element_p->eff_stress(1);
+        output_stressxz << " " << element_p->eff_stress(2);
+        output_stressyy << " " << element_p->eff_stress_yy;
+        output_pw << " " << element_p->excess_pore_pressure;
+
+        fL << " " << element_p->ep_p->fL;
+        psi << " " << element_p->ep_p->psi;
+        e << " " << element_p->ep_p->e;
+        n << " " << element_p->ep_p->n_e;
+        h << " " << element_p->ep_p->h;
+        h1 << " " << element_p->ep_p->out_h1;
+        h2 << " " << element_p->ep_p->out_h2;
+        h1_h2e << " " << element_p->ep_p->out_h1 - element_p->ep_p->out_h2*element_p->ep_p->e;
+        H1 << " " << element_p->ep_p->out_H1;
+        H2 << " " << element_p->ep_p->out_H2;
+        L1 << " " << element_p->ep_p->out_L1;
+      }
+      
+      output_dispx << std::endl;
+      output_dispz << std::endl;
+      output_velx << std::endl;
+      output_velz << std::endl;
+      output_accx << std::endl;
+      output_accz << std::endl;
+      output_strainxx << std::endl;
+      output_strainzz << std::endl;
+      output_strainxz << std::endl;
+      output_stressxx << std::endl;
+      output_stresszz << std::endl;
+      output_stressxz << std::endl;
+      output_stressyy << std::endl;
+      output_pw << std::endl;
+
+      fL << std::endl;
+      psi << std::endl;
+      e << std::endl;
+      n << std::endl;
+      h << std::endl;
+      h1 << std::endl;
+      h2 << std::endl;
+      h1_h2e << std::endl;
+      H1 << std::endl;
+      H2 << std::endl;
+      L1 << std::endl;
+
+      if (it%(fsamp/dsamp*10) == 0){
+        Element* out_element_p = &fem.elements[p];
+        // std::cout << " t=" << it*dt << " e_id:" << p << " " << out_element_p->stress(0) << " " << out_element_p->stress(1) << std::endl;
+        std::cout << " t=" << it*dt << " e_id:" << p << " " << out_element_p->eff_stress(0) << " " << out_element_p->eff_stress_yy << " " << out_element_p->eff_stress(1) << " " << out_element_p->excess_pore_pressure << std::endl;
+      }
     }
   }
+
+  output_dispx.close();
+  output_dispz.close();
+  output_velx.close();
+  output_velz.close();
+  output_accx.close();
+  output_accz.close();
+
+  output_strainxx.close();
+  output_strainzz.close();
+  output_strainxz.close();
+
+  output_stressxx.close();
+  output_stresszz.close();
+  output_stressxz.close();
+  output_stressyy.close();
+  output_pw.close();
+
+  output_accin.close();
+  output_velin.close();
+  output_dispin.close();
+
+  fL.close();
+  psi.close();
+  e.close();
+  n.close();
+  h.close();
+  h1.close();
+  h2.close();
+  h1_h2e.close();
+  H1.close();
+  H2.close();
+  L1.close();
 
   clock_t end = clock();
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
-
-  // --- Write output file --- //
-  std::ofstream fa(output_dir + "result.acc");
-  std::ofstream fd(output_dir + "result.disp");
-  for (size_t it = 0 ; it < ntim ; it++) {
-    fa << tim(it) ;
-    fa << " " << output_accx(it,0);
-    fa << "\n";
-
-    fd << tim(it) ;
-    fd << " " << output_dispx(it,0);
-    fd << " " << output_dispx(it,int(fem.output_nnode/2));
-    fd << "\n";
-  }
-  fa.close();
-  fd.close();
-
-  std::ofstream f(output_dir + "output_element_list.dat");
-  for (size_t i = 0 ; i < fem.output_nelem ; i++) {
-    Element* element_p = fem.output_elements_p[i];
-    f << element_p->xnT(0,8) << " " << element_p->xnT(1,8) << "\n";
-  }
-  f.close();
-
-  std::ofstream fxx(output_dir + "output_element.stress_xx");
-  std::ofstream fzz(output_dir + "output_element.stress_zz");
-  std::ofstream fxz(output_dir + "output_element.stress_xz");
-  std::ofstream fyy(output_dir + "output_element.stress_yy");
-  for (size_t it = 0 ; it < ntim ; it++) {
-    fxx << tim(it) ;
-    fzz << tim(it) ;
-    fxz << tim(it) ;
-    fyy << tim(it) ;
-    for (size_t i = 0 ; i < fem.output_nelem ; i++) {
-      fxx << " " << output_element_stress_xx(it,i);
-      fzz << " " << output_element_stress_zz(it,i);
-      fxz << " " << output_element_stress_xz(it,i);
-      fyy << " " << output_element_stress_yy(it,i);
-    }
-    fxx << "\n";
-    fzz << "\n";
-    fxz << "\n";
-    fyy << "\n";
-  }
-  fxx.close();
-  fzz.close();
-  fxz.close();
-  fyy.close();
 }

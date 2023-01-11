@@ -12,9 +12,9 @@ class EP {
 
     EM stress,strain;
     double e;
+    double psi, fL, h, n_e;
+    double out_H1, out_H2, out_L1, out_h1, out_h2;
 
-    EP ();
-    virtual ~EP ();
 
 
     EM FEMstress_to_matrix(EV FEMstress);
@@ -31,6 +31,7 @@ class EP {
 
     virtual std::tuple<double, double> elastic_modulus(const double e, const double p) = 0;
     virtual std::tuple<double, double> elastic_modulus_lame() = 0;
+    virtual void initial_state_isotropic(EV init_stress) = 0;
     virtual void initial_state(EV init_stress) = 0;
     virtual std::tuple<EM, EV, double> set_Dp_matrix(EV FEMdstrain) = 0;
     virtual EV strain_to_stress(EV FEMdstrain) = 0;

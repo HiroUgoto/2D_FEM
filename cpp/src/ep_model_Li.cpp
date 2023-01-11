@@ -17,7 +17,7 @@ StateParameters::StateParameters (EM strain, EM stress, EM dstrain, EM dstress, 
     this->stress = stress;
     this->dstrain = dstrain;
     this->dstress = dstress;
-    this->pmin = 1.0;
+    this->pmin = 1.e2;
 
     this->elastic_flag1 = ef1;
     this->elastic_flag2 = ef2;
@@ -88,9 +88,12 @@ Li2002::Li2002 (double G0, double nu, double M, double eg, double d1, double coh
     this->sqrt2_3 = std::sqrt(2.0/3.0);
     this->fn = 2.0*(1+this->nu)/(3.0*(1.0-2.0*this->nu));
     this->rlambda_coeff = 2.0*this->nu/(1.0-2.0*this->nu);
-    this->G2_coeff = this->fn*this->h4 / (this->h4 + this->sqrt2_3*this->fn*this->d2) / this->fn;
+    // this->G2_coeff = this->fn*this->h4 / (this->h4 + this->sqrt2_3*this->fn*this->d2) / this->fn;
+    this->G2_coeff = this->fn*this->h4 / (this->h4 + this->sqrt2_3*this->fn*this->d2);
     this->g0 = this->c*(1.0+this->c) / (1.0+this->c*this->c);
     this->dg0 = (-this->c*this->c*(1-this->c)* std::pow(1+this->c,2)) / std::pow(1+this->c*this->c,3);
+
+    this->psi = 0.0;
   }
 
 
@@ -104,11 +107,24 @@ void Li2002::clear_strain() {
 }
 
 // ------------------------------------------------------------------- //
+void Li2002::initial_state_isotropic(EV init_stress) {
+  // isotropic compression
+  double compression_stress = std::max(-init_stress(0),-init_stress(1));
+  this->isotropic_compression(this->e0,compression_stress);
+  this->e = this->e0;
+
+  // set initial parameters
+  double p = this->set_stress_variable_p(this->stress);
+  this->beta = p;
+  this->H2 = p;
+
+}
+
 void Li2002::initial_state(EV init_stress) {
   EM init_stress_mat = this->FEMstress_to_matrix(init_stress);
 
   // isotropic compression
-  double compression_stress = init_stress_mat(0,0);
+  double compression_stress = std::max(-init_stress(0),-init_stress(1));
   this->isotropic_compression(this->e0,compression_stress);
   this->e = this->e0;
 
@@ -121,7 +137,9 @@ void Li2002::initial_state(EV init_stress) {
   EV dstrain_vec = EV::Zero(6);
   EV dstress_vec = EV::Zero(6);
 
-  dstress_vec(2) = (init_stress_mat(2,2)-init_stress_mat(0,0))/nstep;
+  dstress_vec(0) = (init_stress_mat(0,0)-compression_stress)/nstep;
+  dstress_vec(1) = (init_stress_mat(1,1)-compression_stress)/nstep;
+  dstress_vec(2) = (init_stress_mat(2,2)-compression_stress)/nstep;
 
   EM dstrain_input = this->vector_to_matrix(dstrain_vec);
   EM dstress_input = this->vector_to_matrix(dstress_vec);
@@ -158,7 +176,10 @@ std::tuple<EM, EV, double> Li2002::set_Dp_matrix(EV FEMdstrain) {
 
   EM dstress = this->solve_stress(dstrain,Ep);
 
-  StateParameters sp2(strain,stress,dstrain,dstress,this->stress_shift,ef1,ef2);
+  StateParameters sp_check(this->strain,this->stress,dstrain,dstress,this->stress_shift,ef1,ef2);
+  auto [ef1_check, ef2_check] = this->check_unload(sp_check);
+
+  StateParameters sp2(strain,stress,dstrain,dstress,this->stress_shift,ef1_check,ef2_check);
   this->update_parameters(sp2);
 
   auto [ev, gamma] = this->set_strain_variable(this->strain);
@@ -224,20 +245,35 @@ void Li2002::isotropic_compression(const double e0, const double compression_str
 // ------------------------------------------------------------------- //
 std::tuple<EM, StateParameters>
   Li2002::plastic_deformation_strain(const EM dstrain_given, const EM dstress_given, const StateParameters sp0) {
+    // sp0 :            stress state defined by EFFECTIVE stress
+    // dstress_given :  TOTAL stress
+    // extract stress state from sp0
     auto [ef1, ef2] = this->check_unload(sp0);
     EM strain = sp0.strain;
-    EM stress = sp0.stress;
+    EM eff_stress = sp0.stress;
 
     // std::cout << " " << std::endl;
     // std::cout << ef1 << " " << ef2 << std::endl;
     // std::cout << strain << std::endl;
     // std::cout << stress << std::endl;
 
-    StateParameters sp(strain,stress,dstrain_given,dstress_given,this->stress_shift,ef1,ef2);
+    // set elasto-plastic tensor in dry condition
+    StateParameters sp(strain,eff_stress,dstrain_given,dstress_given,this->stress_shift,ef1,ef2);
     Eigen::Tensor<double,4> Ep = this->plastic_stiffness(sp);
+
     EM dstrain_ep = this->solve_strain(dstress_given,Ep);
 
-    StateParameters sp2(strain,stress,dstrain_ep,dstress_given,this->stress_shift,ef1,ef2);
+    //check loading or unloading
+    StateParameters sp_check(strain,eff_stress,dstrain_ep,dstress_given,this->stress_shift,ef1,ef2);
+    auto [ef1_check, ef2_check] = this->check_unload(sp_check);
+
+    // if (ef1 != ef1_check || ef2 != ef2_check){
+    //   StateParameters sp(strain,eff_stress,dstrain_given,dstress_given,this->stress_shift,ef1,ef2);
+    //   Ep = this->plastic_stiffness(sp);
+    //   dstrain_ep = this->solve_strain(dstress_given,Ep);
+    // }
+    
+    StateParameters sp2(strain,eff_stress,dstrain_ep,dstress_given,this->stress_shift,ef1,ef2);
     this->update_parameters(sp2);
 
     // std::cout << " " << std::endl;
@@ -296,6 +332,7 @@ Eigen::Tensor<double,4>
     double G = this->elastic_modulus_G(e,p);
     double G2 = G*this->G2_coeff;
     Eigen::Tensor<double,4> E2 = this->elastic_stiffness(G2);
+    // std::cout << "G0(MPa):" << G/1e6 << "G2(MPa):" << G2/1e6 << std::endl;
     return E2;
   }
 
@@ -309,7 +346,7 @@ Eigen::Tensor<double,4> Li2002::elastic_stiffness(const double G) {
 }
 
 double Li2002::elastic_modulus_G(const double e, const double p) {
-  double G = this->G0*std::pow(2.97-e,2) / (1+e) * std::sqrt(std::max(p,this->pmin)*this->pr);
+  double G = this->G0*std::pow(2.97-e,2) / (1+e) * std::sqrt(std::max(p + this->stress_shift,this->pmin)*this->pr);
   return G;
 }
 
@@ -442,6 +479,15 @@ void Li2002::update_parameters(StateParameters &sp) {
     // this->H2 += sp.Kp2_b*dL2;
     this->H2 = H2;
   }
+
+  //----output----
+  this->psi = sp.psi;
+  this->h = sp.h;
+  this->out_H1 = this->H1;
+  this->out_H2 = this->H2;
+  this->out_L1 = this->L1;
+  this->out_h1 = this->h1;
+  this->out_h2 = this->h2;
 }
 
 // ------------------------------------------------------------------- //
@@ -475,7 +521,7 @@ std::tuple<double, double> Li2002::set_mapping_stress(StateParameters &sp) {
     if (sp.p > this->beta) {
       sp.p_bar = this->H2;
     } else {
-      sp.p_bar = this->pmin;
+      sp.p_bar = this->pmin - this->stress_shift;
     }
 
     double rho2 = std::abs(sp.p - this->beta);
@@ -626,6 +672,7 @@ double Li2002::_scaling_factor(const double e, const double rho1_ratio) {
   double fL = this->_accumulated_load_index(this->L1);
   double r1 = std::pow(1.0/rho1_ratio,10);
   double h = (this->h1-this->h2*e)*(r1+this->h3*fL*(1.0-r1));
+  this->fL = fL;
   return h;
 }
 
@@ -760,7 +807,7 @@ void Li2002::set_parameter_TZ(StateParameters &sp) {
 // ------------------------------------------------------------------- //
 Eigen::Tensor<double,4>
   Li2002::set_tensor_Ep(StateParameters &sp) {
-    Eigen::Tensor<double,4> Lm0 = this->set_Dikjl();
+    Eigen::Tensor<double,4> Lm0 = (this->set_Dikjl() + this->set_Diljk()) / 2.0;
     Eigen::Tensor<double,4> Lm1(3,3,3,3), Lm2(3,3,3,3);
 
     if (sp.elastic_flag1) {
@@ -827,7 +874,7 @@ Eigen::Tensor<double,4>
 
 // ------------------------------------------------------------------- //
 double Li2002::state_parameter(const double e, const double p) {
-  double psi = e - (this->eg-this->rlambdac* std::pow(std::max(p,this->pmin)/this->pr,this->xi));
+  double psi = e - (this->eg-this->rlambdac* std::pow(std::max(p + this->stress_shift,this->pmin)/this->pr,this->xi));
   return psi;
 }
 

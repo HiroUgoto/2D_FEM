@@ -7,6 +7,9 @@ class Material {
     std::string style;
     std::vector<double> param, param_ep;
     double rmu, rlambda, rho;
+    double rho_w = 1000.0;
+    double Kw = 2.25e9;
+    
     double kv, kh;
     EM R;
 

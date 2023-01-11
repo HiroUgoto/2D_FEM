@@ -13,7 +13,7 @@ using EM2 = Eigen::Matrix2d ;
 EP* set_ep_style(double dof, std::string style, std::vector<double> param_ep) {
   EP* ep_p = nullptr;
 
-  if (style == "ep_Li") {
+  if (style == "ep_Li" || style == "ep_eff_Li") {
     double nu = param_ep.at(0);
     double G0 = param_ep.at(1);
     double M  = param_ep.at(2);
@@ -28,6 +28,7 @@ EP* set_ep_style(double dof, std::string style, std::vector<double> param_ep) {
     ep_p->dof = dof;
     ep_p->style = style;
     ep_p->clear_strain();
+    // std::cout << ep_p->G0 << std::endl;
   }
 
   return ep_p;
