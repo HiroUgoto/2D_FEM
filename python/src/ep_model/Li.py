@@ -12,7 +12,8 @@ class Li2002:
 
         #parameter backup
         with open("./result/param.txt","w",newline="\n") as f:
-            saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
+            # saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
+            saveparam = "Li param\nG0 nu M c eg rlambdac xi d1 m h1 h2 h3 n d2 h4 a b1 b2 b3 cohesion\n{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}\ne0\n{}".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
             f.write(saveparam)
             f.close()
 
@@ -32,7 +33,7 @@ class Li2002:
 
         # stress parameters
         self.pr = 101.e3
-        self.pmin = 1.e2
+        self.pmin = 1.e-4
 
         # stress & strain
         self.stress = np.zeros((3,3))
@@ -80,13 +81,16 @@ class Li2002:
             self.dstress = np.copy(dstress)
             self.dstrain = np.copy(dstrain)
             self.pore_pressure = pore_pressure
-            self.pmin = 1.e2
+            self.pmin = 1.e-4
 
             self.set_stress_variable(stress_shift)
             self.set_stress_increment()
 
             self.elastic_flag1 = ef1
             self.elastic_flag2 = ef2
+
+            self.Kp1 = 0.0
+            self.Kp2 = 0.0
 
         def set_stress_variable(self,stress_shift):
             self.p = np.trace(self.stress)/3
@@ -521,6 +525,12 @@ class Li2002:
             self.H2 = H2
 
         self.psi = sp.psi
+        self.D1 = sp.D1
+        self.D2 = sp.D2
+        self.Kp1 = sp.Kp1
+        self.Kp2 = sp.Kp2
+        self.Ge = sp.Ge
+        self.Ke = sp.Ke
 
 
     # -------------------------------------------------------------------------------------- #

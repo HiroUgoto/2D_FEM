@@ -17,7 +17,7 @@ StateParameters::StateParameters (EM strain, EM stress, EM dstrain, EM dstress, 
     this->stress = stress;
     this->dstrain = dstrain;
     this->dstress = dstress;
-    this->pmin = 1.e2;
+    this->pmin = 1.e-4;
 
     this->elastic_flag1 = ef1;
     this->elastic_flag2 = ef2;
@@ -61,7 +61,7 @@ Li2002::Li2002 (double G0, double nu, double M, double eg, double d1, double coh
 
     // stress parameters
     this->pr = 101.e3;
-    this->pmin = 100.0;
+    this->pmin = 1.e-4;
 
     // stress and strain
     this->stress = EM::Zero(3,3);
@@ -93,7 +93,13 @@ Li2002::Li2002 (double G0, double nu, double M, double eg, double d1, double coh
     this->g0 = this->c*(1.0+this->c) / (1.0+this->c*this->c);
     this->dg0 = (-this->c*this->c*(1-this->c)* std::pow(1+this->c,2)) / std::pow(1+this->c*this->c,3);
 
-    this->psi = 0.0;
+    std::ofstream outparams;;
+    outparams.open("./result/param.txt");
+    outparams << "Li param" << std::endl;
+    outparams << "G0 nu M c eg rlambdac xi d1 m h1 h2 h3 n d2 h4 a b1 b2 b3 cohesion" << std::endl;
+    outparams << G0 << " " << nu << " " << M << " " << c << " " << eg << " " << rlambdac << " " << xi << " " << d1 << " " << m << " " << h1 << " " << h2 << " " << h3 << " " << n << " " << d2 << " " << h4 << " " << a << " " << b1 << " " << b2 << " " << b3 << " " << cohesion;
+    outparams.close();
+
   }
 
 
@@ -160,7 +166,6 @@ void Li2002::initial_state(EV init_stress) {
     auto [ev, gamma] = this->set_strain_variable(this->strain);
     this->e = this->e0 - ev*(1.0+this->e0);
   }
-
 }
 
 // ------------------------------------------------------------------- //
@@ -273,7 +278,7 @@ std::tuple<EM, StateParameters>
     //   dstrain_ep = this->solve_strain(dstress_given,Ep);
     // }
     
-    StateParameters sp2(strain,eff_stress,dstrain_ep,dstress_given,this->stress_shift,ef1,ef2);
+    StateParameters sp2(strain,eff_stress,dstrain_ep,dstress_given,this->stress_shift,ef1_check,ef2_check); //check
     this->update_parameters(sp2);
 
     // std::cout << " " << std::endl;
@@ -488,6 +493,12 @@ void Li2002::update_parameters(StateParameters &sp) {
   this->out_L1 = this->L1;
   this->out_h1 = this->h1;
   this->out_h2 = this->h2;
+  this->out_D1 = sp.D1;
+  this->out_D2 = sp.D2;
+  this->out_Kp1 = sp.Kp1;
+  this->out_Kp2 = sp.Kp2;
+  this->out_Ge = sp.Ge;
+  this->out_Ke = sp.Ke;
 }
 
 // ------------------------------------------------------------------- //

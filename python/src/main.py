@@ -23,7 +23,7 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fp = 3.0
+fp = 1.0
 amp = 1.0
 printmesh = 0
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
@@ -35,7 +35,7 @@ fem.set_ep_initial_state()
 ## --- Define input wave --- ##
 fsamp = 40000
 datasamplerate = 100  #sampling rate[Hz]
-duration = 3
+duration = 20
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp)
@@ -88,6 +88,12 @@ h1_h2e_list = np.zeros(fem.output_nelem+1) #h1-h2*e
 H1_list = np.zeros(fem.output_nelem+1)
 H2_list = np.zeros(fem.output_nelem+1)
 L1_list = np.zeros(fem.output_nelem+1)
+D1_list = np.zeros(fem.output_nelem+1)
+D2_list = np.zeros(fem.output_nelem+1)
+Kp1_list = np.zeros(fem.output_nelem+1)
+Kp2_list = np.zeros(fem.output_nelem+1)
+Ge_list = np.zeros(fem.output_nelem+1)
+Ke_list = np.zeros(fem.output_nelem+1)
 
 
 
@@ -118,6 +124,12 @@ h1_h2e = open(output_dir+"h1-h2e.out","w")
 H1 = open(output_dir+"H1.out","w")
 H2 = open(output_dir+"H2.out","w")
 L1 = open(output_dir+"L1.out","w")
+D1 = open(output_dir+"D1.out","w")
+D2 = open(output_dir+"D2.out","w")
+Kp1 = open(output_dir+"Kp1.out","w")
+Kp2 = open(output_dir+"Kp2.out","w")
+Ge = open(output_dir+"Ge.out","w")
+Ke = open(output_dir+"Ke.out","w")
 
 
 
@@ -167,6 +179,12 @@ for it in range(ntim):
         writef(H1_list, H1, tim[it], [element.ep.model.H1 for element in fem.output_elements])
         writef(H2_list, H2, tim[it], [element.ep.model.H2 for element in fem.output_elements])
         writef(L1_list, L1, tim[it], [element.ep.model.L1 for element in fem.output_elements])
+        writef(D1_list, D1, tim[it], [element.ep.model.D1 for element in fem.output_elements])
+        writef(D2_list, D2, tim[it], [element.ep.model.D2 for element in fem.output_elements])
+        writef(Kp1_list, Kp1, tim[it], [element.ep.model.Kp1 for element in fem.output_elements])
+        writef(Kp2_list, Kp2, tim[it], [element.ep.model.Kp2 for element in fem.output_elements])
+        writef(Ge_list, Kp1, tim[it], [element.ep.model.Ge for element in fem.output_elements])
+        writef(Ke_list, Kp2, tim[it], [element.ep.model.Ke for element in fem.output_elements])
         
     if it%(fsamp/datasamplerate*10) == 0:
         # plot_model.plot_mesh_update(ax,fem,100.)
@@ -200,6 +218,12 @@ h1_h2e.close()
 H1.close()
 H2.close()
 L1.close()
+D1.close()
+D2.close()
+Kp1.close()
+Kp2.close()
+Ge.close()
+Ke.close()
 
 
 elapsed_time = time.time() - start
