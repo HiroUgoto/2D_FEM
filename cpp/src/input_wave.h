@@ -7,4 +7,6 @@ namespace input_wave {
     simple_sin(const Eigen::VectorXd tim, const double fp, const double amp);
   Eigen::VectorXd
     tapered_sin(const Eigen::VectorXd tim, const double fp, const double taper, const double duration, const double amp);
+  Eigen::VectorXd
+    wavedata(const Eigen::VectorXd tim, const std::string inputfile);
 }

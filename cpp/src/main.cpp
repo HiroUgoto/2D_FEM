@@ -40,14 +40,15 @@ int main() {
   // fem.set_rayleigh_damping(fp,10*fp,0.02);
 
   // ----------------------------- //
-  size_t fsamp = 80000;
-  double duration = 30;
+  size_t fsamp = 120000;
+  double duration = 50;
 
   EV wave_acc;
   auto [tim, dt] = input_wave::linspace(0,duration,(int)(fsamp*duration));
   // wave_acc = input_wave::tapered_sin(tim,fp,1.0/fp,duration-1.0/fp,amp);
   // wave_acc = input_wave::tapered_sin(tim,fp,2.0/fp,duration-1.0/fp,amp);
-  wave_acc = input_wave::tapered_sin(tim,fp,1.0,duration+3,amp);
+  // wave_acc = input_wave::tapered_sin(tim,fp,1.0,duration+3,amp);
+  wave_acc = input_wave::wavedata(tim,"input/data/multisin120k50a0001.in");
   size_t ntim = tim.size();
 
   // ----- Prepare time solver ----- //
@@ -258,7 +259,7 @@ int main() {
       Ge << std::endl;
       Ke << std::endl;
 
-      if (it%(fsamp/100) == 0){
+      if (it%(fsamp/dsamp*10) == 0){
         Element* out_element_p = &fem.elements[p];
         // std::cout << " t=" << it*dt << " e_id:" << p << " " << out_element_p->stress(0) << " " << out_element_p->stress(1) << std::endl;
         std::cout << " t=" << it*dt << " e_id:" << p << " " << out_element_p->eff_stress(0) << " " << out_element_p->eff_stress_yy << " " << out_element_p->eff_stress(1) << " " << out_element_p->excess_pore_pressure << std::endl;
