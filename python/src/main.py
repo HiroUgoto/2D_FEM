@@ -69,7 +69,7 @@ for it in range(ntim):
 
     if it%50 == 0:
         plot_model.plot_mesh_update(ax,fem,10.,margin=2)
-        print(it,"t=",tim[it],output_accx[it,0],output_element_strain_xz[it,0],output_element_stress_xz[it,0])
+        print(f'{it} t={tim[it]:.03f} {output_accx[it,0]:.03e} {output_element_strain_xz[it,0]:.03e} {output_element_stress_xz[it,0]:.03e}')
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
