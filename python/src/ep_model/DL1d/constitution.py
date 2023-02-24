@@ -24,14 +24,6 @@ class DL1d:
             `info (dict)`: Dictionary that contains material parameters. Keys are 'H', 'P0', 'N', 'G0', 'sand', 'silt', 'clay', 'wL' and 'wP'. The first four are in SI units and the last five are in percent(%).
         '''
         self.info_dict = info
-        if maxlen is None:
-            self.enc_gamma = [0]*100
-            self.enc_nmtau1 = [0]*100
-            self.enc_nmtau2 = [0]*100
-        else:
-            self.enc_gamma = deque([0]*100,maxlen)
-            self.enc_nmtau1 = deque([0]*100,maxlen)
-            self.enc_nmtau2 = deque([0]*100,maxlen)
 
         self.gamma_list = []
         self.tau_list = []
@@ -56,7 +48,7 @@ class DL1d:
     def _init_dl_models(self):
         self.dl_gr = Net.DL_gr()
         self.dl_h = Net.DL_h()
-        self.dl_s2s = Net.DL_s2s()
+        self.dl_s2s = t.jit.script(Net.DL_s2s())
 
     def initial_state(self,info_update):
         self.info_dict.update(info_update)
@@ -118,16 +110,13 @@ class DL1d:
         nmtau2 = self.nm2.shear(gamma)
 
         self.gamma = gamma
-        self.enc_gamma.append(self._encode_gamma(gamma))
-        self.enc_nmtau1.append(self._encode_tau(nmtau1))
-        self.enc_nmtau2.append(self._encode_tau(nmtau2))
+        enc_gamma = t.Tensor([self._encode_gamma(gamma)])
+        enc_nmtau = t.zeros([2])
+        enc_nmtau[0] = self._encode_tau(nmtau1)
+        enc_nmtau[1] = self._encode_tau(nmtau2)
 
-        enc_gamma = t.Tensor(self.enc_gamma)
-        enc_nmtau = t.Tensor([self.enc_nmtau1,self.enc_nmtau2]).T
         x = self.info_enc,enc_gamma,enc_nmtau
-        with t.no_grad():
-            enc_tau = t.squeeze(self.dl_s2s(*x))
-        self.tau = self._decode_tau(enc_tau[-1])
+        self.tau = float(self._decode_tau(self.dl_s2s(*x)))
         self.gamma_list.append(self.gamma)
         self.tau_list.append(self.tau)
         self.nmtau_list.append((nmtau1+nmtau2)/2)

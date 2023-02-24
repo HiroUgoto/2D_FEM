@@ -97,10 +97,9 @@ class Net_s2s(nn.Module):
         # gamma.shape: seq
         # taumodel.shape: seq,model
         seq = len(gamma)
-        gamma = gamma.reshape(1,seq,1)
-        taumodel = taumodel.reshape(1,seq,2)
-        info = info.reshape(1,1,-1) * t.ones(1,seq,1).to(dev)
-        # print(info.shape,gamma.shape)
+        gamma = gamma.view(1,seq,1)
+        taumodel = taumodel.view(1,seq,2)
+        info = info.view(1,1,-1) * t.ones(1,seq,1).to(dev)
         x = t.cat((info,gamma),2).transpose(1,2)
         x = self.encoder(x).transpose(1,2)
         x = self.connect(x)
@@ -110,13 +109,35 @@ class Net_s2s(nn.Module):
         return x
 
 
-class DL_s2s(Net_s2s):
+class DL_s2s(nn.Module):
     def __init__(self,name='state_dict.pth'):
-        super().__init__(**S2S_ARGS)
+        super().__init__()
+        enc_args,dec_args = S2S_ARGS.values()
+        nmodel = 2
+        self.encoder = TCN.Cashed_TCN(**enc_args)
+        self.connect = nn.Linear(enc_args['num_channels'][-1],dec_args['num_inputs']-nmodel)
+        self.decoder = TCN.Cashed_TCN(**dec_args)
+        self.outnet = nn.Linear(dec_args['num_channels'][-1],1)
         self.load_state_dict(loadpath(name))
+        self.encoder.remove_weight_norm()
+        self.decoder.remove_weight_norm()
         self.eval()
 
-    @t.jit.script_if_tracing
     def forward(self,info,gamma,taumodel):
+        '''
+        `info size: (feature,)`
+        `gamma size: (1,)`
+        `taumodel size: (model,)`
+        `output size: (1,)`
+        '''
         with t.no_grad():
-            return super().forward(info,gamma,taumodel,dev='cpu')
+            gamma = gamma.view(1,1)
+            taumodel = taumodel.view(1,2)
+            info = info.view(1,-1)
+            x = t.cat((info,gamma),-1)
+            x = self.encoder(x)
+            x = self.connect(x)
+            x = t.cat((x,taumodel),-1)
+            x = self.decoder(x)
+            x = self.outnet(x).squeeze()
+            return x
