@@ -61,7 +61,7 @@ class Li2002: public EP {
             double d1=0.41, double cohesion=0.0,
             double c=0.75, double rlambdac=0.019, double xi=0.7,
             double m=3.5, double h1=2.1, double h2=2.03, double h3=2.2, double n=1.1,
-            double d2=1.0, double h4=3.5, double a=1.0, double b1=0.005, double b2=2.0, double b3=0.05);
+            double d2=1.0, double h4=3.5, double a=1.0, double b1=0.005, double b2=2.0, double b3=0.01);
 
     void print();
     void clear_strain();

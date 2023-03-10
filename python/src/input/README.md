@@ -118,7 +118,8 @@ id style param
   + S-wave velocity [m/s], P-wave velocity [m/s], and density [kg/m^3]
 - nu_vp_rho : Linear elastic material. Parameters are given in the order of
   + Poisson's ratio, P-wave velocity [m/s], and density [kg/m^3]
-
+- ep_eff_Li : elasto-plastic material under undrain condition. Parameters are given in the order of
+  + soil particle density [kg/m^3], model parameters
 ### Example
 
 ```

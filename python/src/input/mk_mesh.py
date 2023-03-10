@@ -1,8 +1,8 @@
 import numpy as np
 import os,sys
 
-area_x = 20.0
-area_z = 4.0
+area_x = 5.0
+area_z = 1.0
 
 nx = 5
 nz = 1
@@ -40,7 +40,7 @@ for k in range(nz):
         if 1 <= i <= 3:
             im = 1
         else:
-            im = 2
+            im = 0
 
         n0,n1,n2,n3 = node[2*i,2*k],node[2*i+2,2*k],node[2*i+2,2*k+2],node[2*i,2*k+2]
         n4,n5,n6,n7 = node[2*i+1,2*k],node[2*i+2,2*k+1],node[2*i+1,2*k+2],node[2*i,2*k+1]
@@ -81,14 +81,9 @@ nelem = ielem       #number of elements
 
 ### Set material ###
 material_lines = []
-material_lines += ["{} {} {} {} {}\n".format(0,"nu_E_rho",0.2,100.0e9,850.0)]
-# material_lines += ["{} {} {} {} {} \n".format(1,"nu_vs_rho",0.33,150.0,1700.0)]
-# material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_Li",1700.0,0.33,420,0.97,0.7148,0.957,0.0,4.e3)]
-#                                                      # rho, nu, G0, M, e0, eg, d1, cohesion
-material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_eff_Li",2650.0,0.33,80,1.25,0.85,0.934,0.41,0.0)]
+material_lines += ["{} {} {} {} {}\n".format(0,"nu_vs_rho",0.33,150.0,1700.0)]
+material_lines += ["{} {} {} {} {} {} {} {} {} {}\n".format(1,"ep_eff_Li",2650.0,0.25,125,1.25,0.85,0.934,0.41,0.0)]
                                                      # rho, nu, G0, M, e0, eg, d1, cohesion
-material_lines += ["{} {} {} {} {}\n".format(2,"nu_vs_rho",0.33,150.0,1700.0)]
-
 
 nmaterial = len(material_lines)
 

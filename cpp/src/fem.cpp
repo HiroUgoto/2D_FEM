@@ -350,6 +350,7 @@ void Fem::set_ep_initial_state() {
     // EV compression_stress(3);
     // compression_stress << -30e3, -30e3, 0.0;
     // element_p->ep_p->initial_state_isotropic(element_p->stress);
+    
     element_p->ep_p->initial_state(element_p->stress);
     auto [rmu,rlambda] = element_p->ep_p->elastic_modulus_lame();
     element_p->material.rmu = rmu;
