@@ -61,3 +61,25 @@ Eigen::VectorXd
 
     return wave.array() * coeff.array();
   }
+
+  // ------------------------------------------------------------------- //
+Eigen::VectorXd
+  input_wave::wavedata(const Eigen::VectorXd tim, const std::string inputfile) {
+    std::ifstream f(inputfile);
+    if (f.fail()) {
+	    std::cout << "Cannot open file\n";
+	    exit(0);
+	  }
+
+    std::string line;
+    double number;
+    size_t num = tim.size();
+    Eigen::VectorXd wave = Eigen::VectorXd::Zero(num);
+    for (size_t i = 0 ; i < num ; i++ ){
+      std::getline(f,line);
+      std::istringstream iss(line);
+      iss >> number;
+      wave(i) = number;
+    }
+    return wave;
+  }

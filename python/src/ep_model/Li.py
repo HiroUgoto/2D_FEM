@@ -8,11 +8,12 @@ class Li2002:
     # Defalt parameters are for Toyoura sand (Li2002)
     def __init__(self,G0=125,nu=0.25,M=1.25,c=0.75,eg=0.934,rlambdac=0.019,xi=0.7, \
                  d1=0.41,m=3.5,h1=2.1,h2=2.03,h3=2.2,n=1.1, \
-                 d2=1.0,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.05,cohesion=0.0,e0=False):
+                 d2=1.0,h4=3.5,a=1,b1=0.005,b2=2.0,b3=0.01,cohesion=0.0,e0=False):
 
         #parameter backup
         with open("./result/param.txt","w",newline="\n") as f:
-            saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
+            # saveparam = "Li param\nG0={} nu={} \nM={} c={} eg={} rlambdac={} xi={} \nd1={} m={} h1={} h2={} h3={} n={} \nd2={} h4={} \na={} b1={} b2={} b3={} cohesion={} e0={}\n".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
+            saveparam = "Li param\nG0 nu M c eg rlambdac xi d1 m h1 h2 h3 n d2 h4 a b1 b2 b3 cohesion\n{} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {} {}\ne0\n{}".format(G0,nu,M,c,eg,rlambdac,xi,d1,m,h1,h2,h3,n,d2,h4,a,b1,b2,b3,cohesion,e0)
             f.write(saveparam)
             f.close()
 
@@ -32,7 +33,7 @@ class Li2002:
 
         # stress parameters
         self.pr = 101.e3
-        self.pmin = 1.e2
+        self.pmin = 1.e-4
 
         # stress & strain
         self.stress = np.zeros((3,3))
@@ -80,13 +81,16 @@ class Li2002:
             self.dstress = np.copy(dstress)
             self.dstrain = np.copy(dstrain)
             self.pore_pressure = pore_pressure
-            self.pmin = 1.e2
+            self.pmin = 1.e-4
 
             self.set_stress_variable(stress_shift)
             self.set_stress_increment()
 
             self.elastic_flag1 = ef1
             self.elastic_flag2 = ef2
+
+            self.Kp1 = 0.0
+            self.Kp2 = 0.0
 
         def set_stress_variable(self,stress_shift):
             self.p = np.trace(self.stress)/3
@@ -521,6 +525,12 @@ class Li2002:
             self.H2 = H2
 
         self.psi = sp.psi
+        self.D1 = sp.D1
+        self.D2 = sp.D2
+        self.Kp1 = sp.Kp1
+        self.Kp2 = sp.Kp2
+        self.Ge = sp.Ge
+        self.Ke = sp.Ke
 
 
     # -------------------------------------------------------------------------------------- #
@@ -829,7 +839,7 @@ class Li2002:
 
 
     # -------------------------------------------------------------------------------------- #
-    def cyclic_shear_test_CU(self,e0,compression_stress,sr=0.2,cycle=20,print_result=False,plot=False):
+    def cyclic_shear_test_CU1(self,e0,compression_stress,sr=0.2,cycle=20,print_result=False,plot=False):
         # 応力制御
         def cycle_load(nstep,amp,i):
             tau = amp*np.sin((i+1)/nstep*2*np.pi)
@@ -930,14 +940,14 @@ class Li2002:
                 ep_list += [self.strain[2,2]]
                 gamma_list += [gamma]
                 tau_list += [self.stress[0,2]]
-                ev_list += [ev] #体積ひずみ
-                p_list += [eff_p]  #平均有効拘束圧
-                q_list += [(self.eff_stress[2,2]-self.eff_stress[0,0])]     #軸差応力
+                ev_list += [ev]
+                p_list += [eff_p]
+                q_list += [(self.eff_stress[2,2]-self.eff_stress[0,0])]
                 stressxx += [self.eff_stress[0,0]]
                 stressyy += [self.eff_stress[1,1]]
                 stresszz += [self.eff_stress[2,2]]
-                stresszz_all += [self.stress[2,2]]    #全応力
-                epstress_list += [self.pore_pressure]   #過剰間隙水圧
+                stresszz_all += [self.stress[2,2]]
+                epstress_list += [self.pore_pressure]
                 epstress_ratio += [self.pore_pressure/p]
                 strain_d += [self.strain[2,2]]
                 fL_list += [self.fL]
@@ -949,7 +959,7 @@ class Li2002:
                 H2_list += [self.H2]
                 L1_list += [self.L1]
 
-            DA = max(strain_d[-nstep:-1]) - min(strain_d[-nstep:-1])    #各サイクルでの軸ひずみ両振幅
+            DA = max(strain_d[-nstep:-1]) - min(strain_d[-nstep:-1])    #軸ひずみ両振幅
             print("DA",DA*100)
             DA_list += [DA]
             if (1 <= DA*100 < 2) and flag1==True:
@@ -1027,10 +1037,9 @@ class Li2002:
             plt.plot(gamma_list,ep_list)
             plt.show()
 
-
     # -------------------------------------------------------------------------------------- #
     def cyclic_shear_test_CU2(self,e0,compression_stress,sr=0.2,cycle=20,print_result=False,plot=False):
-        #ひずみ制御，線形探索
+        #ひずみ制御
         def cycle_load(nstep,amp,i):
             tau = amp*np.sin((i+1)/nstep*2*np.pi)
             tau0 = amp*np.sin((i+0)/nstep*2*np.pi)
@@ -1057,7 +1066,6 @@ class Li2002:
         nstep = 100
         step = int(1e6)
         ncycle = cycle
-        print("sigma_d=",2*sr*p0/1000,"kPa")
 
         dstrain_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
         dstrain_input = self.vector_to_matrix(dstrain_vec)
@@ -1098,7 +1106,7 @@ class Li2002:
                 eff_p,R = self.set_stress_variable(self.eff_stress)
 
 
-                for j in range(1,step):     #応力が既定値になるまでひずみを増加
+                for j in range(1,step):
                     dgamma = 0.1/step*j*np.sign(dtau)
                     dstrain_vec = np.array([0.0,0.0,dgamma,0.0,0.0,0.0])
                     dstrain_input = self.vector_to_matrix(dstrain_vec)
@@ -1145,12 +1153,12 @@ class Li2002:
                 tau_list += [self.stress[0,2]]
                 ev_list += [ev] #体積ひずみ
                 p_list += [eff_p]  #平均有効拘束圧
-                q_list += [(self.eff_stress[2,2]-self.eff_stress[0,0])]     #軸差応力
+                q_list += [(self.eff_stress[2,2]-self.eff_stress[0,0])]
                 stressxx += [self.eff_stress[0,0]]
                 stressyy += [self.eff_stress[1,1]]
                 stresszz += [self.eff_stress[2,2]]
-                stresszz_all += [self.stress[2,2]]    #全応力
-                epstress_list += [self.pore_pressure]   #過剰間隙水圧
+                stresszz_all += [self.stress[2,2]]
+                epstress_list += [self.pore_pressure]
                 epstress_ratio += [self.pore_pressure/p]
                 strain_d += [self.strain[2,2]]
                 fL_list += [self.fL]
@@ -1162,7 +1170,7 @@ class Li2002:
                 H2_list += [self.H2]
                 L1_list += [self.L1]
 
-            DA = max(strain_d[-nstep:-1]) - min(strain_d[-nstep:-1])    #各サイクルでの軸ひずみ両振幅
+            DA = max(strain_d[-nstep:-1]) - min(strain_d[-nstep:-1])    #軸ひずみ両振幅
             print("DA",DA*100)
             DA_list += [DA]
             if (1 <= DA*100 < 2) and flag1==True:
@@ -1238,229 +1246,6 @@ class Li2002:
             plt.show()
             plt.plot(gamma_list,ep_list)
             plt.show()
-
-
-    def cyclic_shear_test_CU3(self,e0,compression_stress,sr=0.2,cycle=20,print_result=False,plot=False):
-        #ひずみ制御,二分探索
-        def cycle_load(nstep,amp,i):
-            tau = amp*np.sin((i+1)/nstep*2*np.pi)
-            tau0 = amp*np.sin((i+0)/nstep*2*np.pi)
-            return tau - tau0
-
-        gamma_list,ev_list,tau_list,ep_list = [],[],[],[]
-        p_list,q_list = [],[]
-        strain_d, DA_list = [],[]
-        epstress_list, epstress_ratio = [],[]
-        stressxx,stressyy,stresszz,stresszz_all = [],[],[],[]
-        fL_list,h_list,psi_list = [],[],[]
-        h1_h2e_list, e_list = [],[]
-        H1_list, H2_list, L1_list = [],[],[]
-
-        flag1,flag2,flag5,flag10 = True,True,True,True
-
-        self.isotropic_compression(e0,compression_stress)
-        self.e0 = np.copy(e0)
-        self.e = np.copy(e0)
-
-        p0,_ = self.set_stress_variable(self.stress)
-        self.beta,self.H2 = p0,p0
-
-        nstep = 100
-        step = int(1e6)
-        ncycle = cycle
-        print("sigma_d=",2*sr*p0/1000,"kPa")
-
-        dstrain_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
-        dstrain_input = self.vector_to_matrix(dstrain_vec)
-
-        dstress_vec = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
-        dstress_input = self.vector_to_matrix(dstress_vec)
-#
-        deformation_vec = np.array([True,True,False,True,True,True],dtype=bool)
-        deformation = self.vector_to_matrix(deformation_vec)
-
-        sp0 = self.StateParameters(self.strain,self.stress,dstrain_input,dstress_input,self.stress_shift)
-
-        # init effective stress
-        self.eff_stress = np.copy(self.stress)
-        self.pore_pressure = 0.0
-        self.pore_dpressure = 0.0
-
-
-        for ic in range(ncycle):
-            print("###--------------------###")
-            print("+ N :",ic+1)
-            for i in range(nstep):
-                # print("")
-                # print("+step:",i,"/",ic)
-
-                dtau = cycle_load(nstep,2*sr*p0,i)
-                # print("eps=",eps,"n=",n,"d_ev=",d_ev,"ev",ev)
-
-                # set effective stress
-                pore_dpressure = self.pore_dpressure
-                eff_dstress_input = dstress_input - pore_dpressure*np.eye(3)
-
-                # sp = self.StateParameters(self.strain,self.stress,sp0.dstrain,dstress_input,self.stress_shift)
-                sp = self.StateParameters(self.strain,self.eff_stress,sp0.dstrain,eff_dstress_input,self.stress_shift,self.pore_pressure)
-
-                # p,R = self.set_stress_variable(self.stress)
-                eff_p,R = self.set_stress_variable(self.eff_stress)
-
-
-                start = 1
-                end = step
-                while(start <= end):
-                    middle = (start + end)//2
-
-                    if middle > step-1:
-                        print("error,step overflow i:",i)
-
-                    dgamma = 0.1/step*middle*np.sign(dtau)
-                    dstrain_vec = np.array([0.0,0.0,dgamma,0.0,0.0,0.0])
-                    dstrain_input = self.vector_to_matrix(dstrain_vec)
-
-                    # dstress: total stress
-                    dstrain,dstress,sp0 = \
-                        self.plastic_deformation(dstrain_input,dstress_input,deformation,sp,pore_dpressure,CU=True)
-
-                    if abs(dstress[2,2]) == abs(dtau):
-                        break
-                    elif abs(dstress[2,2]) < abs(dtau):
-                        start = middle+1
-                    elif abs(dtau) < abs(dstress[2,2]):
-                        end = middle-1
-                
-                
-                if i%10 == 0:
-                    print("break!! cycle:",ic,"step:",i,"j:",middle,"/",step)
-                    print(dstress[2,2],dtau,dgamma)
-                    
-
-                self.stress += dstress
-                self.strain += dstrain
-                self.pore_dpressure = sp0.pore_pressure - self.pore_pressure
-                self.pore_pressure = sp0.pore_pressure
-                self.eff_stress = self.stress - self.pore_pressure*np.eye(3)
-                eff_p = np.trace(self.eff_stress)/3.0
-                p = np.trace(self.stress)/3.0
-
-                # print("")
-                # print(eff_p,self.eff_stress[2,2]-self.eff_stress[0,0],self.pore_pressure)
-                # print(" stress:",self.stress.diagonal())
-                # print(" eff_stress:",self.eff_stress.diagonal())
-
-                # if i%50==0:
-                #     print("stress",self.stress)
-                    # print("strain",self.strain)
-                    # print("dstress",dstress)
-                    # print("strain",dstrain)
-                    # print("fL",self.fL)
-
-                ev,gamma = self.set_strain_variable(self.strain)
-                self.e = self.e0 - ev*(1+self.e0)
-                dev_strain = self.strain - ev/3.0 * self.I3
-
-                ###---for plot---###
-                ep_list += [self.strain[2,2]]
-                gamma_list += [gamma]
-                tau_list += [self.stress[0,2]]
-                ev_list += [ev] #体積ひずみ
-                p_list += [eff_p]  #平均有効拘束圧
-                q_list += [(self.eff_stress[2,2]-self.eff_stress[0,0])]     #軸差応力
-                stressxx += [self.eff_stress[0,0]]
-                stressyy += [self.eff_stress[1,1]]
-                stresszz += [self.eff_stress[2,2]]
-                stresszz_all += [self.stress[2,2]]    #全応力
-                epstress_list += [self.pore_pressure]   #過剰間隙水圧
-                epstress_ratio += [self.pore_pressure/p]
-                strain_d += [self.strain[2,2]]
-                fL_list += [self.fL]
-                h_list += [self.h]
-                psi_list += [self.psi]
-                h1_h2e_list += [self.h1-self.h2*self.e]
-                e_list += [self.e]
-                H1_list += [self.H1]
-                H2_list += [self.H2]
-                L1_list += [self.L1]
-
-            DA = max(strain_d[-nstep:-1]) - min(strain_d[-nstep:-1])    #各サイクルでの軸ひずみ両振幅
-            print("DA",DA*100)
-            DA_list += [DA]
-            if (1 <= DA*100 < 2) and flag1==True:
-                print("1% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
-                flag1=False
-            elif (2 <= DA*100 < 5) and flag2==True:
-                print("2% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
-                flag2=False
-            elif (5 <= DA*100 < 10) and flag5==True:
-                print("5% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
-                flag5=False
-            elif (10 <= DA*100) and flag10==True:
-                print("10% liquified!!!",max(strain_d[-nstep:-1]),min(strain_d[-nstep:-1]))
-                flag10=False
-            # print("strain",self.strain)
-            # print("stress",self.stress)
-
-        step_list = np.linspace(0,cycle,nstep*ncycle)
-        gamma_list = np.array(gamma_list)
-        tau_list = np.array(tau_list)
-        ev_list = np.array(ev_list)
-        p_list = np.array(p_list)
-        q_list = np.array(q_list)
-        stressxx = np.array(stressxx)
-        stressyy = np.array(stressyy)
-        stresszz = np.array(stresszz)
-        stresszz_all = np.array(stresszz_all)
-        epstress_list = np.array(epstress_list)
-        epstress_ratio = np.array(epstress_ratio)
-        strain_d = np.array(strain_d)
-        DA_list = np.array(DA_list)
-        fL_list =  np.array(fL_list)
-        h_list =  np.array(h_list)
-        psi_list =  np.array(psi_list)
-        h1_h2e_list =  np.array(h1_h2e_list)
-        e_list =  np.array(e_list)
-        H1_list =  np.array(H1_list)
-        H2_list =  np.array(H2_list)
-        L1_list =  np.array(L1_list)
-
-        np.savetxt("./result/step.dat",step_list)
-        np.savetxt("./result/gamma.dat",gamma_list)
-        np.savetxt("./result/tau.dat",tau_list)
-        np.savetxt("./result/ev.dat",ev_list)
-        np.savetxt("./result/p.dat",p_list)
-        np.savetxt("./result/q.dat",q_list)
-        np.savetxt("./result/stressxx.dat",stressxx)
-        np.savetxt("./result/stressyy.dat",stressyy)
-        np.savetxt("./result/stresszz.dat",stresszz)
-        np.savetxt("./result/stresszz_all.dat",stresszz_all)
-        np.savetxt("./result/epstress.dat",epstress_list)
-        np.savetxt("./result/epstrassratio.dat",epstress_ratio)
-        np.savetxt("./result/strain_d.dat",strain_d)
-        np.savetxt("./result/DA.dat",DA_list)
-        np.savetxt("./result/fL.dat",fL_list)
-        np.savetxt("./result/h.dat",h_list)
-        np.savetxt("./result/psi.dat",psi_list)
-        np.savetxt("./result/h1-h2e.dat",h1_h2e_list)
-        np.savetxt("./result/e.dat",e_list)
-        np.savetxt("./result/H1.dat",H1_list)
-        np.savetxt("./result/H2.dat",H2_list)
-        np.savetxt("./result/L1.dat",L1_list)
-
-        if plot:
-            plt.figure()
-            plt.plot(gamma_list,tau_list)
-            plt.xlabel("gamma")
-            plt.ylabel("tau")
-            plt.show()
-            plt.plot(p_list,tau_list)
-            plt.xlabel("p")
-            plt.ylabel("tau")
-            plt.show()
-            plt.plot(gamma_list,ep_list)
-            plt.show()
-
 
     # -------------------------------------------------------------------------------------- #
     def cyclic_pure_shear_test(self,e0,compression_stress,gmax=0.01,cycle=30,print_result=False,plot=False):

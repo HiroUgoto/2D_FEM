@@ -24,8 +24,8 @@ class Element:
         self.estyle = element_style.set_style(style)
         self.dim = self.estyle.dim
 
-        self.xi,self.w = self.estyle.gauss      #gauss積分点の座標,重み
-        self.ng = len(self.xi)      #積分点数
+        self.xi,self.w = self.estyle.gauss
+        self.ng = len(self.xi)
 
     def set_nodes(self,nodes):
         self.nodes = nodes
@@ -53,8 +53,8 @@ class Element:
     def set_xn(self):
         self.xnT  = np.empty([2,self.nnode],dtype=np.float64)
         for i in range(self.nnode):
-            self.xnT[0,i] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
-            self.xnT[1,i] = self.nodes[i].xyz[1] + self.u[i][1] # mesh update
+            self.xnT[0,i] = self.nodes[i].xyz[0] + self.u[i][0]
+            self.xnT[1,i] = self.nodes[i].xyz[1] + self.u[i][1]
 
     # ---------------------------------------------------------
     # ---------------------------------------------------------
@@ -553,7 +553,7 @@ def mk_n(dof,estyle,nnode,xi,zeta):
     return N
 
 # ---------------------------------------------------------
-def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
+def mk_nqn(dof,n,q,imp):
     nqn = np.linalg.multi_dot([n.T,q.T,imp,q,n])
     return nqn
 

@@ -13,8 +13,10 @@ class EP {
     EM stress,strain;
     double e;
     double psi, fL, h, n_e;
-    double out_H1, out_H2, out_L1, out_h1, out_h2;
+    double out_H1, out_H2, out_L1, out_h1, out_h2, out_D1, out_D2, out_Kp1, out_Kp2, out_Ge, out_Ke;
 
+    EP ();
+    virtual ~EP ();
 
 
     EM FEMstress_to_matrix(EV FEMstress);

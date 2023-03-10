@@ -91,7 +91,7 @@ void Material::set_param() {
   } else if (this->style == "ep_eff_Li") {
     double e0 = param.at(4);
     double n0 = e0 / (1 + e0);
-    this->rho = (1 - n0)*param.at(0) + n0*this->rho_w;  //inputのrhoは土粒子密度で入力
+    this->rho = (1 - n0)*param.at(0) + n0*this->rho_w;
     for (size_t i=1; i < this->param.size(); i++) {
       if (i == 0) {
         this->param_ep.push_back(this->rho);
