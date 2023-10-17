@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from ep_model import Li
+from ep_model import GHES
 
 class EP:
     def __init__(self,dof,style,param):
@@ -18,6 +19,12 @@ class EP:
             self.model = Li.Li2002(G0=G0,nu=nu,M=M,eg=eg,d1=d1,cohesion=cohesion,e0=self.e0)
             self.e = self.e0
 
+        elif self.style == "ep_GHES":
+            nu,G0,phi,hmax = param
+            self.model = GHES.GHES(G0=G0,nu=nu,phi=phi,hmax=hmax)
+            self.e0 = self.model.e0
+            self.e = self.model.e
+            
         deformation_vec = np.array([False,False,False,False,False,False],dtype=bool)
         self.deformation = self.vector_to_matrix(deformation_vec)
 
@@ -145,7 +152,8 @@ class EP:
         init_stress_mat = self.FEMstress_to_matrix(init_stress)
 
         # isotropic_compression
-        compression_stress = max([-init_stress[0],-init_stress[1]])
+        # compression_stress = max([-init_stress[0],-init_stress[1]])
+        compression_stress = init_stress_mat[0,0]
         self.model.isotropic_compression(self.e0,compression_stress)
         self.model.e0 = np.copy(self.e0)
         self.model.e = np.copy(self.e0)
@@ -156,7 +164,8 @@ class EP:
         self.e = self.model.e
 
         p,_ = self.model.set_stress_variable(self.stress)
-        self.model.beta,self.model.H2 = p,p
+        if self.style == "ep_Li" or self.style == "ep_eff_Li":
+            self.model.beta,self.model.H2 = p,p
 
         nstep = 50
         dstrain_vec = np.zeros(6,dtype=np.float64)
@@ -185,19 +194,11 @@ class EP:
             self.strain += dstrain
 
             # print(self.stress)
+            # print(self.strain)
 
             ev,gamma = self.model.set_strain_variable(self.strain)
             self.e = self.e0 - ev*(1+self.e0)
             # print(p,R,gamma)
-
-        # FEMstress = self.matrix_to_FEMstress(self.stress)
-        # FEMstrain = self.matrix_to_FEMstrain(self.strain)
-        # print("strain: ",FEMstrain)
-        # print("stress: ",FEMstress)
-        # print(self.model.alpha)
-        # print(self.model.H1,self.model.H2)
-        # print("strain: ",self.strain.diagonal())
-        # print("stress: ",self.stress.diagonal())
 
     # -------------------------------------------------------------------------------------- #
     def set_Dp_matrix(self,FEMdstrain):

@@ -20,8 +20,8 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fp = 1.0
-amp = 1.0
+fp = 3.3
+amp = 0.01
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
@@ -29,12 +29,14 @@ fem.set_ep_initial_state()
 # fem.set_rayleigh_damping(fp,10*fp,0.002)
 
 ## --- Define input wave --- ##
-fsamp = 50000
-duration = 10
+fsamp = 2500
+duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-wave_acc = input_wave.tapered_sin(tim,fp,2.0/fp,duration-2.0/fp,amp)
+wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
 ntim = len(tim)
+
+exit()
 
 # plt.figure()
 # plt.plot(tim,wave_acc)

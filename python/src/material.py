@@ -75,6 +75,10 @@ class Material:
             self.rho = (1-n0)*param[0] + n0*self.rho_w
             # print("rho_t:",self.rho)
 
+        elif self.style == "ep_GHES":
+            self.rho = param[0]
+            self.param = param[1:]
+
     # ---------------------------------------------------------
     def mk_d(self,dof):
         if dof == 1:

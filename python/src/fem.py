@@ -1,6 +1,5 @@
 import numpy as np
 import concurrent.futures
-import sys
 
 class Fem():
     def __init__(self,dof,nodes,elements,materials):
@@ -260,16 +259,12 @@ class Fem():
 
         for element in self.ep_elements:
             element.calc_stress()
-            # element.eff_stress = [-30.e3,-30.e3,0]    #等方圧密
-            # element.ep.initial_state_isotropic(element.stress)
             element.ep.initial_state(element.stress)
             element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
             element.clear_strain()
 
         for element in self.ep_eff_elements:
             element.calc_eff_stress()
-            # element.eff_stress = [-30.e3,-30.e3,0]    #等方圧密
-            # element.ep.initial_state_isotropic(element.eff_stress)
             element.ep.initial_state(element.eff_stress)
             element.material.rmu,element.material.rlambda = element.ep.elastic_modulus()
             element.clear_strain()
@@ -284,7 +279,7 @@ class Fem():
 
         for element in self.ep_elements:
             element.ep_init_calc_stress_all()
-            print("e is",element.ep.e)
+            # print("e is",element.ep.e)
         for element in self.ep_eff_elements:
             element.ep_eff_init_calc_stress_all()
 

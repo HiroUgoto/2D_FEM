@@ -12,24 +12,26 @@ class GHES:
         self.phi,self.hmax = phi,hmax
         self.K0 = 2*G0*(1+nu)/(3*(1-2*nu))
 
+        self.p_ref = 40.e3 
+        self.G = G0
+
         # stress parameters
         self.pr = 101.e3
         self.pmin = 1.e-4
         self.stress_shift = 0.0
 
         # strength parameter
-        ref_p = 1.e4
         phi = np.deg2rad(self.phi)
         self.Mc = 6*np.sin(phi)/(3-np.sin(phi))
-        tauf = self.Mc*ref_p
+        tauf = self.Mc*self.p_ref
         self.gr = tauf/self.G0
         self.g05 = self.gr/2.5
 
-        self.e0 = None
-        self.e = None
+        self.e0 = 0.80
+        self.e = 0.80
 
         # model 
-        self.qmodel = hd3d_FEM.Multi_spring_3d(ref_p,G0,self.g05,hmax,model2d=hd_FEM.GHE_S)
+        self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE_S)
 
         # identity
         self.Z3 = np.zeros([3,3])
@@ -66,7 +68,7 @@ class GHES:
     # -------------------------------------------------------------------------------------- #
     def elastic_modulus(self,e,p):
         # G = self.G0
-        G = self.Mc * p / self.gr
+        G = self.G0/self.p_ref * p 
         K = G*2*(1+self.nu)/(3*(1-2*self.nu))  
         return G,K
 
@@ -85,7 +87,7 @@ class GHES:
         return p,R
 
     # -------------------------------------------------------------------------------------- #
-    def isotropic_compression(self,e0,compression_stress,nstep=1000):
+    def isotropic_compression(self,e0,compression_stress):
         self.stress = self.I3 * compression_stress
         self.strain = np.zeros((3,3))
 
@@ -106,16 +108,15 @@ class GHES:
         dstrain[d] = dstrain_mask
         dstress = np.dot(Ep,dstrain)
 
+        # update inner state #
         strain_vec = self.matrix_to_vector(sp.strain) + dstrain
-        self.qmodel.shear(strain_vec,sp.p)
+        _ = self.qmodel.shear(strain_vec,sp.p)
 
         dstrain_mat = self.vector_to_matrix(dstrain)
         dstress_mat = self.vector_to_matrix(dstress)
         sp2 = self.StateParameters(sp.strain,sp.stress,dstrain_mat,dstress_mat)
 
         return dstrain_mat,dstress_mat,sp2
-
-        # return dstrain_given,dstress_given,sp
 
     # -------------------------------------------------------------------------------------- #
     def ep_modulus(self,sp,de=1.e-6):

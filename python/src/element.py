@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 
 import material
 import element_style
