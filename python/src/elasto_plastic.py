@@ -20,8 +20,8 @@ class EP:
             self.e = self.e0
 
         elif self.style == "ep_GHES":
-            nu,G0,phi,hmax = param
-            self.model = GHES.GHES(G0=G0,nu=nu,phi=phi,hmax=hmax)
+            nu,G0,p_ref,phi,hmax = param
+            self.model = GHES.GHES(G0=G0,nu=nu,phi=phi,hmax=hmax,p_ref=p_ref)
             self.e0 = self.model.e0
             self.e = self.model.e
             
@@ -204,50 +204,51 @@ class EP:
     def set_Dp_matrix(self,FEMdstrain):
         dstrain = self.FEMstrain_to_matrix(FEMdstrain)
 
-        # print(" ")
-
         dstress_vec = np.zeros(6,dtype=np.float64)
         dstress_input = self.vector_to_matrix(dstress_vec)
 
-        sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
-        ef1,ef2 = self.model.check_unload(sp0)
+        if self.style == "ep_Li" or self.style == "ep_eff_Li":
+            sp0 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
+            ef1,ef2 = self.model.check_unload(sp0)
 
-        # print(self.stress)
-        # print(ef1,self.model.alpha)
-        # print(ef2,sp0.p,self.model.beta)
+            sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1,ef2=ef2)
+            Ep = self.model.plastic_stiffness(sp)
 
-        sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1,ef2=ef2)
-        Ep = self.model.plastic_stiffness(sp)
+            dstrain,dstress = \
+                self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
 
-        dstrain,dstress = \
-            self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
+            sp_check = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1,ef2=ef2)
+            ef1_check,ef2_check = self.model.check_unload(sp_check)
 
-        sp_check = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1,ef2=ef2)
-        ef1_check,ef2_check = self.model.check_unload(sp_check)
+            sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1_check,ef2=ef2_check)
+            self.model.update_parameters(sp2)
 
-        # if (ef1 != ef1_check) or (ef2 != ef2_check):
-        #     sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift,ef1=ef1_check,ef2=ef2_check)
-        #     Ep = self.model.plastic_stiffness(sp)
-        #     dstrain,dstress = self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
+            ev,gamma = self.model.set_strain_variable(self.strain)
+            self.e = self.e0 - ev*(1+self.e0)
 
-        sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift,ef1=ef1_check,ef2=ef2_check)
-        self.model.update_parameters(sp2)
+            self.strain += dstrain
+            self.stress += dstress
 
-        ev,gamma = self.model.set_strain_variable(self.strain)
-        self.e = self.e0 - ev*(1+self.e0)
+            Dp = self.modulus_to_Dmatrix(Ep)
+            stress_yy = -self.stress[1,1]
 
-        self.strain += dstrain
-        self.stress += dstress
+        elif self.style == "ep_GHES":
+            sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
+            Ep = self.model.plastic_stiffness(sp)
 
-        Dp = self.modulus_to_Dmatrix(Ep)
-        stress_yy = -self.stress[1,1]
+            dstrain,dstress = \
+                self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
 
-        # print(self.strain)
-        # print(self.stress)
-        # print(stress_yy)
+            sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift)
+            self.model.update_parameters(sp2)
 
-        # eff_p = np.trace(self.stress)/3.0
-        # print(eff_p)
+            self.strain += dstrain
+            self.stress += dstress
+
+            Dp = self.model.modulus_to_Dmatrix(Ep)
+            stress_yy = -self.stress[1,1]
+
+            print(Dp)
 
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
 

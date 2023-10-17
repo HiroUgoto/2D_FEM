@@ -410,6 +410,39 @@ class Fem():
         for element in self.output_ep_element_set:
             element.calc_ep_stress()
 
+    # ======================================================================= #
+    def update_time_disp(self,disp0,nodes,self_gravity=False):
+        if self_gravity:
+            for node in self.nodes:
+                node.dynamic_force = np.copy(node.static_force)
+        else:
+            for node in self.nodes:
+                node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
+
+        for node in self.nodes:
+            self._update_time_node_init(node)
+
+        for element in self.e_elements:
+            element.mk_ku_cv()
+        for element in self.ep_elements:
+            element.mk_ep_B_stress()
+        for element in self.ep_eff_elements:
+            element.mk_ep_eff_B_stress()
+
+        return
+
+        self._update_time_set_nodes_all()
+
+        for element in self.connected_elements:
+            self._update_time_set_connected_elements_(element)
+        for element in self.spring_elements:
+            self._update_time_set_spring_elements_(element)
+
+        for element in self.output_e_elements:
+            element.calc_stress()
+        for element in self.output_ep_elements:
+            element.calc_ep_stress()
+
     # ---------------------------------------
     def _update_time_node_init(self,node):
         node.force = -node.dynamic_force.copy()

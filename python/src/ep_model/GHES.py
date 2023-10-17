@@ -5,14 +5,14 @@ import ep_model.GHES_hd_FEM as hd_FEM
 import ep_model.GHES_hd3d_FEM as hd3d_FEM
 
 class GHES:
-    def __init__(self,G0,nu,phi=30.0,hmax=0.20):
+    def __init__(self,G0,nu,phi=30.0,hmax=0.20,p_ref=40.e3):
         # Elastic parameters
         self.G0,self.nu = G0,nu
         # Parameters
         self.phi,self.hmax = phi,hmax
         self.K0 = 2*G0*(1+nu)/(3*(1-2*nu))
 
-        self.p_ref = 40.e3 
+        self.p_ref = p_ref
         self.G = G0
 
         # stress parameters
@@ -85,6 +85,52 @@ class GHES:
         r_stress = (stress - p*self.I3) / max(p,self.pmin)
         R = math.sqrt(1.5)*np.linalg.norm(r_stress)
         return p,R
+
+    # -------------------------------------------------------------------------------------- #
+    def check_unload(self,sp):
+        return False,False
+
+    # -------------------------------------------------------------------------------------- #
+    def plastic_stiffness(self,sp):
+        Ep = self.ep_modulus(sp)
+        return Ep
+
+    # -------------------------------------------------------------------------------------- #
+    def solve_strain_with_constrain(self,dstrain_given,dstress_given,Ep,deformation):
+        d = self.matrix_to_vector_bool(deformation)
+
+        dstrain = self.matrix_to_vector(dstrain_given)
+        dstrain[d] = 0.0
+        dstress_constrain = np.dot(Ep,dstrain)
+        dstress = self.matrix_to_vector(dstress_given) - dstress_constrain
+
+        dstress_mask = dstress[d]
+        Ep_mask = Ep[d][:,d]
+        dstrain_mask = np.linalg.solve(Ep_mask,dstress_mask)
+
+        dstrain[d] = dstrain_mask
+        dstress = np.dot(Ep,dstrain)
+
+        dstrain_mat = self.vector_to_matrix(dstrain)
+        dstress_mat = self.vector_to_matrix(dstress)
+
+        return dstrain_mat,dstress_mat
+
+    # -------------------------------------------------------------------------------------- #
+    def update_parameters(self,sp):
+        strain_vec = self.matrix_to_vector(sp.strain + sp.dstrain)
+        _ = self.qmodel.shear(strain_vec,sp.p)
+
+    # -------------------------------------------------------------------------------------- #
+    def modulus_to_Dmatrix(self,E):
+        D = np.zeros([3,3])
+        D[0,0],D[0,1],D[0,2] = E[0,0],E[0,2], E[0,5]
+        D[1,0],D[1,1],D[1,2] = E[2,0],E[2,2], E[2,5]
+        D[2,0] = E[5,0]
+        D[2,1] = E[5,2]
+        D[2,2] = E[5,5]
+
+        return D
 
     # -------------------------------------------------------------------------------------- #
     def isotropic_compression(self,e0,compression_stress):
