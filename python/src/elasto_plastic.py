@@ -190,13 +190,13 @@ class EP:
             dstrain,dstress,sp0 = \
                 self.model.plastic_deformation(dstrain_input,dstress_input,deformation,sp)
 
-            # self.stress += dstress
-            # self.strain += dstrain
+            self.stress += dstress
+            self.strain += dstrain
 
-            np.set_printoptions(precision=3)
-            print(self.stress)
-            np.set_printoptions(precision=8)
-            print(self.strain)
+            # np.set_printoptions(precision=3)
+            # print(self.stress)
+            # np.set_printoptions(precision=8)
+            # print(self.strain)
 
             ev,gamma = self.model.set_strain_variable(self.strain)
             self.e = self.e0 - ev*(1+self.e0)

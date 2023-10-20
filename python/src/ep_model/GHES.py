@@ -125,12 +125,14 @@ class GHES:
     def isotropic_compression(self,e0,compression_stress):
         self.stress = self.I3 * compression_stress
         self.strain = np.zeros((3,3))
+        self.pc = compression_stress
 
     # -------------------------------------------------------------------------------------- #
     def plastic_deformation(self,dstrain_given,dstress_given,deformation,sp):
         d = self.matrix_to_vector_bool(deformation)
         Ep = self.ep_modulus(sp)
 
+        # dstress = Ep * dstrain #
         dstrain = self.matrix_to_vector(dstrain_given)
         dstrain[d] = 0.0
         dstress_constrain = np.dot(Ep,dstrain)
@@ -143,13 +145,45 @@ class GHES:
         dstrain[d] = dstrain_mask
         dstress = np.dot(Ep,dstrain)
 
+        # check stress+ = Ep(strain+) 
+        print("dstress given",dstress_given)
+
+        strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+        stress_vec = self.strain_to_stress_(strain_vec)
+        print("dstress",self.vector_to_matrix(stress_vec)-sp.stress)
+
+        for itr in range(5):
+            Ep = self.ep_modulus(sp,dstrain)
+            dstrain = self.matrix_to_vector(dstrain_given)
+            dstrain[d] = 0.0
+            dstress_constrain = np.dot(Ep,dstrain)
+            dstress = self.matrix_to_vector(dstress_given) - dstress_constrain
+            dstress_mask = dstress[d]
+            Ep_mask = Ep[d][:,d]
+            dstrain_mask = np.linalg.solve(Ep_mask,dstress_mask)
+            dstrain[d] = dstrain_mask
+            dstress = np.dot(Ep,dstrain)
+
+            strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+            stress_vec = self.strain_to_stress_(strain_vec)
+            print("dstress",self.vector_to_matrix(stress_vec)-sp.stress)
+
+
+        exit()
+
         # update inner state #
         strain_vec = self.matrix_to_vector(sp.strain) + dstrain
-        _ = self.qmodel.shear(strain_vec,sp.p)
+        _ = self.qmodel_shear(strain_vec,sp.p)
 
         dstrain_mat = self.vector_to_matrix(dstrain)
         dstress_mat = self.vector_to_matrix(dstress)
         sp2 = self.StateParameters(sp.strain,sp.stress,dstrain_mat,dstress_mat)
+
+
+        print("dstrain",dstrain)
+        print("dstess",dstress)
+
+
 
         return dstrain_mat,dstress_mat,sp2
 
@@ -163,7 +197,7 @@ class GHES:
                 dstrain[i,j] = de
                 dstrain_vec = self.matrix_to_vector(dstrain)
                 strain_vec = self.matrix_to_vector(sp.strain + dstrain)
-                dev_stress_vec = self.qmodel.shear_(strain_vec,sp.p)
+                dev_stress_vec = self.qmodel_shear_(strain_vec,sp.p)
                 pstress_vec = self.pmodel(dstrain_vec,sp.p)
                 stress_vec = pstress_vec + dev_stress_vec
 
@@ -174,33 +208,73 @@ class GHES:
         return Ep
 
     # -------------------------------------------------------------------------------------- #
-    def ep_modulus(self,sp,de=1.e-6):
+    def ep_modulus(self,sp,de=None):
         Ep = np.zeros([6,6])
+        if de is None:
+            de = np.ones(6) * 1.e-6
 
         for i in range(6):
             dstrain = np.zeros(6)
-            dstrain[i] = de
+            dstrain[i] = de[i]
             strain_vec = self.matrix_to_vector(sp.strain) + dstrain
-            dev_stress_vec = self.qmodel.shear_(strain_vec,sp.p)
-            pstress_vec = self.pmodel(dstrain,sp.p)
-            stress_vec = pstress_vec + dev_stress_vec
-
+            stress_vec = self.strain_to_stress_(strain_vec)
             dstress = stress_vec - self.matrix_to_vector(sp.stress)
-            Ep[:,i] = dstress/de
+            Ep[:,i] = dstress/de[i]
 
         return Ep
 
+    # def ep_modulus(self,sp,de=1.e-6):
+    #     Ep = np.zeros([6,6])
+
+    #     for i in range(6):
+    #         dstrain = np.zeros(6)
+    #         dstrain[i] = de
+    #         strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+    #         stress_vec = self.strain_to_stress_(strain_vec)
+    #         dstress = stress_vec - self.matrix_to_vector(sp.stress)
+    #         Ep[:,i] = dstress/de
+
+    #     return Ep
+
     # -------------------------------------------------------------------------------------- #
-    def pmodel(self,dstrain_vec,p):
-        dev = dstrain_vec[0] + dstrain_vec[1] + dstrain_vec[2]
-        dp = self.K0 * dev
+    def strain_to_stress_(self,strain_vec):
+        pstress_vec = self.pmodel(strain_vec)
+        p = pstress_vec[0]
+        dev_stress_vec = self.qmodel_shear_(strain_vec,p)
+        stress_vec = pstress_vec + dev_stress_vec
+        return stress_vec
 
-        dstress_vec = np.zeros(6)
-        dstress_vec[0] = dp + p
-        dstress_vec[1] = dp + p
-        dstress_vec[2] = dp + p
+    # -------------------------------------------------------------------------------------- #
+    def qmodel_shear(self,strain_vec,p):
+        dev_stress_vec = self.qmodel.shear(strain_vec,p)
+        return dev_stress_vec/self.p_ref * p
 
-        return dstress_vec
+    def qmodel_shear_(self,strain_vec,p):
+        dev_stress_vec = self.qmodel.shear_(strain_vec,p)
+        return dev_stress_vec/self.p_ref * p
+
+    # -------------------------------------------------------------------------------------- #
+    def pmodel(self,strain_vec):
+        ev = strain_vec[0] + strain_vec[1] + strain_vec[2]
+        p = self.pc + self.K0 * ev
+
+        stress_vec = np.zeros(6)
+        stress_vec[0] = p
+        stress_vec[1] = p
+        stress_vec[2] = p
+
+        return stress_vec
+
+    # def pmodel(self,dstrain_vec,p):
+    #     dev = dstrain_vec[0] + dstrain_vec[1] + dstrain_vec[2]
+    #     dp = self.K0 * dev
+
+    #     dstress_vec = np.zeros(6)
+    #     dstress_vec[0] = dp + p
+    #     dstress_vec[1] = dp + p
+    #     dstress_vec[2] = dp + p
+
+    #     return dstress_vec
 
     # -------------------------------------------------------------------------------------- #
     def vector_to_matrix(self,vec):
