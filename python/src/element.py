@@ -391,7 +391,7 @@ class Element:
             self.stress_yy = stress_yy
             self.ep.n = self.ep.e / (1+self.ep.e)
 
-            # print(self.id,self.strain,self.stress)
+            print(self.id,self.strain,self.stress)
 
             for gp in self.gauss_points:
                 det,dnj = mk_dnj(self.xnT,gp.dn)

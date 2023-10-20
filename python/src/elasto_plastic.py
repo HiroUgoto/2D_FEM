@@ -190,15 +190,49 @@ class EP:
             dstrain,dstress,sp0 = \
                 self.model.plastic_deformation(dstrain_input,dstress_input,deformation,sp)
 
-            self.stress += dstress
-            self.strain += dstrain
+            # self.stress += dstress
+            # self.strain += dstrain
 
-            # print(self.stress)
-            # print(self.strain)
+            np.set_printoptions(precision=3)
+            print(self.stress)
+            np.set_printoptions(precision=8)
+            print(self.strain)
 
             ev,gamma = self.model.set_strain_variable(self.strain)
             self.e = self.e0 - ev*(1+self.e0)
             # print(p,R,gamma)
+
+
+        print("")
+
+        np.set_printoptions(precision=8)
+        print(self.strain)
+
+        sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
+        dstrain_vec = self.model.matrix_to_vector(dstrain)
+        np.set_printoptions(precision=8)
+        print("dstrain",dstrain_vec)
+
+        strain_vec = self.model.matrix_to_vector(sp.strain) + dstrain_vec
+        print("strain",strain_vec)
+
+        np.set_printoptions(precision=3)
+        dev_stress_vec = self.model.qmodel.shear_(strain_vec,sp.p)
+        print("dev_stress",dev_stress_vec)
+
+
+        print("")
+        print(sp.stress)
+
+        pstress_vec = self.model.pmodel(dstrain_vec,sp.p)
+        stress_vec = pstress_vec + dev_stress_vec
+        dstress_vec = stress_vec - self.model.matrix_to_vector(sp.stress)
+
+        print(stress_vec)
+        print("")
+
+        exit()
+
 
     # -------------------------------------------------------------------------------------- #
     def set_Dp_matrix(self,FEMdstrain):
@@ -233,22 +267,74 @@ class EP:
             stress_yy = -self.stress[1,1]
 
         elif self.style == "ep_GHES":
+            print("self.stress",self.stress)
+            print("self.strain",self.strain)
+
             sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
+
+            dstrain_vec = self.model.matrix_to_vector(dstrain)
+            np.set_printoptions(precision=8)
+            print("dstrain",dstrain_vec)
+
+            strain_vec = self.model.matrix_to_vector(sp.strain) + dstrain_vec
+            print("strain",strain_vec)
+
+            np.set_printoptions(precision=3)
+            dev_stress_vec = self.model.qmodel.shear_(strain_vec,sp.p)
+            print("dev_stress",dev_stress_vec)
+
+            print("")
+            print(sp.stress)
+
+            pstress_vec = self.model.pmodel(dstrain_vec,sp.p)
+            stress_vec = pstress_vec + dev_stress_vec
+            dstress_vec = stress_vec - self.model.matrix_to_vector(sp.stress)
+
+            print(stress_vec)
+            print("")
+
+
+            np.set_printoptions(precision=3)
+            print("dstress1",dstress_vec)
+
+            E = self.model.ep_modulus(sp)
+            dstress_vec = np.dot(E,dstrain_vec)
+            print("dstress2",dstress_vec)
+
             Ep = self.model.plastic_stiffness(sp)
+            Dp = self.modulus_to_Dmatrix(Ep)
 
-            dstrain,dstress = \
-                self.model.solve_strain_with_constrain(dstrain,dstress_input,Ep,self.deformation)
+            # sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
+            # E = self.model.ep_modulus(sp)
+            # dstrain_vec = self.model.matrix_to_vector(dstrain)
+            # dstress_vec = np.dot(E,dstrain_vec)
 
-            sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift)
-            self.model.update_parameters(sp2)
+            # np.set_printoptions(precision=3)
+            # print("E:",E)
 
+            # np.set_printoptions(precision=8)
+            # print("dstrain",dstrain_vec)
+
+            # np.set_printoptions(precision=3)
+            # print("dstress",dstress_vec)
+
+            dstress = self.model.vector_to_matrix(dstress_vec)
             self.strain += dstrain
             self.stress += dstress
-
-            Dp = self.model.modulus_to_Dmatrix(Ep)
             stress_yy = -self.stress[1,1]
 
-            print(Dp)
+            # print("Dp:",Dp)
+            print("")
+
+            exit()
+
+            # print("strain:",self.strain)
+            # print("dstrain:",dstrain)
+            # print("")
+
+            # print("stress:",self.stress)
+            # print("dstress:",dstress)
+            # print("")
 
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
 

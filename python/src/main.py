@@ -12,7 +12,8 @@ start = time.time()
 fem = io_data.input_mesh("input/mesh.in")
 outputs = io_data.input_outputs("input/output.in")
 output_dir = "result/"
-datasamplerate = 100  #sampling rate[Hz]
+datasamplerate = 2500  #sampling rate[Hz]
+# datasamplerate = 100  #sampling rate[Hz]
 
 ## --- FEM Set up --- ##
 fem.set_init()
@@ -94,7 +95,8 @@ accin = open(output_dir+"acc.in","w")
 velin = open(output_dir+"vel.in","w") 
 dispin = open(output_dir+"disp.in","w") 
 
-for it in range(ntim):
+# for it in range(ntim):
+for it in range(3):
     # acc0 = np.array([wave_acc[it],0.0])
     # vel0 += acc0*dt
     # dis0 += vel0*dt
@@ -106,7 +108,6 @@ for it in range(ntim):
     # fem.update_time(acc0,vel0,input_wave=True,FD=True)
     fem.update_time_disp(forced_disp0,forced_nodes,self_gravity=True)
 
-    break
 
     if it%(fsamp/datasamplerate) == 0:
         writef_in(accin, [acc0[0]])
@@ -131,9 +132,15 @@ for it in range(ntim):
         # writef(output_element_stress_yy, stressyy, tim[it], [element.eff_stress_yy for element in fem.output_elements])
         # writef(output_element_pw, stresspw, tim[it], [element.excess_pore_pressure for element in fem.output_elements])
 
-    if it%(fsamp/datasamplerate*10) == 0:
-        # plot_model.plot_mesh_update(ax,fem,100.)        
-        print("t=",it*dt,output_element_stress_zz[1],output_element_pw[1])
+        print(it,"t=",it*dt,forced_disp0[0],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
+        print("----------------------------------------------------------------------")
+
+
+    # if it%(fsamp/datasamplerate*10) == 0:
+        # plot_model.plot_mesh_update(ax,fem,100.)    
+        # print("t=",it*dt,output_element_stress_zz[1],output_element_pw[1])
+        # print(it,"t=",it*dt,output_accx[0],output_element_stress_xx[0],output_element_stress_zz[0],output_element_stress_yy[0])  
+        # break
 
 accin.close()
 velin.close()
