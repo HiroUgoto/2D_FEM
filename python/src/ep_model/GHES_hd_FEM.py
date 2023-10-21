@@ -242,20 +242,18 @@ class GHE:
 
     def find_hysteresis_curve_(self,gamma,dg):
         tau = self.hysteresis_curve(gamma)
-        # print("tauy",self.tau_y)
-        # print("tau",tau)
-        # if np.abs(tau) >= self.tau_y or self.skeleton:
-        #     self.skeleton = True
-        #     tau = self.skeleton_curve(gamma,self.G0,self.gr)
-        #     self.update_yield_stress(gamma,tau)
-        #     self.tau0_p_list,self.gamma0_p_list = [],[]
-        #     self.tau0_n_list,self.gamma0_n_list = [],[]
-        #     return tau
+        if np.abs(tau) >= self.tau_y or self.skeleton:
+            # self.skeleton = True
+            tau = self.skeleton_curve(gamma,self.G0,self.gr)
+            # self.update_yield_stress(gamma,tau)
+            # self.tau0_p_list,self.gamma0_p_list = [],[]
+            # self.tau0_n_list,self.gamma0_n_list = [],[]
+            return tau
 
-        # elif len(self.tau0_p_list) <= 0:
-        #     return tau
-        # elif len(self.tau0_n_list) <= 0:
-        #     return tau
+        elif len(self.tau0_p_list) <= 0:
+            return tau
+        elif len(self.tau0_n_list) <= 0:
+            return tau
 
         # elif dg > 0.0:
         #     if tau > self.tau0_p_list[0]:
@@ -305,8 +303,8 @@ class GHE:
 
     def shear_(self,strain):
         # self.check_reversal(strain,self.gamma,self.tau,self.dg)
-        # if np.abs(strain-self.gamma)>0.0:
-        #     self.dg = strain-self.gamma
+        if np.abs(strain-self.gamma)>0.0:
+            self.dg = strain-self.gamma
         self.tau = self.find_hysteresis_curve_(strain,self.dg)
         self.gamma = strain
         return self.tau
