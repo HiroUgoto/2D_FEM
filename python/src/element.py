@@ -386,18 +386,13 @@ class Element:
             B = mk_b(self.dof,self.nnode,dnj)
             strain = B @ np.hstack(self.u)
             dstrain = strain - self.strain
-
-            # np.set_printoptions(precision=8)
-            # print("u",self.u)
-            # print("FEMdstrain",dstrain)
-
             Dp,self.stress,stress_yy = self.ep.set_Dp_matrix(dstrain)
             self.strain = np.copy(strain)
             self.stress_yy = stress_yy
             self.ep.n = self.ep.e / (1+self.ep.e)
 
-            np.set_printoptions(precision=5)
-            print(self.id,self.strain,self.stress)
+            # np.set_printoptions(precision=5)
+            # print(self.id,self.strain,self.stress)
 
             for gp in self.gauss_points:
                 det,dnj = mk_dnj(self.xnT,gp.dn)

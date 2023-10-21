@@ -15,6 +15,7 @@ class GHES:
 
         self.p_ref = p_ref
         self.G = G0
+        self.K = self.K0
 
         # stress parameters
         self.pr = 101.e3
@@ -93,7 +94,25 @@ class GHES:
 
     # -------------------------------------------------------------------------------------- #
     def plastic_stiffness(self,sp):
-        Ep = self.ep_tensor(sp)
+        dstrain_vec = self.matrix_to_vector(sp.dstrain)
+        strain_update_vec = self.matrix_to_vector(sp.strain) + dstrain_vec
+        stress_update_vec = self.strain_to_stress_(strain_update_vec)
+        dstress_residual = stress_update_vec - self.matrix_to_vector(sp.stress)
+
+        # np.set_printoptions(precision=5)
+        # print("dstress_residual",dstress_residual)
+
+        Ep = self.ep_modulus(sp,dstrain_vec)
+        dstress_trial = np.dot(Ep,dstrain_vec)
+        # print("dstress_trial",dstress_trial)
+
+        for i in range(6):
+            if np.abs(dstress_trial[i]) > 1.e-8:
+                Ep[i,:] = Ep[i,:] * dstress_residual[i]/dstress_trial[i]
+
+        # dstress_trial = np.dot(Ep,dstrain_vec)
+        # print("dstress_trial",dstress_trial)
+
         return Ep
 
     # -------------------------------------------------------------------------------------- #
@@ -188,7 +207,7 @@ class GHES:
     # -------------------------------------------------------------------------------------- #
     def update_parameters(self,sp):
         strain_update_vec = self.matrix_to_vector(sp.strain + sp.dstrain)
-        stress_update_vec = self.strain_to_stress(strain_update_vec)
+        self.strain_to_stress(strain_update_vec)
         
     # -------------------------------------------------------------------------------------- #
     def modulus_to_Dmatrix(self,E):
@@ -222,22 +241,57 @@ class GHES:
 
     # -------------------------------------------------------------------------------------- #
     def ep_modulus(self,sp,de=None):
-        Ep = np.zeros([6,6])
+        Ep = self.e_modulus(sp.p)
+        # Ep = np.zeros([6,6])
+
         if de is None:
             de = np.ones(6) * 1.e-6
 
-        for i in range(6):
-            if abs(de[i]) < 1.e-12:
-                Ep[:,i] = 0.0
-            else:
+        # for i in range(6):
+        #     if abs(de[i]) > 1.e-10:
+        #         dstrain = np.zeros(6)
+        #         dstrain[i] = de[i]
+        #         strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+        #         stress_vec = self.strain_to_stress_(strain_vec)
+        #         dstress = stress_vec - self.matrix_to_vector(sp.stress)
+        #         Ep[:,i] = dstress[:]/de[i]
+
+
+        for i in range(0,3):
+            if abs(de[i]) > 1.e-10:
                 dstrain = np.zeros(6)
                 dstrain[i] = de[i]
                 strain_vec = self.matrix_to_vector(sp.strain) + dstrain
                 stress_vec = self.strain_to_stress_(strain_vec)
                 dstress = stress_vec - self.matrix_to_vector(sp.stress)
-                Ep[:,i] = dstress/de[i]
+                Ep[0:3,i] = dstress[0:3]/de[i]
+
+        for i in range(3,6):
+            if abs(de[i]) > 1.e-10:
+                dstrain = np.zeros(6)
+                dstrain[i] = de[i]
+                strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+                stress_vec = self.strain_to_stress_(strain_vec)
+                dstress = stress_vec - self.matrix_to_vector(sp.stress)
+                Ep[3:6,i] = dstress[3:6]/de[i]
 
         return Ep
+
+    # -------------------------------------------------------------------------------------- #
+    def e_modulus(self,p):
+        E = np.zeros([6,6])
+        G0,K0 = self.elastic_modulus(self.e,p)
+        rmu, rlambda = G0, K0-G0*2/3
+
+        E[0,0],E[0,1],E[0,2] = rlambda+2*rmu, rlambda, rlambda
+        E[1,0],E[1,1],E[1,2] = rlambda, rlambda+2*rmu, rlambda
+        E[2,0],E[2,1],E[2,2] = rlambda, rlambda, rlambda+2*rmu
+
+        E[3,3] = rmu
+        E[4,4] = rmu
+        E[5,5] = rmu
+
+        return E
 
     # -------------------------------------------------------------------------------------- #
     def strain_to_stress(self,strain_vec):
@@ -251,6 +305,21 @@ class GHES:
         pstress_vec = self.pmodel(strain_vec)
         p = pstress_vec[0]
         dev_stress_vec = self.qmodel_shear_(strain_vec,p)
+        stress_vec = pstress_vec + dev_stress_vec
+        return stress_vec
+
+    def strain_to_stress_check(self,strain_vec):
+        pstress_vec = self.pmodel(strain_vec)
+        p = pstress_vec[0]
+        dev_stress_vec = self.qmodel_shear_(strain_vec,p)
+
+        print("")
+        np.set_printoptions(precision=12)
+        print(strain_vec)
+        np.set_printoptions(precision=5)
+        print(p,dev_stress_vec)
+        print("")
+
         stress_vec = pstress_vec + dev_stress_vec
         return stress_vec
 

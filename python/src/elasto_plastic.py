@@ -242,19 +242,12 @@ class EP:
             stress_yy = -self.stress[1,1]
 
         elif self.style == "ep_GHES":
-            # np.set_printoptions(precision=8)
-            # print("self.strain",self.strain)
-
-            # np.set_printoptions(precision=5)
-            # print("self.stress",self.stress)
-
             dstrain_vec = self.model.matrix_to_vector(dstrain)
-
-            np.set_printoptions(precision=8)
-            print("dstrain",dstrain_vec)
+            # np.set_printoptions(precision=8)
+            # print("dstrain",dstrain_vec)
 
             sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
-            Ep = self.model.ep_modulus(sp,dstrain_vec)
+            Ep = self.model.plastic_stiffness(sp)
 
             dstress_vec = np.dot(Ep,dstrain_vec)
 
@@ -273,30 +266,20 @@ class EP:
             stress_yy = -self.stress[1,1]
 
 
-
-            strain_vec = self.model.matrix_to_vector(self.strain)
-            stress_vec = self.model.matrix_to_vector(self.stress)
-
-            np.set_printoptions(precision=5)
-            print("stress update",stress_vec)
+            # strain_vec = self.model.matrix_to_vector(self.strain)
+            # stress_vec = self.model.matrix_to_vector(self.stress)
+            # np.set_printoptions(precision=5)
+            # print("stress update",stress_vec)
 
             # np.set_printoptions(precision=8)
             # print("strain check",strain_vec)
 
-            stress_check = self.model.strain_to_stress_(strain_vec)
-            np.set_printoptions(precision=5)
-            print("stress check",stress_check)
+            # stress_check = self.model.strain_to_stress_(strain_vec)
+            # np.set_printoptions(precision=5)
+            # print("stress check",stress_check)
 
 
-            print("Dp:",Dp)
-            print("")
-
-            # print("strain:",self.strain)
-            # print("dstrain:",dstrain)
-            # print("")
-
-            # print("stress:",self.stress)
-            # print("dstress:",dstress)
+            # print("Dp:",Dp)
             # print("")
 
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
