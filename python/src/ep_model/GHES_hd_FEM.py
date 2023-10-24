@@ -1,6 +1,6 @@
 # from tkinter import E
 import numpy as np
-import copy,math
+import copy, math, sys
 
 import warnings,traceback,sys
 warnings.filterwarnings('error')
@@ -159,11 +159,12 @@ class GHE:
 
     # -------------------------------------------------------------------------------------- #
     def check_reversal(self,gamma,g0,tau0,dg):
-        if dg*(gamma-g0) < 0.0:
+        if dg*(gamma-g0) < -sys.float_info.epsilon:
             self.tau0 = tau0
             self.gamma0 = g0
             self.update_reversal_points(dg)
             self.skeleton = False
+            # print("reverse",dg,gamma,tau0,self.tau0_p_list,self.tau0_n_list)
 
 
     def update_reversal_points(self,dg):
@@ -171,15 +172,6 @@ class GHE:
         gamma0_list = [self.gamma0]
 
         if dg > 0.0:
-            for i,tau0 in enumerate(self.tau0_p_list):
-                if tau0 > self.tau0:
-                    tau0_list = [self.tau0] + self.tau0_p_list[i:]
-                    gamma0_list = [self.gamma0] + self.gamma0_p_list[i:]
-                    break
-            self.tau0_p_list = tau0_list
-            self.gamma0_p_list = gamma0_list
-
-        elif dg < 0.0:
             for i,tau0 in enumerate(self.tau0_n_list):
                 if tau0 < self.tau0:
                     tau0_list = [self.tau0] + self.tau0_n_list[i:]
@@ -187,11 +179,25 @@ class GHE:
                     break
             self.tau0_n_list = tau0_list
             self.gamma0_n_list = gamma0_list
+
+        elif dg < 0.0:
+            for i,tau0 in enumerate(self.tau0_p_list):
+                if tau0 > self.tau0:
+                    tau0_list = [self.tau0] + self.tau0_p_list[i:]
+                    gamma0_list = [self.gamma0] + self.gamma0_p_list[i:]
+                    break
+            self.tau0_p_list = tau0_list
+            self.gamma0_p_list = gamma0_list
             # print("n",self.tau0_n_list,self.tau_y)
 
     def find_hysteresis_curve(self,gamma,dg):
         tau = self.hysteresis_curve(gamma)
+        # print(tau,self.tau0)
+
         if np.abs(tau) >= self.tau_y or self.skeleton:
+            # print("A")
+            # print(dg,gamma,tau,self.tau_y,self.tau0_p_list,self.tau0_n_list)
+            # print(tau,self.tau0,self.tau_y)
             self.skeleton = True
             tau = self.skeleton_curve(gamma,self.G0,self.gr)
             self.update_yield_stress(gamma,tau)
@@ -199,12 +205,25 @@ class GHE:
             self.tau0_n_list,self.gamma0_n_list = [],[]
             return tau
 
-        elif len(self.tau0_p_list) <= 0:
-            return tau
-        elif len(self.tau0_n_list) <= 0:
-            return tau
+        # elif len(self.tau0_p_list) <= 0:
+        #     print("B")
+        #     print(tau,self.tau0,self.tau_y)
+        #     exit()
+        #     return tau
+        # elif len(self.tau0_n_list) <= 0:
+        #     print("C")
+        #     print(tau,self.tau0,self.tau_y)
+        #     exit()
+        #     return tau
 
         elif dg > 0.0:
+            if len(self.tau0_p_list) <= 0:
+                print("B in D")
+                return tau
+
+            print("D")
+            print(dg,gamma,tau,self.tau_y,self.tau0_p_list,self.tau0_n_list)
+
             if tau > self.tau0_p_list[0]:
                 self.tau0_p_list.pop(0)
                 self.gamma0_p_list.pop(0)
@@ -221,7 +240,15 @@ class GHE:
 
                 tau = self.hysteresis_curve(gamma)
                 return tau
+            
         elif dg < 0.0:
+            if len(self.tau0_n_list) <= 0:
+                print("C in E")
+                return tau
+
+            print("E")
+            print(dg,gamma,tau,self.tau_y,self.tau0_p_list,self.tau0_n_list)
+
             if tau < self.tau0_n_list[0]:
                 self.tau0_p_list.pop(0)
                 self.gamma0_p_list.pop(0)
@@ -241,6 +268,9 @@ class GHE:
         return tau
 
     def find_hysteresis_curve_(self,gamma,dg):
+        tau0_original = copy.copy(self.tau0)
+        gamma0_original = copy.copy(self.gamma0)
+
         tau = self.hysteresis_curve(gamma)
         if np.abs(tau) >= self.tau_y or self.skeleton:
             # self.skeleton = True
@@ -250,45 +280,72 @@ class GHE:
             # self.tau0_n_list,self.gamma0_n_list = [],[]
             return tau
 
-        elif len(self.tau0_p_list) <= 0:
+        # elif len(self.tau0_p_list) <= 0:
+        #     return tau
+        # elif len(self.tau0_n_list) <= 0:
+        #     return tau
+
+        elif dg > 0.0:
+            self.tau0 = -self.tau_y
+            self.gamma0 = -self.gamma_y
+            for i in range(len(self.tau0_p_list)):
+                if tau > self.tau0_p_list[i]:
+                    self.tau0 = self.tau0_n_list[i]
+                    self.gamma0 = self.gamma0_n_list[i]
+                    break
+
+            tau = self.hysteresis_curve(gamma)
+            self.tau0 = tau0_original
+            self.gamma0 = gamma0_original
             return tau
-        elif len(self.tau0_n_list) <= 0:
+
+            # if tau > self.tau0_p_list[0]:
+            #     self.tau0_p_list.pop(0)
+            #     self.gamma0_p_list.pop(0)
+            #     self.tau0_n_list.pop(0)
+            #     self.gamma0_n_list.pop(0)
+
+            #     if len(self.tau0_n_list)==0:
+            #         self.tau0 = -self.tau_y
+            #         self.gamma0 = -self.gamma_y
+            #     else:
+            #         self.tau0 = self.tau0_n_list[0]
+            #         self.gamma0 = self.gamma0_n_list[0]
+            #     # print("pop positive",self.tau0,self.gamma0)
+
+            #     tau = self.hysteresis_curve(gamma)
+            #     return tau
+
+        elif dg < 0.0:
+            self.tau0 = self.tau_y
+            self.gamma0 = self.gamma_y
+            for i in range(len(self.tau0_n_list)):
+                if tau < self.tau0_n_list[i]:
+                    self.tau0 = self.tau0_p_list[i]
+                    self.gamma0 = self.gamma0_p_list[i]
+                    break
+
+            tau = self.hysteresis_curve(gamma)
+            self.tau0 = tau0_original
+            self.gamma0 = gamma0_original
             return tau
 
-        # elif dg > 0.0:
-        #     if tau > self.tau0_p_list[0]:
-        #         self.tau0_p_list.pop(0)
-        #         self.gamma0_p_list.pop(0)
-        #         self.tau0_n_list.pop(0)
-        #         self.gamma0_n_list.pop(0)
+            # if tau < self.tau0_n_list[0]:
+            #     self.tau0_p_list.pop(0)
+            #     self.gamma0_p_list.pop(0)
+            #     self.tau0_n_list.pop(0)
+            #     self.gamma0_n_list.pop(0)
 
-        #         if len(self.tau0_n_list)==0:
-        #             self.tau0 = -self.tau_y
-        #             self.gamma0 = -self.gamma_y
-        #         else:
-        #             self.tau0 = self.tau0_n_list[0]
-        #             self.gamma0 = self.gamma0_n_list[0]
-        #         # print("pop positive",self.tau0,self.gamma0)
+            #     if len(self.tau0_p_list)==0:
+            #         self.tau0 = self.tau_y
+            #         self.gamma0 = self.gamma_y
+            #     else:
+            #         self.tau0 = self.tau0_p_list[0]
+            #         self.gamma0 = self.gamma0_p_list[0]
+            #     # print("pop negative",self.tau0,self.gamma0)
 
-        #         tau = self.hysteresis_curve(gamma)
-        #         return tau
-        # elif dg < 0.0:
-        #     if tau < self.tau0_n_list[0]:
-        #         self.tau0_p_list.pop(0)
-        #         self.gamma0_p_list.pop(0)
-        #         self.tau0_n_list.pop(0)
-        #         self.gamma0_n_list.pop(0)
-
-        #         if len(self.tau0_p_list)==0:
-        #             self.tau0 = self.tau_y
-        #             self.gamma0 = self.gamma_y
-        #         else:
-        #             self.tau0 = self.tau0_p_list[0]
-        #             self.gamma0 = self.gamma0_p_list[0]
-        #         # print("pop negative",self.tau0,self.gamma0)
-
-        #         tau = self.hysteresis_curve(gamma)
-        #         return tau
+            #     tau = self.hysteresis_curve(gamma)
+            #     return tau
         return tau
 
 
@@ -305,9 +362,10 @@ class GHE:
         # self.check_reversal(strain,self.gamma,self.tau,self.dg)
         if np.abs(strain-self.gamma)>0.0:
             self.dg = strain-self.gamma
-        self.tau = self.find_hysteresis_curve_(strain,self.dg)
-        self.gamma = strain
-        return self.tau
+        return self.find_hysteresis_curve_(strain,self.dg)
+        # self.tau = self.find_hysteresis_curve_(strain,self.dg)
+        # self.gamma = strain
+        # return self.tau
 
     def cyclic_shear(self,shear_strain,plot=False):
         nstep = len(shear_strain)

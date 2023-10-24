@@ -12,7 +12,7 @@ start = time.time()
 fem = io_data.input_mesh("input/mesh.in")
 outputs = io_data.input_outputs("input/output.in")
 output_dir = "result/"
-datasamplerate = 500  #sampling rate[Hz]
+datasamplerate = 2000  #sampling rate[Hz]
 # datasamplerate = 100  #sampling rate[Hz]
 
 ## --- FEM Set up --- ##
@@ -35,7 +35,7 @@ duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
-forced_disp = -input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp) #FEM試験用
+forced_disp = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp) #FEM試験用
 forced_nodes = [2,5,8] #FEM試験用(強制変位S)
 ntim = len(tim)
 
@@ -96,7 +96,7 @@ output_element_pw = np.zeros(fem.output_nelem+1)
 # dispin = open(output_dir+"disp.in","w") 
 
 # for it in range(ntim):
-for it in range(500):
+for it in range(20):
     # acc0 = np.array([wave_acc[it],0.0])
     # vel0 += acc0*dt
     # dis0 += vel0*dt
@@ -107,6 +107,7 @@ for it in range(500):
     # fem.update_time(acc0,vel0,input_wave=True)
     fem.update_time_disp(forced_disp0,forced_nodes)
 
+    np.set_printoptions(precision=5)
 
     if it%(fsamp/datasamplerate) == 0:
         # writef_in(accin, [acc0[0]])
@@ -131,8 +132,10 @@ for it in range(500):
         # # writef(output_element_stress_yy, stressyy, tim[it], [element.eff_stress_yy for element in fem.output_elements])
         # # writef(output_element_pw, stresspw, tim[it], [element.excess_pore_pressure for element in fem.output_elements])
 
-        print(it,"t=",it*dt,forced_disp0[0],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
-        # print("----------------------------------------------------------------------")
+        # print(it,"t=",it*dt,forced_disp0[0],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
+        print(it,"t=",it*dt,forced_disp0[0])  
+        print("                              ",fem.elements[0].stress)
+        print("----------------------------------------------------------------------")
 
 
     # if it%(fsamp/datasamplerate*10) == 0:
