@@ -21,7 +21,7 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fp = 10.0
+fp = 4.0
 amp = 1.e-5
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
@@ -96,7 +96,7 @@ output_element_pw = np.zeros(fem.output_nelem+1)
 # dispin = open(output_dir+"disp.in","w") 
 
 # for it in range(ntim):
-for it in range(20):
+for it in range(80):
     # acc0 = np.array([wave_acc[it],0.0])
     # vel0 += acc0*dt
     # dis0 += vel0*dt
