@@ -96,7 +96,7 @@ output_element_pw = np.zeros(fem.output_nelem+1)
 # dispin = open(output_dir+"disp.in","w") 
 
 # for it in range(ntim):
-for it in range(120):
+for it in range(125):
     # acc0 = np.array([wave_acc[it],0.0])
     # vel0 += acc0*dt
     # dis0 += vel0*dt

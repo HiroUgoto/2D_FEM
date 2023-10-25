@@ -177,6 +177,7 @@ class Fem():
                     node._ur[i] = 0.0
                 else:
                     node._ur[i] = node.static_force[i] - node.force[i]
+
         for element in self.connected_elements:
             u = np.zeros(element.nodes[0].dof,dtype=np.float64)
             for node in element.nodes:
@@ -216,7 +217,6 @@ class Fem():
             for element in self.input_elements:
                 for node in element.nodes:
                     node._uy = np.zeros(element.nodes[0].dof,dtype=np.float64)
-
 
             ## alpha = rr/py
             rr,py = 0.0,0.0
@@ -441,9 +441,9 @@ class Fem():
                 if self.nodes[id].freedom[i] == 0:
                     self.nodes[id].u[i] = disp0[i]
 
-        np.set_printoptions(precision=8)
-        for node in self.nodes:
-            print("u",node.id,node.u)
+        # np.set_printoptions(precision=8)
+        # for node in self.nodes:
+        #     print("u",node.id,node.u)
 
         for element in self.output_e_elements:
             element.calc_stress()

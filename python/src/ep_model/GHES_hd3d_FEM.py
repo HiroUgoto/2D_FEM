@@ -157,8 +157,6 @@ class Multi_spring_2d:
     def shear(self,gamma_axis,gamma_theta,p):
         gamma = [-gamma_axis*np.sin(theta) + gamma_theta*np.cos(theta) for theta in self.theta]
         tau = np.array([self.model[i].shear1(gamma[i]) for i in range(self.ntheta)])
-        print("")
-
         d = self.dtheta / (np.pi/2)
         tau_axis = tau * np.sin(-self.theta) * d
         tau_theta = tau * np.cos(self.theta) * d

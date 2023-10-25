@@ -220,11 +220,10 @@ class GHE:
     def find_hysteresis_curve_(self,gamma,dg):
         if np.abs(gamma) >= self.gamma_y:
             tau = self.skeleton_curve(gamma,self.G0,self.gr)
+            # print("A",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
 
         elif dg > self.epsilon:
-            # print("C",self.dg,dg,gamma,self.tau0_p_list,self.tau0_n_list)
-
             if dg*self.dg < -self.epsilon:
                 tau0 = self.tau
                 gamma0 = gamma - dg
@@ -237,11 +236,10 @@ class GHE:
                     gamma0 = self.gamma0_n_list[i]
                     break
             tau = self.hysteresis_curve(gamma,gamma0,tau0)
+            # print("B",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
 
         elif dg < -self.epsilon:
-            # print("D",self.dg,dg,gamma,self.tau0_p_list,self.tau0_n_list)
-
             if dg*self.dg < -self.epsilon:
                 tau0 = self.tau
                 gamma0 = gamma - dg
@@ -254,10 +252,12 @@ class GHE:
                     gamma0 = self.gamma0_p_list[i]
                     break
             tau = self.hysteresis_curve(gamma,gamma0,tau0)
+            # print("C",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
 
         else:
             tau = self.hysteresis_curve(gamma)
+            # print("D",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
 
     def update_hysteresis_curve(self,gamma,tau,dg):
@@ -304,7 +304,7 @@ class GHE:
                 self.tau0 = self.tau0_p_list[0]
                 self.gamma0 = self.gamma0_p_list[0]
 
-        print(self.id,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+        # print(self.id,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
 
 
     # -------------------------------------------------------------------------------------- #
@@ -320,6 +320,7 @@ class GHE:
     def shear_(self,gamma):
         dg = gamma - self.gamma
         tau = self.find_hysteresis_curve_(gamma,dg)
+        # print(self.id,dg,gamma,tau)
         return tau
 
     def cyclic_shear(self,shear_strain,plot=False):

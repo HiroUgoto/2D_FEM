@@ -150,7 +150,6 @@ class EP:
 
     def initial_state(self,init_stress):
         init_stress_mat = self.FEMstress_to_matrix(init_stress)
-        # print(init_stress_mat)
 
         # isotropic_compression
         # compression_stress = max([-init_stress[0],-init_stress[1]])
@@ -197,7 +196,6 @@ class EP:
             ev,gamma = self.model.set_strain_variable(self.strain)
             self.e = self.e0 - ev*(1+self.e0)
             # print(p,R,gamma)
-
 
         # sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
         # strain_vec = self.model.matrix_to_vector(self.strain)

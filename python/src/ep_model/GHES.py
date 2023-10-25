@@ -173,6 +173,7 @@ class GHES:
 
             dstress_mask = dstress[d]
             Ep_mask = Ep[d][:,d]
+            
             dstrain_mask = np.linalg.solve(Ep_mask,dstress_mask)
 
             dstrain[d] = dstrain_mask
@@ -183,6 +184,7 @@ class GHES:
             dstress_mat = self.vector_to_matrix(dstress)
             strain_update = sp.strain + dstrain_mat
             strain_update_vec = self.matrix_to_vector(strain_update)
+
             stress_update_vec = self.strain_to_stress_(strain_update_vec)
 
             stress_update = self.vector_to_matrix(stress_update_vec)
@@ -194,7 +196,6 @@ class GHES:
             sp = self.StateParameters(strain_update,stress_update,dstrain_residual,dstress_residual)
 
             norm = np.linalg.norm(dstress_residual) 
-            # print('norm',norm)
             if norm < 1.e-6:
                 break
 
