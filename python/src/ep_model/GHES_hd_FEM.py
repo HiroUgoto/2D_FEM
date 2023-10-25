@@ -19,7 +19,7 @@ S_PARAM = {'c1_0':1.0,'c1_inf':0.17,'c2_0':0.8,'c2_inf':2.5,'alpha':2.86,'beta':
 
 # GHEモデル
 class GHE:
-    def __init__(self,G0,gr,hmax=0.2,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0):
+    def __init__(self,G0,gr,hmax=0.2,id=None,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0):
         self.G0 = G0
         self.gr = gr
         self.hmax = hmax
@@ -32,6 +32,11 @@ class GHE:
         self.G0_h = self.G0
 
         self.tau,self.gamma,self.dg = 0.0,0.0,0.0
+
+        if id is not None:
+            self.id = id
+        else:
+            self.id = -1
 
         # reversal point
         self.tau0 = 0.0
@@ -168,13 +173,13 @@ class GHE:
             self.gamma0 = g0
             self.update_reversal_points(gamma-g0)
             self.skeleton = False
-            print("reverse",gamma-g0,dg,gamma,tau0,self.tau0_p_list,self.tau0_n_list)
+            # print("reverse",gamma-g0,dg,gamma,tau0,self.tau0_p_list,self.tau0_n_list)
 
     def update_reversal_points(self,dg):
         gamma0_list = [self.gamma0]
         tau0_list = [self.tau0]
 
-        if dg > 0.0:
+        if dg > self.epsilon:
             for i,tau0 in enumerate(self.tau0_n_list):
                 if tau0 < self.tau0:
                     tau0_list = [self.tau0] + self.tau0_n_list[i:]
@@ -184,7 +189,7 @@ class GHE:
             self.gamma0_n_list = gamma0_list
             # print("n",self.tau0_n_list,self.tau_y)
 
-        elif dg < 0.0:
+        elif dg < -self.epsilon:
             for i,tau0 in enumerate(self.tau0_p_list):
                 if tau0 > self.tau0:
                     tau0_list = [self.tau0] + self.tau0_p_list[i:]
@@ -193,6 +198,19 @@ class GHE:
             self.tau0_p_list = tau0_list
             self.gamma0_p_list = gamma0_list
             # print("p",self.tau0_p_list,self.tau_y)
+
+        # if len(self.tau0_n_list) < len(self.tau0_p_list):
+        #     n = len(self.tau0_n_list)
+        #     for i in range(n,len(self.tau0_p_list)):
+        #         self.tau0_n_list += [-self.tau_y] 
+        #         self.gamma0_n_list += [-self.gamma_y] 
+
+        # elif len(self.tau0_n_list) > len(self.tau0_p_list):
+        #     n = len(self.tau0_p_list)
+        #     for i in range(n,len(self.tau0_n_list)):
+        #         self.tau0_p_list += [self.tau_y] 
+        #         self.gamma0_p_list += [self.gamma_y] 
+
 
     def find_hysteresis_curve(self,gamma,dg):
         tau = self.find_hysteresis_curve_(gamma,dg)
@@ -204,7 +222,9 @@ class GHE:
             tau = self.skeleton_curve(gamma,self.G0,self.gr)
             return tau
 
-        elif dg > 0.0:
+        elif dg > self.epsilon:
+            # print("C",self.dg,dg,gamma,self.tau0_p_list,self.tau0_n_list)
+
             if dg*self.dg < -self.epsilon:
                 tau0 = self.tau
                 gamma0 = gamma - dg
@@ -219,7 +239,9 @@ class GHE:
             tau = self.hysteresis_curve(gamma,gamma0,tau0)
             return tau
 
-        elif dg < 0.0:
+        elif dg < -self.epsilon:
+            # print("D",self.dg,dg,gamma,self.tau0_p_list,self.tau0_n_list)
+
             if dg*self.dg < -self.epsilon:
                 tau0 = self.tau
                 gamma0 = gamma - dg
@@ -243,14 +265,14 @@ class GHE:
             self.tau0 = self.tau
             self.gamma0 = gamma - dg
             self.update_reversal_points(dg)
-            # print("reverse",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+            print("reverse",self.id,self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
 
         if np.abs(gamma) >= self.gamma_y:
             self.update_yield_stress(gamma,tau)
             self.tau0_p_list,self.gamma0_p_list = [self.tau_y],[self.gamma_y]
             self.tau0_n_list,self.gamma0_n_list = [-self.tau_y],[-self.gamma_y]
 
-        elif dg > 0.0:
+        elif dg > self.epsilon:
             n = len(self.gamma0_p_list)
             for i in range(n):
                 if gamma > self.gamma0_p_list[0]:
@@ -266,7 +288,7 @@ class GHE:
                 self.tau0 = self.tau0_n_list[0]
                 self.gamma0 = self.gamma0_n_list[0]
 
-        elif dg < 0.0:
+        elif dg < -self.epsilon:
             n = len(self.gamma0_n_list)
             for i in range(n):
                 if gamma < self.gamma0_n_list[0]:
@@ -282,11 +304,15 @@ class GHE:
                 self.tau0 = self.tau0_p_list[0]
                 self.gamma0 = self.gamma0_p_list[0]
 
+        print(self.id,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+
+
     # -------------------------------------------------------------------------------------- #
     def shear1(self,gamma):
         dg = gamma - self.gamma
         tau = self.find_hysteresis_curve(gamma,dg)
-        self.dg = dg
+        if np.abs(dg) > self.epsilon:
+            self.dg = dg
         self.gamma = gamma
         self.tau = tau
         return self.tau
@@ -457,8 +483,8 @@ class mod_GHE2(GHE):
 class GHE_S(GHE):
     coef = (1,0)
 
-    def __init__(self,G0,gr,hmax,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0,gr0bygr=5,GmbyGM=0.1):
-        super().__init__(G0,gr,hmax,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
+    def __init__(self,G0,gr,hmax,id=None,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0,gr0bygr=5,GmbyGM=0.1):
+        super().__init__(G0,gr,hmax,id,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
         self.gr0 = gr0bygr * gr
         self.GmbyGM = GmbyGM
         self.init_hyst()
@@ -639,6 +665,7 @@ class GHE_S(GHE):
             gr_h = self.gr_h_for_skeleton
             G0_hbyGmax = (1-self.GmbyGM)/(1+gamma0/self.gr0) + self.GmbyGM
             G0_h = G0_hbyGmax * self.G0
+
             if gamma < gamma0[0]:
                 self.lmbda0 = 2.0
                 self.G0_h = self.G0

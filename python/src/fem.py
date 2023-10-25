@@ -438,7 +438,12 @@ class Fem():
 
         for id in forced_nodes:
             for i in range(self.dof):
-                self.nodes[id].u[i] = disp0[i]
+                if self.nodes[id].freedom[i] == 0:
+                    self.nodes[id].u[i] = disp0[i]
+
+        np.set_printoptions(precision=8)
+        for node in self.nodes:
+            print("u",node.id,node.u)
 
         for element in self.output_e_elements:
             element.calc_stress()
