@@ -21,7 +21,7 @@ fem.set_output(outputs)
 # plot_model.plot_mesh(fem)
 
 ## --- Define input wave --- ##
-fp = 4.0
+fp = 3.3
 amp = 1.e-5
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
