@@ -243,8 +243,8 @@ class EP:
 
         elif self.style == "ep_GHES":
             dstrain_vec = self.model.matrix_to_vector(dstrain)
-            np.set_printoptions(precision=8)
-            print("dstrain",dstrain_vec)
+            # np.set_printoptions(precision=8)
+            # print("dstrain",dstrain_vec)
 
             sp = self.model.StateParameters(self.strain,self.stress,dstrain,dstress_input,self.model.stress_shift)
             Ep = self.model.plastic_stiffness(sp)
@@ -254,13 +254,13 @@ class EP:
             dstress = self.model.vector_to_matrix(dstress_vec)
 
             # check #
-            strain_vec = self.model.matrix_to_vector(self.strain+dstrain)
-            np.set_printoptions(precision=8)
-            print("strain check",strain_vec)
+            # strain_vec = self.model.matrix_to_vector(self.strain+dstrain)
+            # np.set_printoptions(precision=8)
+            # print("strain check",strain_vec)
 
-            stress_check = self.model.strain_to_stress_(strain_vec)
-            np.set_printoptions(precision=5)
-            print("stress check",stress_check)
+            # stress_check = self.model.strain_to_stress_(strain_vec)
+            # np.set_printoptions(precision=5)
+            # print("stress check",stress_check)
             ########
 
             sp2 = self.model.StateParameters(self.strain,self.stress,dstrain,dstress,self.model.stress_shift)
@@ -276,14 +276,14 @@ class EP:
             stress_yy = -self.stress[1,1]
 
             # check #
-            strain_vec = self.model.matrix_to_vector(self.strain)
-            stress_vec = self.model.matrix_to_vector(self.stress)
-            np.set_printoptions(precision=5)
-            print("stress update",stress_vec)
+            # strain_vec = self.model.matrix_to_vector(self.strain)
+            # stress_vec = self.model.matrix_to_vector(self.stress)
+            # np.set_printoptions(precision=5)
+            # print("stress update",stress_vec)
 
 
-            print("Dp:",Dp)
-            print("")
+            # print("Dp:",Dp)
+            # print("")
 
         return Dp, self.matrix_to_FEMstress(self.stress), stress_yy
 

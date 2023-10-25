@@ -12,7 +12,7 @@ start = time.time()
 fem = io_data.input_mesh("input/mesh.in")
 outputs = io_data.input_outputs("input/output.in")
 output_dir = "result/"
-datasamplerate = 2000  #sampling rate[Hz]
+datasamplerate = 2500  #sampling rate[Hz]
 # datasamplerate = 100  #sampling rate[Hz]
 
 ## --- FEM Set up --- ##
@@ -27,10 +27,10 @@ print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-# fem.set_rayleigh_damping(fp,10*fp,0.002)
+fem.set_rayleigh_damping(fp,5*fp,0.01)
 
 ## --- Define input wave --- ##
-fsamp = 2000
+fsamp = 2500
 duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
@@ -96,7 +96,7 @@ output_element_pw = np.zeros(fem.output_nelem+1)
 # dispin = open(output_dir+"disp.in","w") 
 
 # for it in range(ntim):
-for it in range(80):
+for it in range(400):
     # acc0 = np.array([wave_acc[it],0.0])
     # vel0 += acc0*dt
     # dis0 += vel0*dt
@@ -132,10 +132,10 @@ for it in range(80):
         # # writef(output_element_stress_yy, stressyy, tim[it], [element.eff_stress_yy for element in fem.output_elements])
         # # writef(output_element_pw, stresspw, tim[it], [element.excess_pore_pressure for element in fem.output_elements])
 
-        # print(it,"t=",it*dt,forced_disp0[0],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
-        print(it,"t=",it*dt,forced_disp0[0])  
-        print("                              ",fem.elements[0].stress)
-        print("----------------------------------------------------------------------")
+        print(it,"t=",it*dt,forced_disp0[0],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
+        # print(it,"t=",it*dt,forced_disp0[0])  
+        # print("                              ",fem.elements[0].stress)
+        # print("----------------------------------------------------------------------")
 
 
     # if it%(fsamp/datasamplerate*10) == 0:
