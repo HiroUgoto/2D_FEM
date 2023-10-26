@@ -495,12 +495,19 @@ class Fem():
     def _update_time_set_connected_elements_(self,element):
         u = np.zeros_like(element.nodes[0].u)
         a = np.zeros_like(element.nodes[0].a)
+        count = np.zeros_like(element.nodes[0].u)
         for node in element.nodes:
-            u[:] += node.u[:]
-            a[:] += node.a[:]
+            for i in range(self.dof):
+                if node.freedom[i] != 0:
+                    u[i] += node.u[i]
+                    a[i] += node.a[i]
+                    count[i] += 1
+
         for node in element.nodes:
-            node.u[:] = u[:]/element.nnode
-            node.a[:] = a[:]/element.nnode
+            for i in range(self.dof):
+                if node.freedom[i] != 0:
+                    node.u[i] = u[i]/count[i]
+                    node.a[i] = a[i]/count[i]
 
     def _update_time_set_spring_elements_(self,element):
         u = element.R @ np.hstack(element.u)

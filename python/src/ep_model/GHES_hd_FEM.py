@@ -1,6 +1,6 @@
 # from tkinter import E
 import numpy as np
-import copy, math, sys
+import copy, math, sys, os
 
 import warnings,traceback,sys
 warnings.filterwarnings('error')
@@ -19,7 +19,7 @@ S_PARAM = {'c1_0':1.0,'c1_inf':0.17,'c2_0':0.8,'c2_inf':2.5,'alpha':2.86,'beta':
 
 # GHEモデル
 class GHE:
-    def __init__(self,G0,gr,hmax=0.2,id=None,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0):
+    def __init__(self,G0,gr,hmax=0.2,id=None,idxy="",hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0):
         self.G0 = G0
         self.gr = gr
         self.hmax = hmax
@@ -37,6 +37,7 @@ class GHE:
             self.id = id
         else:
             self.id = -1
+        self.idxy = idxy
 
         # reversal point
         self.tau0 = 0.0
@@ -72,6 +73,14 @@ class GHE:
         self.Diljk = np.einsum('ij,kl->ilkj',self.I3,self.I3)
         self.epsilon = sys.float_info.epsilon
 
+        # check file
+        # file_name = "tmp/"+idxy+"_"+'{0:02}'.format(id)
+        # if os.path.isfile(file_name):
+        #     os.remove(file_name)
+        # self.file = open(file_name,"w") 
+
+    # def __del__(self):
+    #     self.file.close()
 
     def re_init(self):
         self.G0_h,self.gr_h = self.G0,self.gr
@@ -96,9 +105,6 @@ class GHE:
 
             self.set_stress_variable()
             self.set_stress_increment()
-
-            # self.elastic_flag1 = ef1
-            # self.elastic_flag2 = ef2
 
         def vector_to_matrix(self,vec):
             mat = np.array([[vec[0],vec[3],vec[5]],
@@ -199,80 +205,86 @@ class GHE:
             self.gamma0_p_list = gamma0_list
             # print("p",self.tau0_p_list,self.tau_y)
 
-        # if len(self.tau0_n_list) < len(self.tau0_p_list):
-        #     n = len(self.tau0_n_list)
-        #     for i in range(n,len(self.tau0_p_list)):
-        #         self.tau0_n_list += [-self.tau_y] 
-        #         self.gamma0_n_list += [-self.gamma_y] 
-
-        # elif len(self.tau0_n_list) > len(self.tau0_p_list):
-        #     n = len(self.tau0_p_list)
-        #     for i in range(n,len(self.tau0_n_list)):
-        #         self.tau0_p_list += [self.tau_y] 
-        #         self.gamma0_p_list += [self.gamma_y] 
-
-
     def find_hysteresis_curve(self,gamma,dg):
         tau = self.find_hysteresis_curve_(gamma,dg)
         self.update_hysteresis_curve(gamma,tau,dg)
+
+        # if self.idxy == "zx" and self.id == 8:
+        #     print("check",self.idxy,self.id,self.dg,dg,gamma,tau)
+        #     print("")
+
         return tau
 
     def find_hysteresis_curve_(self,gamma,dg):
+        # if self.idxy == "zx" and self.id == 8:
+        #     flag = True
+        # else:
+        #     flag = False
+
         if np.abs(gamma) >= self.gamma_y:
             tau = self.skeleton_curve(gamma,self.G0,self.gr)
-            # print("A",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+            # if flag:
+            #     print("A",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
 
-        elif dg > self.epsilon:
-            if dg*self.dg < -self.epsilon:
-                tau0 = self.tau
-                gamma0 = gamma - dg
-            else:
-                tau0 = -self.tau_y
-                gamma0 = -self.gamma_y
+        elif dg > 0.0:
+            tau0_n_list = self.tau0_n_list.copy()
+            gamma0_n_list = self.gamma0_n_list.copy()
+
+            if dg*self.dg < 0.0:
+                tau0_n_list.insert(0, self.tau)
+                gamma0_n_list.insert(0, gamma-dg)               
+
             for i in range(len(self.gamma0_p_list)):
-                if gamma > self.gamma0_p_list[i]:
-                    tau0 = self.tau0_n_list[i]
-                    gamma0 = self.gamma0_n_list[i]
+                if gamma < self.gamma0_p_list[i]:
+                    tau0 = tau0_n_list[i]
+                    gamma0 = gamma0_n_list[i]
                     break
             tau = self.hysteresis_curve(gamma,gamma0,tau0)
-            # print("B",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+            # if flag:
+            #     print("B",self.dg,dg,gamma,tau,self.tau0_p_list,tau0_n_list)
+            #     print(" ",gamma0,tau0)
             return tau
 
-        elif dg < -self.epsilon:
-            if dg*self.dg < -self.epsilon:
-                tau0 = self.tau
-                gamma0 = gamma - dg
-            else:
-                tau0 = self.tau_y
-                gamma0 = self.gamma_y
+        elif dg < 0.0:
+            tau0_p_list = self.tau0_p_list.copy()
+            gamma0_p_list = self.gamma0_p_list.copy()
+
+            if dg*self.dg < 0.0:
+                tau0_p_list.insert(0, self.tau)
+                gamma0_p_list.insert(0, gamma-dg)               
+
             for i in range(len(self.gamma0_n_list)):
-                if gamma < self.gamma0_n_list[i]:
-                    tau0 = self.tau0_p_list[i]
-                    gamma0 = self.gamma0_p_list[i]
+                if gamma > self.gamma0_n_list[i]:
+                    tau0 = tau0_p_list[i]
+                    gamma0 = gamma0_p_list[i]
                     break
             tau = self.hysteresis_curve(gamma,gamma0,tau0)
-            # print("C",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+            # if flag:
+            #     print("C",self.dg,dg,gamma,tau,tau0_p_list,self.tau0_n_list)
+            #     print(" ",gamma0,tau0)
             return tau
 
         else:
             tau = self.hysteresis_curve(gamma)
-            # print("D",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+            # if flag:
+            #     print("D",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
 
     def update_hysteresis_curve(self,gamma,tau,dg):
-        if dg*self.dg < -self.epsilon:
+        if dg*self.dg < 0:
             self.tau0 = self.tau
             self.gamma0 = gamma - dg
             self.update_reversal_points(dg)
-            print("reverse",self.id,self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+            # if self.idxy == "zx" and self.id == 8:
+            #     print("reverse",self.idxy,self.id,self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
 
         if np.abs(gamma) >= self.gamma_y:
             self.update_yield_stress(gamma,tau)
             self.tau0_p_list,self.gamma0_p_list = [self.tau_y],[self.gamma_y]
             self.tau0_n_list,self.gamma0_n_list = [-self.tau_y],[-self.gamma_y]
 
-        elif dg > self.epsilon:
+        elif dg > 0.0:
             n = len(self.gamma0_p_list)
             for i in range(n):
                 if gamma > self.gamma0_p_list[0]:
@@ -288,7 +300,7 @@ class GHE:
                 self.tau0 = self.tau0_n_list[0]
                 self.gamma0 = self.gamma0_n_list[0]
 
-        elif dg < -self.epsilon:
+        elif dg < 0.0:
             n = len(self.gamma0_n_list)
             for i in range(n):
                 if gamma < self.gamma0_n_list[0]:
@@ -304,8 +316,6 @@ class GHE:
                 self.tau0 = self.tau0_p_list[0]
                 self.gamma0 = self.gamma0_p_list[0]
 
-        # print(self.id,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
-
 
     # -------------------------------------------------------------------------------------- #
     def shear1(self,gamma):
@@ -315,12 +325,15 @@ class GHE:
             self.dg = dg
         self.gamma = gamma
         self.tau = tau
+
+        # output_line = "{} {}\n".format(self.gamma,self.tau)
+        # self.file.write(output_line)
+
         return self.tau
 
     def shear_(self,gamma):
         dg = gamma - self.gamma
         tau = self.find_hysteresis_curve_(gamma,dg)
-        # print(self.id,dg,gamma,tau)
         return tau
 
     def cyclic_shear(self,shear_strain,plot=False):
@@ -334,158 +347,11 @@ class GHE:
         return np.array(tau_list)
 
 
-# 前の論文で用いたもの: h-gamma用のgamma_refをパラメータとして用意する
-class Prev_IY(GHE):
-    def __init__(self,G0,gr,gr_h,hmax,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0):
-        super().__init__(G0,gr,hmax,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
-        self.gr_h = gr_h
-
-        x = 10.0 ** np.linspace(-5,3,100)
-        self.x_for_skeleton = x
-        self.h_for_skeleton = 4/np.pi*(1+1/x)*(1 - np.log(1+x)/x) - 2/np.pi
-
-    def update_yield_stress(self,gamma,tau):
-        super().update_yield_stress(gamma,tau)
-        if np.abs(gamma) > 0.0:
-            self.G0_h = np.abs(tau/gamma) * (1+np.abs(gamma)/self.gr_h)
-
-    def hysteresis_curve(self,gamma):
-        def skeleton_for_hyst(gamma):
-            return self.G0_h * gamma / (1+np.abs(gamma)/self.gr_h)
-        tau = self.tau0 + 2*skeleton_for_hyst(0.5*(gamma-self.gamma0))
-        return tau
-
-# 修正GHEモデル: h-gammaを数式でモデル化し、
-class mod_GHE(GHE):
-    def __init__(self,G0,gr,hmax,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0):
-        super().__init__(G0,gr,hmax,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
-        self.init_hyst()
-
-    def init_hyst(self):
-        def skeleton_curve(gamma,G0,gr):
-            x = np.abs(gamma/gr)
-            idx = x>0
-            c1 = np.ones_like(x)*self.c1_0
-            c2 = np.ones_like(x)*self.c2_0
-            c1[idx] = (self.c1_0+self.c1_inf + (self.c1_0-self.c1_inf)*np.cos(np.pi/(self.alpha/x[idx] +1)))/2
-            c2[idx] = (self.c2_0+self.c2_inf + (self.c2_0-self.c2_inf)*np.cos(np.pi/(self.beta/x[idx] +1)))/2
-            tau = G0 * gamma /(1/c1 + x/c2)
-            return tau
-
-        def hysteresis(gamma,gamma0,tau0,G0_h,gr_h):
-            tau = tau0 + 2*skeleton_curve((gamma-gamma0)/2,G0_h,gr_h)
-            return tau
-
-        def calculate_h(gamma,tau,gamma0,tau0):
-            dW = -np.sum((tau[:-1]+tau[1:])*(gamma[1:]-gamma[:-1])/2, axis=0)
-            W = gamma0[0]*tau0[0]/2
-            h = 1/(4*np.pi) * dW/W
-            return h
-
-        def get_G0_h(gamma0,tau0,gr_h):
-            x = np.abs(gamma0/gr_h)
-            idx = x>0
-            c1 = np.ones_like(x)*self.c1_0
-            c2 = np.ones_like(x)*self.c2_0
-            c1[idx] = (self.c1_0+self.c1_inf + (self.c1_0-self.c1_inf)*np.cos(np.pi/(self.alpha/x[idx] +1)))/2
-            c2[idx] = (self.c2_0+self.c2_inf + (self.c2_0-self.c2_inf)*np.cos(np.pi/(self.beta/x[idx] +1)))/2
-            G0_h = np.abs(tau0/gamma0) * (1/c1 + x/c2)
-            return G0_h
-
-
-        n0,n1,n2 = 150,100,1001
-        maxlog = np.log10(0.5/self.gr)
-        maxlog = max(maxlog10x,maxlog)
-        x = 10.0 ** np.linspace(minlog10x,maxlog,n1)[None,:,None]
-        gamma0 = x * self.gr
-
-        gamma = np.sin(np.linspace(0,3*np.pi,n0))[:,None,None]
-        gamma = gamma*gamma0
-        gamma0 = gamma0 * np.ones([n0,n1])[:,:,None]
-        gamma0[1:] *= np.sign(np.sign(gamma[1:]-gamma[:-1])+0.5)
-        tau0 = skeleton_curve(gamma0,self.G0,self.gr)
-
-        logmin = np.log10(self.gr)
-        logmax = logmin + 5
-        gr_h = 10.0 ** np.linspace(logmin,logmax,n2)[None,None,:]
-        G0_h = get_G0_h(gamma0,tau0,gr_h)
-        tau = hysteresis(gamma,gamma0,tau0,G0_h,gr_h)
-        k = int(n0/3)
-        h_cal = calculate_h(gamma[k:],tau[k:],gamma0,tau0)  # shape: n1,n2
-        h = self.get_h(gamma0[0],tau0[0])
-
-        err = np.abs(h_cal - h)
-        idx = np.argmin(err,axis=1)
-        self.gamma0_for_skeleton = gamma0[0].flatten()
-        self.gr_h_for_skeleton = gr_h.flatten()[idx]
-        self.G0_h_for_skeleton = G0_h.flatten()[idx]
-
-    def hysteresis_curve(self,gamma):
-        tau = self.tau0 + 2*self.skeleton_curve((gamma-self.gamma0)/2,self.G0_h,self.gr_h)
-        return tau
-
-    def update_yield_stress(self,gamma,tau):
-        def set_hyst_params(gamma,tau):
-            def set_G0_h(gamma,tau):
-                x = np.abs(gamma/self.gr_h)
-                if x > 0.0:
-                    c1 = (self.c1_0+self.c1_inf + (self.c1_0-self.c1_inf)*np.cos(np.pi/(self.alpha/x +1)))/2
-                    c2 = (self.c2_0+self.c2_inf + (self.c2_0-self.c2_inf)*np.cos(np.pi/(self.beta/x +1)))/2
-                    self.G0_h = np.abs(tau/gamma) * (1/c1 + x/c2)
-                else:
-                    self.G0_h = self.G0
-            gamma = np.abs(gamma)
-            gamma0 = self.gamma0_for_skeleton
-            # G0_h = self.G0_h_for_skeleton
-            gr_h = self.gr_h_for_skeleton
-            idx1 = np.argmin(np.abs(gamma-gamma0))
-            if gamma0[idx1] > gamma:
-                idx2 = idx1 - 1
-            else:
-                idx2 = idx1 + 1
-            rate = (gamma-gamma0[idx1])/(gamma0[idx2]-gamma0[idx1])
-            # self.G0_h = G0_h[idx1] + rate*(G0_h[idx2]-G0_h[idx1])
-            self.gr_h = gr_h[idx1] + rate*(gr_h[idx2]-gr_h[idx1])
-            set_G0_h(gamma,tau)
-
-        set_hyst_params(gamma,tau)
-        super().update_yield_stress(gamma,tau)
-
-
-# 修正GHEモデル： 履歴曲線用の骨格曲線をHDモデルにしたパターン
-class mod_GHE2(GHE):
-    def hysteresis_curve(self,gamma):
-        def skeleton_curve(gamma):
-            x = np.abs(gamma/self.gr_h)
-            return self.G0_h*gamma / (1+x)
-        tau = self.tau0 + 2*skeleton_curve((gamma-self.gamma0)/2)
-        return tau
-
-    def update_yield_stress(self,gamma,tau):
-        def set_hyst_params(gamma,tau):
-            def set_gr_h(gamma,tau):
-                h = self.get_h(gamma,tau)
-                if h > 0.0:
-                    logx = np.arctanh(np.pi*h-1) + 0.64
-                    x = 10.0 ** logx
-                    self.gr_h = gamma/x
-
-            def set_G0_h(gamma,tau):
-                x = np.abs(gamma/self.gr_h)
-                self.G0_h = np.abs(tau/gamma)*(1+x)
-            if gamma > 0.0:
-                set_gr_h(gamma,tau)
-                set_G0_h(gamma,tau)
-
-        set_hyst_params(np.abs(gamma),np.abs(tau))
-        super().update_yield_stress(gamma,tau)
-
-
 class GHE_S(GHE):
     coef = (1,0)
 
-    def __init__(self,G0,gr,hmax,id=None,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0,gr0bygr=5,GmbyGM=0.1):
-        super().__init__(G0,gr,hmax,id,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
+    def __init__(self,G0,gr,hmax,id=None,idxy="",hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0,gr0bygr=5,GmbyGM=0.1):
+        super().__init__(G0,gr,hmax,id,idxy,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
         self.gr0 = gr0bygr * gr
         self.GmbyGM = GmbyGM
         self.init_hyst()
@@ -683,181 +549,6 @@ class GHE_S(GHE):
                 self.gr_h = gr_h[idx1] + rate * (gr_h[idx2]-gr_h[idx1])
         set_hyst_params(gamma)
         super().update_yield_stress(gamma,tau)
-
-
-class myGHE_S(GHE_S):
-    # coef = (0,0,0,1)
-    coef = (1,)
-    # coef = (1,1)
-
-
-class special_GHE_S(GHE):
-    coef = (1,)
-
-    # def __init__(self,G0,gr,hmax,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0,gr0bygr=5,GmbyGM=0.18):
-    def __init__(self,G0,gr,hmax,hbeta=1,c1_0=1,c1_inf=1,c2_0=1,c2_inf=1,alpha=0,beta=0,gr0bygr=5,GmbyGM=0.1):
-        super().__init__(G0,gr,hmax,hbeta,c1_0,c1_inf,c2_0,c2_inf,alpha,beta)
-        self.gr0 = gr0bygr * gr
-        self.GmbyGM = GmbyGM
-        self.xmax = 0
-        self.rh = 500
-        self.init_hyst()
-
-    def init_hyst(self):
-        def get_G0_h(gamma0):
-            G0_hbyGmax = (1-self.GmbyGM)/(1+gamma0/self.gr0) + self.GmbyGM
-            return G0_hbyGmax * self.G0
-
-        def set_gr_h(gamma0):
-            n = len(gamma0)
-            gr_h = []
-            log_gr = np.log10(self.gr)
-            for i in range(n):
-                g0 = gamma0[i]
-                G0_h = get_G0_h(g0)
-                n2 = 1000
-                gr = 10.0 ** np.linspace(log_gr,log_gr+3,n2)
-                tau0 = skeleton_curve(g0,self.G0,self.gr)
-                tau = skeleton_curve(g0,G0_h,gr)
-                err = np.abs(tau-tau0)
-                idx = np.argmin(err)
-                gr_h += [gr[idx]]
-            self.gr_h_for_skeleton = np.array(gr_h)
-
-        def skeleton_curve(gamma,G0,gr):
-            x = np.abs(gamma/gr)
-            if type(x) is np.ndarray:
-                idx = x>0
-                c1 = np.ones_like(x)*self.c1_0
-                c2 = np.ones_like(x)*self.c2_0
-                c1[idx] = (self.c1_0+self.c1_inf + (self.c1_0-self.c1_inf)*np.cos(np.pi/(self.alpha/x[idx] +1)))/2
-                c2[idx] = (self.c2_0+self.c2_inf + (self.c2_0-self.c2_inf)*np.cos(np.pi/(self.beta/x[idx] +1)))/2
-            else:
-                if x > 0.0:
-                    c1 = (self.c1_0+self.c1_inf + (self.c1_0-self.c1_inf)*np.cos(np.pi/(self.alpha/x +1)))/2
-                    c2 = (self.c2_0+self.c2_inf + (self.c2_0-self.c2_inf)*np.cos(np.pi/(self.beta/x +1)))/2
-                else:
-                    c1,c2 = self.c1_0,self.c2_0
-            tau = G0 * gamma /(1/c1 + x/c2)
-            return tau
-
-        def hysteresis(gamma,gamma0,tau0,lmbda0):
-            gr_h = self.gr_h_for_skeleton[None,:,None]
-            G0_h = get_G0_h(np.abs(gamma0))
-            x = gamma/gamma0
-
-            # fx = (self.coef[0]*x**2 + self.coef[1]*x**4)/sum(self.coef)
-            fx = np.zeros_like(x)
-            fx[x<0] = sum([c*x[x<0]**(2*i+2) for i,c in enumerate(self.coef)])/sum(self.coef)
-            fx[x>=0] = (self.rh/(self.xmax+self.rh) * x[x>=0])**2
-            lmbda = (2-lmbda0)*fx + lmbda0
-            tau = tau0 + lmbda*skeleton_curve((gamma-gamma0)/lmbda,G0_h,gr_h)
-            return tau
-
-        def calculate_h(gamma,tau,gamma0,tau0):
-            dW = -np.sum((tau[:-1]+tau[1:])*(gamma[1:]-gamma[:-1])/2, axis=0)
-            W = gamma0[0]*tau0[0]/2
-            h = 1/(4*np.pi) * dW/W
-            return h
-
-
-        n0,n1,n2 = 150,100,501
-        maxlog = np.log10(0.5/self.gr)
-        maxlog = max(maxlog10x,maxlog)
-        x = 10.0 ** np.linspace(minlog10x,maxlog,n1)[None,:,None]
-        gamma0 = x * self.gr
-
-        set_gr_h(gamma0.flatten())
-
-        lmbda0 = np.linspace(1,2,n2)[None,None,:]
-        gamma = np.sin(np.linspace(0,3*np.pi,n0))[:,None,None]
-        gamma = gamma*gamma0
-        gamma0 = gamma0 * np.ones([n0,n1])[:,:,None]
-        gamma0[1:] *= np.sign(np.sign(gamma[1:]-gamma[:-1])+0.5)
-        tau0 = skeleton_curve(gamma0,self.G0,self.gr)
-
-        tau = hysteresis(gamma,gamma0,tau0,lmbda0)
-        k = int(n0/3)
-        h_cal = calculate_h(gamma[k:],tau[k:],gamma0,tau0)  # shape: n1,n2
-        h = self.get_h(gamma0[0],tau0[0])
-
-        err = np.abs(h_cal - h)
-        idx = np.argmin(err,axis=1)
-        self.gamma0_for_skeleton = gamma0[0].flatten()
-        self.lmbda0_for_skeleton = lmbda0.flatten()[idx]
-
-    def hysteresis_curve(self,gamma):
-        dg = gamma - self.gamma0
-        if np.abs(dg)>0.0:
-            gy = self.gamma_y * np.sign(-dg)
-        else:
-            gy = self.gamma_y
-        if np.abs(self.gamma_y) > 0:
-            x = dg/gy + 1
-            # fx = (self.coef[0]*x**2 + self.coef[1]*x**4)/sum(self.coef)
-            if x<0:
-                fx = sum([c*x**(2*i+2) for i,c in enumerate(self.coef)])/sum(self.coef)
-            else:
-                fx = (self.rh/(self.xmax+self.rh) * x)**2
-            lmbda0 = max(self.lmbda0,1.05)
-            lmbda = (2-lmbda0)*fx + lmbda0
-            # lmbda = (2-self.lmbda0)*(self.coef[0]*x**2 + self.coef[1]*x**4) + self.lmbda0
-            # lmbda = (2-self.lmbda0)*x**self.degree + self.lmbda0
-            # lmbda = (2-self.lmbda0)/gy**self.degree * dg*(dg+2*gy) + 2
-        else:
-            lmbda = 2.0
-        tau = self.tau0 + lmbda*self.skeleton_curve(dg/lmbda,self.G0_h,self.gr_h)
-        return tau
-
-    def update_yield_stress(self,gamma,tau):
-        def get_G0_h(gamma):
-            G0_hbyGmax = (1-self.GmbyGM)/(1+gamma/self.gr0) + self.GmbyGM
-            return G0_hbyGmax * self.G0
-
-        def set_hyst_params(gamma):
-            gamma = np.abs(gamma)
-            gamma0 = self.gamma0_for_skeleton
-            lmbda0 = self.lmbda0_for_skeleton
-            gr_h = self.gr_h_for_skeleton
-            G0_hbyGmax = (1-self.GmbyGM)/(1+gamma0/self.gr0) + self.GmbyGM
-            G0_h = G0_hbyGmax * self.G0
-            if gamma < gamma0[0]:
-                self.lmbda0 = 2.0
-                self.G0_h = self.G0
-                self.gr_h = self.gr
-            else:
-                idx1 = np.argmin(np.abs(np.abs(gamma-gamma0)))
-                if gamma0[idx1] > gamma:
-                    idx2 = idx1 - 1
-                else:
-                    idx2 = idx1 + 1
-                rate = (gamma-gamma0[idx1])/(gamma0[idx2]-gamma0[idx1])
-                self.lmbda0 = lmbda0[idx1] + rate * (lmbda0[idx2]-lmbda0[idx1])
-                self.gr_h = gr_h[idx1] + rate * (gr_h[idx2]-gr_h[idx1])
-                # self.G0_h = G0_h[idx1] + rate * (G0_h[idx2]-G0_h[idx1])
-                self.G0_h = get_G0_h(gamma)
-                self.xmax = gamma/self.gr
-        set_hyst_params(gamma)
-        super().update_yield_stress(gamma,tau)
-
-
-
-class Multi:
-    def __init__(self,models=[mod_GHE(50e6,1e-3,0.2,**S_PARAM)]):
-        self.models = models
-        self.nmodel = len(models)
-
-    def shear(self,strain):
-        # tau = np.array([m.shear(strain) for m in self.models]).mean()
-        tau = sum([m.shear(strain) for m in self.models])/self.nmodel
-        return tau
-
-    def cyclic_shear(self,shear_strain):
-        tau = np.zeros([self.nmodel,len(shear_strain)])
-        for i,m in enumerate(self.models):
-            tau[i] = m.cyclic_shear(shear_strain)
-        return tau.mean(axis=0)
-
 
 
 if __name__ == '__main__':

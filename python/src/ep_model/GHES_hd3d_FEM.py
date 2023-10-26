@@ -8,151 +8,12 @@ except:
 
 np.set_printoptions(precision=5,suppress=True)
 
-class GHE_3d:
-    def __init__(self,model2d=hd_FEM.myGHE_S(50e3,5e-4,0.2)):
-        self.model = model2d
-        self.strain_vec = np.zeros(6)
-        self.sign = 1
-        self.eig_vec = np.eye(3)
-        self.gamma_i = 0.0
-        self.gamma_s = 0.0
-        self.tau_i,self.tau_s = 0.0,0.0
-        self.dgamma_i = 1.0
-        self.reverse = False
-
-    def vector_to_matrix(self,vec):
-        if vec.ndim >= 2:
-            mat = np.zeros(list(vec.shape[:2])+[3,3])
-            # mat = np.zeros((len(vec),3,3))
-            mat[...,0,0] = vec[...,0]
-            mat[...,1,1] = vec[...,1]
-            mat[...,2,2] = vec[...,2]
-            mat[...,0,1] = vec[...,3]
-            mat[...,1,0] = vec[...,3]
-            mat[...,1,2] = vec[...,4]
-            mat[...,2,1] = vec[...,4]
-            mat[...,0,2] = vec[...,5]
-            mat[...,2,0] = vec[...,5]
-        else:
-            mat = np.array([[vec[0],vec[3],vec[5]],
-                            [vec[3],vec[1],vec[4]],
-                            [vec[5],vec[4],vec[2]]])
-        return mat
-
-    def dq(self,r1,r2):
-        dq = (r1*r2.inv()).as_quat()
-        d = 2*np.arccos(np.abs(dq[-1]))
-        return d
-
-    def d_rot(self,strain_vec):
-        # strain_mat.shape: (3,3)
-
-        def det_sign(A):
-            eijk = np.zeros([3,3,3])
-            eijk[0,1,2] = eijk[1,2,0] = eijk[2,0,1] = 1
-            eijk[0,2,1] = eijk[2,1,0] = eijk[1,0,2] = -1
-            det = np.einsum('...ijk,...i,...j,...k',eijk,A[...,0,:],A[...,1,:],A[...,2,:])
-            return np.sign(det)
-
-        # def continuous(vec,prev_vec):
-        def continuous(val,vec,prev_vec):
-            # vec.shape: (3,3)
-            vecs = np.stack([vec.copy() for i in range(4)],axis=0)
-            vecs[1,1] *= -1
-            vecs[1,2] *= -1
-            vecs[2,0] *= -1
-            vecs[2,2] *= -1
-            vecs[3,0] *= -1
-            vecs[3,1] *= -1
-            rs = Rotation.from_matrix(vecs)
-            prev_r = Rotation.from_matrix(prev_vec)
-            d = []
-            for r in rs:
-                d.append(self.dq(r,prev_r))
-            d = np.array(d)
-            vec = vecs[np.argmin(d)]
-            rmin = rs[np.argmin(d)]
-            # print(eig_vec,(rmin*prev_r.inv()).as_quat(),d.min()>np.pi/3,'\n')
-            # print(val,d,d.min()>np.pi/3,'\n')
-            return vec,d.min()
-
-        strain_mat = self.vector_to_matrix(strain_vec)
-        eig_val,eig_vec = np.linalg.eig(strain_mat)
-        idx = eig_val.argsort()[::-1]
-        eig_val = eig_val[idx]
-        eig_vec = eig_vec[:,idx]
-        eig_vec = eig_vec.T
-
-        eig_vec[...,2] *= det_sign(eig_vec)[...,np.newaxis]
-        eig_vec,d = continuous(eig_val,eig_vec,self.eig_vec)
-        # eig_vec,d = continuous(eig_vec,self.eig_vec)
-        self.eig_vec = eig_vec
-        # print(strain_mat,'\n',eig_vec,d>np.pi/3,'\n')
-        return d
-
-    def get_gamma(self,strain):
-        e = strain.copy()
-        e[:3] -= strain[:3].mean()
-        gamma = 2*np.sqrt((e**2).sum())  # gamma for sheer
-        return gamma
-
-
-    def shear(self,strain_vec):
-        d = self.d_rot(strain_vec-self.strain_vec)
-        reverse = d>np.pi/3
-        self.d = d
-
-        gamma_i = self.get_gamma(strain_vec)
-        dgamma_i = gamma_i-self.gamma_i
-        # if (dgamma_i*self.dgamma_i<0) and (not reverse):
-        # if reverse:
-        s_reverse = dgamma_i*self.dgamma_i < 0
-        if s_reverse and not reverse:
-            self.sign *= -1
-        dgamma_s = self.sign * dgamma_i
-        self.gamma_s += dgamma_s
-        self.gamma_i = gamma_i
-        self.dgamma_i = dgamma_i
-
-        self.strain_vec = strain_vec
-        self.tau_s = self.model.shear(self.gamma_s)
-        self.tau_i = np.abs(self.tau_s)
-        self.reverse = reverse
-        return self.tau_i
-
-    def test(self,strain_vecs):
-        gamma_i,gamma_s,tau_i,tau_s = [],[],[],[]
-        d = []
-        for strain_vec in strain_vecs:
-            self.shear(strain_vec)
-            gamma_i.append(self.gamma_i)
-            gamma_s.append(self.gamma_s)
-            tau_i.append(self.tau_i)
-            tau_s.append(self.tau_s)
-            d.append(self.d)
-        return (np.array(gamma_i),np.array(tau_i)),(np.array(gamma_s),np.array(tau_s)),np.array(d)
-
-    def tortion(self,gammas):
-        seq = len(gammas)
-        strain_vecs = np.zeros([seq,6])
-        strain_vecs[:,5] = gammas/2
-        return self.test(strain_vecs)
-        # (gamma_i,tau_i),(gamma_s,tau_s) = self.test(strain_vecs)
-
-    def triaxial(self,ax_strains):
-        seq = len(ax_strains)
-        strain_vecs = np.zeros([seq,6])
-        strain_vecs[:,2] = ax_strains
-        strain_vecs[:,0] = strain_vecs[:,1] = -ax_strains/2
-        return self.test(strain_vecs)
-
-
 class Multi_spring_2d:
-    def __init__(self,p0,G0,gr05=6e-5,hmax=0.25,model2d=hd_FEM.GHE_S,ntheta=12,ghe_args=hd_FEM.S_PARAM):
+    def __init__(self,p0,G0,gr05=6e-5,hmax=0.25,model2d=hd_FEM.GHE_S,ntheta=12,idxy="",ghe_args=hd_FEM.S_PARAM):
         self.ntheta = ntheta
         self.dtheta = np.pi/ntheta
         self.theta = np.array([i*self.dtheta for i in range(ntheta)])
-        self.model = [model2d(G0,gr05,hmax=hmax,id=i,**ghe_args) for i in range(ntheta)]
+        self.model = [model2d(G0,gr05,hmax=hmax,id=i,idxy=idxy,**ghe_args) for i in range(ntheta)]
 
     def shear(self,gamma_axis,gamma_theta,p):
         gamma = [-gamma_axis*np.sin(theta) + gamma_theta*np.cos(theta) for theta in self.theta]
@@ -174,9 +35,9 @@ class Multi_spring_3d:
     def __init__(self,p0,G0,gr05=6e-5,hmax=0.25,model2d=hd_FEM.GHE_S,ntheta=12,ghe_args=hd_FEM.S_PARAM):
         self.tauf = G0*2.5*gr05
         args = p0,G0,gr05,hmax,model2d,ntheta
-        self.xy = Multi_spring_2d(*args,ghe_args=ghe_args)
-        self.yz = Multi_spring_2d(*args,ghe_args=ghe_args)
-        self.zx = Multi_spring_2d(*args,ghe_args=ghe_args)
+        self.xy = Multi_spring_2d(*args,idxy="xy",ghe_args=ghe_args)
+        self.yz = Multi_spring_2d(*args,idxy="yz",ghe_args=ghe_args)
+        self.zx = Multi_spring_2d(*args,idxy="zx",ghe_args=ghe_args)
 
     def strain_to_shear(self,v):
         xy = v[0]-v[1], 2*v[3] ##式(3.8)
