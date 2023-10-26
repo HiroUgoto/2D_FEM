@@ -73,7 +73,7 @@ class GHE:
         self.Diljk = np.einsum('ij,kl->ilkj',self.I3,self.I3)
         self.epsilon = sys.float_info.epsilon
 
-        # check file
+        # # check file
         # file_name = "tmp/"+idxy+"_"+'{0:02}'.format(id)
         # if os.path.isfile(file_name):
         #     os.remove(file_name)
@@ -95,7 +95,6 @@ class GHE:
         self.skeleton = True
 
     class StateParameters: #FEM用追加(stress_shiftについて確認する,stress_shiftをカットしている．)
-        # def __init__(self,strain,stress,dstrain,dstress,stress_shift,ef1=False,ef2=False):
         def __init__(self,strain,stress,dstrain,dstress,ef1=False,ef2=False):
             self.strain = np.copy(strain)
             self.stress = np.copy(stress)
@@ -235,6 +234,8 @@ class GHE:
                 tau0_n_list.insert(0, self.tau)
                 gamma0_n_list.insert(0, gamma-dg)               
 
+            tau0 = -self.tau_y
+            gamma0 = -self.gamma_y
             for i in range(len(self.gamma0_p_list)):
                 if gamma < self.gamma0_p_list[i]:
                     tau0 = tau0_n_list[i]
@@ -254,6 +255,8 @@ class GHE:
                 tau0_p_list.insert(0, self.tau)
                 gamma0_p_list.insert(0, gamma-dg)               
 
+            tau0 = self.tau_y
+            gamma0 = self.gamma_y
             for i in range(len(self.gamma0_n_list)):
                 if gamma > self.gamma0_n_list[i]:
                     tau0 = tau0_p_list[i]

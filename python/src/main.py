@@ -22,7 +22,7 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fp = 3.3
-amp = 5.e-5
+amp = 1.e-5
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##

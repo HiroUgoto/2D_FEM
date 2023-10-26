@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.linalg
-import math, copy, sys
+import math, copy, sys, os
 import ep_model.GHES_hd_FEM as hd_FEM
 import ep_model.GHES_hd3d_FEM as hd3d_FEM
 
@@ -40,6 +40,16 @@ class GHES:
         self.Z3 = np.zeros([3,3])
         self.I3 = np.eye(3) 
         self.epsilon = sys.float_info.epsilon
+
+        # # check file
+        # id = 0
+        # file_name = "tmp/ghes_"+'{0:02}'.format(id)
+        # if os.path.isfile(file_name):
+        #     os.remove(file_name)
+        # self.file = open(file_name,"w") 
+
+    # def __del__(self):
+    #     self.file.close()
 
     # -------------------------------------------------------------------------------------- #
     class StateParameters:
@@ -302,6 +312,10 @@ class GHES:
         p = pstress_vec[0]
         dev_stress_vec = self.qmodel_shear(strain_vec,p)
         stress_vec = pstress_vec + dev_stress_vec
+
+        # output_line = "{} {}\n".format(strain_vec[0],stress_vec[0])
+        # self.file.write(output_line)
+
         return stress_vec
 
     def strain_to_stress_(self,strain_vec):
