@@ -22,7 +22,7 @@ fem.set_output(outputs)
 
 ## --- Define input wave --- ##
 fp = 3.3
-amp = 1.e-5
+amp = 2.e-3
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
@@ -44,7 +44,7 @@ ntim = len(tim)
 # plt.show()
 
 ## --- Prepare time solver --- ##
-# ax = plot_model.plot_mesh_update_init()
+ax = plot_model.plot_mesh_update_init()
 fem.update_init(dt)
 
 ## Time iteration ##
@@ -137,8 +137,8 @@ for it in range(ntim):
         # print("----------------------------------------------------------------------")
 
 
-    # if it%(fsamp/datasamplerate*10) == 0:
-        # plot_model.plot_mesh_update(ax,fem,100.)    
+    if it%(fsamp/datasamplerate*10) == 0:
+        plot_model.plot_mesh_update(ax,fem,100.)    
         # print("t=",it*dt,output_element_stress_zz[1],output_element_pw[1])
         # print(it,"t=",it*dt,output_accx[0],output_element_stress_xx[0],output_element_stress_zz[0],output_element_stress_yy[0])  
         # break
@@ -163,4 +163,4 @@ stresspw.close()
 
 elapsed_time = time.time() - start
 print ("elapsed_time: {0}".format(elapsed_time) + "[sec]")
-# plot_model.plot_mesh_update(ax,fem,100.,fin=True)
+plot_model.plot_mesh_update(ax,fem,100.,fin=True)

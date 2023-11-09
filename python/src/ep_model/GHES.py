@@ -33,7 +33,7 @@ class GHES:
         self.e = 0.80
 
         # model 
-        self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE_S,ntheta=16)
+        self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE_S,ntheta=13)
         # self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE,ntheta=16)
 
         # identity
@@ -261,32 +261,32 @@ class GHES:
         if de is None:
             de = np.ones(6) * 1.e-8
 
-        # for i in range(6):
+        for i in range(6):
+            if abs(de[i]) > self.epsilon:
+                dstrain = np.zeros(6)
+                dstrain[i] = de[i]
+                strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+                stress_vec = self.strain_to_stress_(strain_vec)
+                dstress = stress_vec - self.matrix_to_vector(sp.stress)
+                Ep[:,i] = dstress[:]/de[i]
+
+        # for i in range(0,3):
         #     if abs(de[i]) > self.epsilon:
         #         dstrain = np.zeros(6)
         #         dstrain[i] = de[i]
         #         strain_vec = self.matrix_to_vector(sp.strain) + dstrain
         #         stress_vec = self.strain_to_stress_(strain_vec)
         #         dstress = stress_vec - self.matrix_to_vector(sp.stress)
-        #         Ep[:,i] = dstress[:]/de[i]
+        #         Ep[0:3,i] = dstress[0:3]/de[i]
 
-        for i in range(0,3):
-            if abs(de[i]) > self.epsilon:
-                dstrain = np.zeros(6)
-                dstrain[i] = de[i]
-                strain_vec = self.matrix_to_vector(sp.strain) + dstrain
-                stress_vec = self.strain_to_stress_(strain_vec)
-                dstress = stress_vec - self.matrix_to_vector(sp.stress)
-                Ep[0:3,i] = dstress[0:3]/de[i]
-
-        for i in range(3,6):
-            if abs(de[i]) > self.epsilon:
-                dstrain = np.zeros(6)
-                dstrain[i] = de[i]
-                strain_vec = self.matrix_to_vector(sp.strain) + dstrain
-                stress_vec = self.strain_to_stress_(strain_vec)
-                dstress = stress_vec - self.matrix_to_vector(sp.stress)
-                Ep[3:6,i] = dstress[3:6]/de[i]
+        # for i in range(3,6):
+        #     if abs(de[i]) > self.epsilon:
+        #         dstrain = np.zeros(6)
+        #         dstrain[i] = de[i]
+        #         strain_vec = self.matrix_to_vector(sp.strain) + dstrain
+        #         stress_vec = self.strain_to_stress_(strain_vec)
+        #         dstress = stress_vec - self.matrix_to_vector(sp.stress)
+        #         Ep[3:6,i] = dstress[3:6]/de[i]
 
         return Ep
 

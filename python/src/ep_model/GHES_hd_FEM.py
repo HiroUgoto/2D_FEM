@@ -1,6 +1,7 @@
 # from tkinter import E
 import numpy as np
 import copy, math, sys, os
+import matplotlib.pyplot as plt
 
 import warnings,traceback,sys
 warnings.filterwarnings('error')
@@ -73,14 +74,14 @@ class GHE:
         self.Diljk = np.einsum('ij,kl->ilkj',self.I3,self.I3)
         self.epsilon = sys.float_info.epsilon
 
-        # # check file
-        # file_name = "tmp/"+idxy+"_"+'{0:02}'.format(id)
-        # if os.path.isfile(file_name):
-        #     os.remove(file_name)
-        # self.file = open(file_name,"w") 
+        # check file
+        file_name = "tmp/"+idxy+"_"+'{0:02}'.format(id)
+        if os.path.isfile(file_name):
+            os.remove(file_name)
+        self.file = open(file_name,"w") 
 
-    # def __del__(self):
-    #     self.file.close()
+    def __del__(self):
+        self.file.close()
 
     def re_init(self):
         self.G0_h,self.gr_h = self.G0,self.gr
@@ -126,13 +127,17 @@ class GHE:
             self.dp = p - self.p
 
     # -------------------------------------------------------------------------------------- #
-    def skeleton_curve(self,gamma,G0,gr):
+    def skeleton_curve(self,gamma,G0,gr,flag=False):
         x = np.abs(gamma/gr)
         if x > 0.0:
             c1 = (self.c1_0+self.c1_inf + (self.c1_0-self.c1_inf)*np.cos(np.pi/(self.alpha/x +1)))/2
             c2 = (self.c2_0+self.c2_inf + (self.c2_0-self.c2_inf)*np.cos(np.pi/(self.beta/x +1)))/2
+            # if flag:
+            #     print("a", x, c1, c2)
         else:
             c1,c2 = self.c1_0,self.c2_0
+            # if flag:
+            #     print("b", x, c1, c2)
         tau = G0 * gamma /(1/c1 + x/c2)
         return tau
 
@@ -208,20 +213,20 @@ class GHE:
         tau = self.find_hysteresis_curve_(gamma,dg)
         self.update_hysteresis_curve(gamma,tau,dg)
 
-        # if self.idxy == "zx" and self.id == 8:
+        # if self.idxy == "zx" and self.id == 1:
         #     print("check",self.idxy,self.id,self.dg,dg,gamma,tau)
         #     print("")
 
         return tau
 
     def find_hysteresis_curve_(self,gamma,dg):
-        # if self.idxy == "zx" and self.id == 8:
-        #     flag = True
-        # else:
-        #     flag = False
+        if self.idxy == "zx" and self.id == 1:
+            flag = True
+        else:
+            flag = False
 
         if np.abs(gamma) >= self.gamma_y:
-            tau = self.skeleton_curve(gamma,self.G0,self.gr)
+            tau = self.skeleton_curve(gamma,self.G0,self.gr,flag)
             # if flag:
             #     print("A",self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
             return tau
@@ -279,8 +284,9 @@ class GHE:
             self.tau0 = self.tau
             self.gamma0 = gamma - dg
             self.update_reversal_points(dg)
-            # if self.idxy == "zx" and self.id == 8:
+            # if self.idxy == "zx" and self.id == 1:
             #     print("reverse",self.idxy,self.id,self.dg,dg,gamma,tau,self.tau0_p_list,self.tau0_n_list)
+                
 
         if np.abs(gamma) >= self.gamma_y:
             self.update_yield_stress(gamma,tau)
@@ -329,8 +335,8 @@ class GHE:
         self.gamma = gamma
         self.tau = tau
 
-        # output_line = "{} {}\n".format(self.gamma,self.tau)
-        # self.file.write(output_line)
+        output_line = "{} {}\n".format(self.gamma,self.tau)
+        self.file.write(output_line)
 
         return self.tau
 
@@ -522,6 +528,7 @@ class GHE_S(GHE):
             # lmbda = (2-self.lmbda0)*(self.coef[0]*x**2 + self.coef[1]*x**4) + self.lmbda0
             # lmbda = (2-self.lmbda0)*x**self.degree + self.lmbda0
             # lmbda = (2-self.lmbda0)/gy**self.degree * dg*(dg+2*gy) + 2
+            # print("lmbda",lmbda,fx,self.lmbda0)
         else:
             lmbda = 2.0
         tau = tau0 + lmbda*self.skeleton_curve(dg/lmbda,self.G0_h,self.gr_h)
@@ -552,3 +559,37 @@ class GHE_S(GHE):
                 self.gr_h = gr_h[idx1] + rate * (gr_h[idx2]-gr_h[idx1])
         set_hyst_params(gamma)
         super().update_yield_stress(gamma,tau)
+
+# ------------------------------------------------------------------------------------------- #
+if __name__ == "__main__":
+
+    G0,gr = 39000000.0,0.0003421538461538461
+    id=1
+    idxy="zx"
+
+    ghe_args=S_PARAM
+    
+    # model = GHE(G0,gr,hmax=0.20,id=id,idxy=idxy,**ghe_args) 
+    model = GHE_S(G0,gr,hmax=0.20,id=id,idxy=idxy,**ghe_args) 
+
+    tim = np.linspace(0,4,1000)
+
+    gmax = 1.e-1
+    freq = 2.0
+    # gamma = gmax * tim/tim[-1]
+    gamma = gmax * np.sin(tim *2*np.pi*freq) * tim/tim[-1]
+    # gamma = gmax* (np.sin(tim *2*np.pi*freq) * tim/tim[-1] + tim/tim[-1])
+
+    g0 = 0.0
+    tau = []
+    for g in gamma:
+        dg = g - g0
+        # t = model.skeleton_curve(g,G0,gr,True)
+        t = model.shear1(g)
+        print(g,t)
+        tau += [t]
+        g0 = g
+
+    plt.plot(gamma,tau)
+    # plt.scatter(gamma,tau)
+    plt.show()
