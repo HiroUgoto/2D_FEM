@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 #--------------------------------------------------------#
 def plot_mesh(fem,amp=1.0):
@@ -57,22 +58,36 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
     ax.set_ylim([max(z)+0.1*area_z,min(z)-0.25*area_z])
     ax.set_aspect('equal')
 
-    for element in fem.elements:
-        if element.dim == 2:
-            ic = element.material_id % len(pc)
+    if fem.dof == 1:
+        x = np.zeros(fem.nnode)        
+        z = np.zeros(fem.nnode) 
+        u = np.zeros(fem.nnode)
+        for node in fem.nodes:
+            x[node.id] = node.xyz[0]
+            z[node.id] = node.xyz[1]
+            # u[node.id] = node.u[0]
+            u[node.id] = node.v[0]
 
-            f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
-            f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
-            f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
-            f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
+        umax = np.max(np.abs(u))
+        ax.scatter(x,z,c=u,vmin=-umax,vmax=umax,cmap="PiYG")
 
-            fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic],alpha=0.4)
-            ax.add_patch(fpoly)
+    elif fem.dof == 2:
+        for element in fem.elements:
+            if element.dim == 2:
+                ic = element.material_id % len(pc)
 
-    rc = 0.01*area_z
-    for node in fem.nodes:
-        p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
-        ax.add_patch(p)
+                f0 = (element.nodes[0].xyz[0]+element.nodes[0].u[0]*amp, element.nodes[0].xyz[1]+element.nodes[0].u[1]*amp)
+                f1 = (element.nodes[1].xyz[0]+element.nodes[1].u[0]*amp, element.nodes[1].xyz[1]+element.nodes[1].u[1]*amp)
+                f2 = (element.nodes[2].xyz[0]+element.nodes[2].u[0]*amp, element.nodes[2].xyz[1]+element.nodes[2].u[1]*amp)
+                f3 = (element.nodes[3].xyz[0]+element.nodes[3].u[0]*amp, element.nodes[3].xyz[1]+element.nodes[3].u[1]*amp)
+
+                fpoly = plt.Polygon((f0,f1,f2,f3),ec="k",fc=pc[ic],alpha=0.4)
+                ax.add_patch(fpoly)
+
+        rc = 0.01*area_z
+        for node in fem.nodes:
+            p = plt.Circle((node.xyz[0]+node.u[0]*amp,node.xyz[1]+node.u[1]*amp),rc,color="k")
+            ax.add_patch(p)
 
     if fin:
         plt.show()

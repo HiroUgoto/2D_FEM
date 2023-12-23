@@ -83,7 +83,7 @@ class Fem():
     # ---------------------------------------
     def _set_initial_matrix(self):
         for element in self.element_set:
-            element.set_xn()
+            element.set_xn(self.dof)
             element.mk_local_matrix_init(self.dof)
             element.mk_local_matrix()
             element.mk_local_vector()
@@ -253,7 +253,7 @@ class Fem():
         node.dynamic_force = np.zeros(self.dof,dtype=np.float64)
 
     def _update_matrix_set_elements(self,element):
-        element.set_xn()
+        element.set_xn(self.dof)
         element.mk_local_update()
 
         id = 0

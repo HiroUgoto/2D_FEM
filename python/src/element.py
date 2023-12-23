@@ -45,11 +45,17 @@ class Element:
             self.u += (node.u.view(),)
             self.v += (node.v.view(),)
 
-    def set_xn(self):
+    def set_xn(self,dof):
         self.xnT  = np.empty([2,self.nnode],dtype=np.float64)
-        for i in range(self.nnode):
-            self.xnT[0,i] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
-            self.xnT[1,i] = self.nodes[i].xyz[1] + self.u[i][1] # mesh update
+        if dof == 1:
+            for i in range(self.nnode):
+                self.xnT[0,i] = self.nodes[i].xyz[0]
+                self.xnT[1,i] = self.nodes[i].xyz[1]
+
+        elif dof == 2:
+            for i in range(self.nnode):
+                self.xnT[0,i] = self.nodes[i].xyz[0] + self.u[i][0] # mesh update
+                self.xnT[1,i] = self.nodes[i].xyz[1] + self.u[i][1] # mesh update
 
     # ---------------------------------------------------------
     # ---------------------------------------------------------
@@ -149,8 +155,8 @@ class Element:
 
     # ---------------------------------------------------------
     def mk_local_vector(self):
-        # if self.dof == 1:
-        #     return
+        if self.dof == 1:
+            return
         if self.dim == 2:
             self.force = np.zeros(self.ndof,dtype=np.float64)
             V = 0.0
@@ -353,7 +359,7 @@ def mk_n(dof,estyle,nnode,xi,zeta):
     return N
 
 # ---------------------------------------------------------
-def mk_nqn(dof,n,q,imp):        #側面境界条件がエネルギー減衰
+def mk_nqn(dof,n,q,imp):
     nqn = np.linalg.multi_dot([n.T,q.T,imp,q,n])
     return nqn
 
@@ -363,7 +369,7 @@ def mk_q(dof,xnT,dn):
     det = np.linalg.norm(t)
 
     if dof == 1:
-        q = np.array([1.0])
+        q = np.array([[1.0]])
     elif dof == 2:
         q = np.array([[n[0],n[1]],
                       [t[0],t[1]]]) / det
