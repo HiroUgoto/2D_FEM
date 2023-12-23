@@ -59,14 +59,19 @@ def plot_mesh_update(ax,fem,amp=1.0,fin=False):
     ax.set_aspect('equal')
 
     if fem.dof == 1:
+        # n = 20*20
+        n = fem.nnode
+        iskip = fem.nnode // n
         x = np.zeros(fem.nnode)        
         z = np.zeros(fem.nnode) 
         u = np.zeros(fem.nnode)
+        id = 0
         for node in fem.nodes:
-            x[node.id] = node.xyz[0]
-            z[node.id] = node.xyz[1]
-            # u[node.id] = node.u[0]
-            u[node.id] = node.v[0]
+            if node.id % iskip == 0:
+                x[id] = node.xyz[0]
+                z[id] = node.xyz[1]
+                u[id] = node.v[0]
+                id += 1
 
         umax = np.max(np.abs(u))
         ax.scatter(x,z,c=u,vmin=-umax,vmax=umax,cmap="PiYG")
