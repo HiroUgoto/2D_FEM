@@ -84,7 +84,7 @@ int main() {
   std::cout << "elapsed_time: " << (double)(end - start) / CLOCKS_PER_SEC << "[sec]\n";
 
   // --- Write output file --- //
-  std::ofstream fd(output_dir + "output_x.disp");
+  std::ofstream fd(output_dir + "output.disp");
   for (size_t it = 0 ; it < ntim ; it++) {
     fd << tim(it) ;
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
@@ -94,7 +94,7 @@ int main() {
   }
   fd.close();
 
-  std::ofstream fv(output_dir + "output_x.vel");
+  std::ofstream fv(output_dir + "output.vel");
   for (size_t it = 0 ; it < ntim ; it++) {
     fv << tim(it) ;
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {
@@ -104,7 +104,7 @@ int main() {
   }
   fv.close();
 
-  std::ofstream fa(output_dir + "output_x.acc");
+  std::ofstream fa(output_dir + "output.acc");
   for (size_t it = 0 ; it < ntim ; it++) {
     fa << tim(it) ;
     for (size_t i = 0 ; i < fem.output_nnode ; i++) {

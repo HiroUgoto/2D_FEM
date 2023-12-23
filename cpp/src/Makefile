@@ -1,9 +1,9 @@
 TARGET_EXEC = FEM
 CXX = g++
 CPPFLAGS = -std=c++17 -Wall --pedantic-errors -O2
-LIBRARY = /usr/local/include/eigen3
+# LIBRARY = /usr/local/include/eigen3
 # LIBRARY = /usr/include/eigen3
-# LIBRARY = /opt/homebrew/include/eigen3
+LIBRARY = /opt/homebrew/include/eigen3
 
 BUILD_DIR = obj
 
