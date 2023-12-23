@@ -26,7 +26,7 @@ fem.set_output(outputs)
 fsamp = 100
 
 fp = 1
-duration = 10
+duration = 12
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
 # slip_rate = input_wave.ricker(tim,fp,tp=1.0/fp,amp=1.0)
