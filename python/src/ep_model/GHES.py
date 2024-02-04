@@ -33,7 +33,7 @@ class GHES:
         self.e = 0.80
 
         # model 
-        self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE_S,ntheta=13)
+        self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE_S,ntheta=3)
         # self.qmodel = hd3d_FEM.Multi_spring_3d(self.p_ref,G0,self.g05,hmax,model2d=hd_FEM.GHE,ntheta=16)
 
         # identity
@@ -120,7 +120,8 @@ class GHES:
         # print("dstress_trial",dstress_trial)
 
         for i in range(6):
-            if np.abs(dstress_trial[i]) > 1.e-8:
+            # if np.abs(dstress_trial[i]) > 1.e-8:
+            if np.abs(dstress_trial[i]) > 1.e-6:
                 Ep[i,:] = Ep[i,:] * dstress_residual[i]/dstress_trial[i]
 
         # dstress_trial = np.dot(Ep,dstrain_vec)
@@ -262,7 +263,8 @@ class GHES:
             de = np.ones(6) * 1.e-8
 
         for i in range(6):
-            if abs(de[i]) > self.epsilon:
+            # if abs(de[i]) > self.epsilon:
+            if abs(de[i]) > 1.e-9:
                 dstrain = np.zeros(6)
                 dstrain[i] = de[i]
                 strain_vec = self.matrix_to_vector(sp.strain) + dstrain

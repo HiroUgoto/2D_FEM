@@ -18,30 +18,32 @@ datasamplerate = 500  #sampling rate[Hz]
 ## --- FEM Set up --- ##
 fem.set_init()
 fem.set_output(outputs)
-# plot_model.plot_mesh(fem)
+# plot_model.plot_mesh(fem,margin=0.5)
 
 ## --- Define input wave --- ##
-fp = 3.3
-amp = 2.e-3
+fp = 4.0
+amp = 2.0
 print("Input frequency(Hz):",fp,"Input amplitude(m/s2):",amp)
 
 ## --- EP Set up --- ##
 fem.set_ep_initial_state()
-fem.set_rayleigh_damping(fp,10*fp,0.01)
+# fem.set_rayleigh_damping(0.2*fp,5*fp,0.01)
+fem.set_rayleigh_damping(0.2*fp,5*fp,0.01)
 
 ## --- Define input wave --- ##
 fsamp = 2500
-duration = 4.0/fp + 1.0/fp
+duration = 3.0/fp + 1.0/fp
 
 tim,dt = np.linspace(0,duration,int(fsamp*duration),endpoint=False,retstep=True)
-# wave_acc = input_wave.tapered_sin(tim,fp,3.0/fp,duration-1.0/fp,amp)
-forced_disp = input_wave.tapered_sin(tim,fp,1.0/fp,duration,amp) #FEM試験用
-forced_nodes = [2,5,8] #FEM試験用(強制変位S)
+wave_acc = input_wave.tapered_sin(tim,fp,1.0/fp,duration,amp)
+# forced_disp = input_wave.tapered_sin(tim,fp,1.0/fp,duration,amp) #FEM試験用
+# forced_nodes = [2,5,8] #FEM試験用(強制変位S)
 ntim = len(tim)
 
 # plt.figure()
 # plt.plot(tim,wave_acc)
 # plt.show()
+
 
 ## --- Prepare time solver --- ##
 ax = plot_model.plot_mesh_update_init()
@@ -93,25 +95,21 @@ stressyy = open(output_dir+"stressyy","w")
 stresspw = open(output_dir+"stresspw","w")
 accin = open(output_dir+"acc.in","w") 
 velin = open(output_dir+"vel.in","w") 
-dispin = open(output_dir+"disp.in","w") 
 
 for it in range(ntim):
-    # acc0 = np.array([wave_acc[it],0.0])
-    # vel0 += acc0*dt
-    # dis0 += vel0*dt
-    forced_disp0 = np.array([forced_disp[it],0.0]) #FEM試験用
+    acc0 = np.array([wave_acc[it],0.0])
+    vel0 += acc0*dt
 
     # fem.update_time(acc0)
     # fem.update_time(acc0,FD=True)
-    # fem.update_time(acc0,vel0,input_wave=True)
-    fem.update_time_disp(forced_disp0,forced_nodes)
+    fem.update_time(acc0,vel0,input_wave=True)
+    # fem.update_time_disp(forced_disp0,forced_nodes)
 
     np.set_printoptions(precision=5)
 
     if it%(fsamp/datasamplerate) == 0:
         writef_in(accin, [acc0[0]])
         writef_in(velin, [vel0[0]])
-        writef_in(dispin, [forced_disp0[0]])
         writef(output_accx, accx, tim[it], [node.a[0] for node in fem.output_nodes] + acc0[0])
         writef(output_accz, accz, tim[it], [node.a[1] for node in fem.output_nodes])
         writef(output_dispx, dispx, tim[it], [node.u[0] for node in fem.output_nodes])
@@ -131,21 +129,20 @@ for it in range(ntim):
         # writef(output_element_stress_yy, stressyy, tim[it], [element.eff_stress_yy for element in fem.output_elements])
         # writef(output_element_pw, stresspw, tim[it], [element.excess_pore_pressure for element in fem.output_elements])
 
-        print(it,"t=",it*dt,forced_disp0[0],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
-        # print(it,"t=",it*dt,forced_disp0[0])  
+        # print(it,"t=",it*dt,wave_acc[it],fem.elements[0].stress[0],fem.elements[0].stress[1],fem.elements[0].stress[2],fem.elements[0].stress_yy)  
+        print(it,"t=",it*dt,wave_acc[it],output_accx[0])  
         # print("                              ",fem.elements[0].stress)
         # print("----------------------------------------------------------------------")
 
 
     if it%(fsamp/datasamplerate*10) == 0:
-        plot_model.plot_mesh_update(ax,fem,100.)    
+        plot_model.plot_mesh_update(ax,fem,200.,margin=0.5)    
         # print("t=",it*dt,output_element_stress_zz[1],output_element_pw[1])
         # print(it,"t=",it*dt,output_accx[0],output_element_stress_xx[0],output_element_stress_zz[0],output_element_stress_yy[0])  
         # break
 
 accin.close()
 velin.close()
-dispin.close()
 accx.close()
 accz.close()
 velx.close()

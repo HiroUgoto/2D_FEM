@@ -75,13 +75,14 @@ class GHE:
         self.epsilon = sys.float_info.epsilon
 
         # check file
-        file_name = "tmp/"+idxy+"_"+'{0:02}'.format(id)
-        if os.path.isfile(file_name):
-            os.remove(file_name)
-        self.file = open(file_name,"w") 
+        # file_name = "tmp/"+idxy+"_"+'{0:04}'.format(id)
+        # if os.path.isfile(file_name):
+        #     os.remove(file_name)
+        # self.file = open(file_name,"w") 
 
     def __del__(self):
-        self.file.close()
+        pass
+        # self.file.close()
 
     def re_init(self):
         self.G0_h,self.gr_h = self.G0,self.gr
@@ -336,7 +337,7 @@ class GHE:
         self.tau = tau
 
         output_line = "{} {}\n".format(self.gamma,self.tau)
-        self.file.write(output_line)
+        # self.file.write(output_line)
 
         return self.tau
 
